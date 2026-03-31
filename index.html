@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>印尼语学习系统 | TMI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #12141d;
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        body {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        h1 {
+            font-size: 2.4rem;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #a0a8b7;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+        .card {
+            background: #1b1e29;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(79, 172, 254, 0.15);
+        }
+        h2 {
+            font-size: 1.5rem;
+            color: #ffffff;
+            margin: 0 0 15px;
+            padding-left: 12px;
+            border-left: 4px solid #4facfe;
+        }
+        button {
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            color: #12141d;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.25s ease;
+            margin: 8px 5px 8px 0;
+        }
+        button:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+        .unit-list, .lesson-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .item-btn {
+            background: #242836;
+            color: #e0e0e0;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .item-btn:hover {
+            background: #2d3244;
+            border-color: #4facfe;
+        }
+        #content {
+            margin-top: 20px;
+            line-height: 1.8;
+            font-size: 1rem;
+            color: #c0c8d7;
+        }
+        .highlight {
+            color: #4facfe;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>印尼语智能学习系统</h1>
+    <p class="subtitle">Indonesian Learning Platform | TMI-Online.Store</p>
+
+    <div class="card">
+        <h2>选择单元</h2>
+        <div class="unit-list" id="unitList">
+            <div class="item-btn" onclick="selectUnit(1)">单元 1 - 基础问候</div>
+            <div class="item-btn" onclick="selectUnit(2)">单元 2 - 数字与时间</div>
+            <div class="item-btn" onclick="selectUnit(3)">单元 3 - 日常交流</div>
+            <div class="item-btn" onclick="selectUnit(4)">单元 4 - 交通出行</div>
+            <div class="item-btn" onclick="selectUnit(5)">单元 5 - 购物用语</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>选择课程</h2>
+        <div class="lesson-list" id="lessonList">
+            <div class="item-btn" onclick="loadLesson(1)">课程 1</div>
+            <div class="item-btn" onclick="loadLesson(2)">课程 2</div>
+            <div class="item-btn" onclick="loadLesson(3)">课程 3</div>
+            <div class="item-btn" onclick="loadLesson(4)">课程 4</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>学习内容</h2>
+        <div id="content">
+            请选择单元与课程开始学习 📚
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>快捷操作</h2>
+        <button onclick="showContent()">显示内容</button>
+        <button onclick="playAudio()">朗读发音</button>
+        <button onclick="clearContent()">清空内容</button>
+    </div>
+
+    <script>
+        let currentUnit = 1;
+        let currentLesson = 1;
+
+        function selectUnit(unit) {
+            currentUnit = unit;
+            document.getElementById('content').innerHTML = `已选择 <span class="highlight">单元 ${unit}</span>，请选择课程`;
+        }
+
+        function loadLesson(lesson) {
+            currentLesson = lesson;
+            const content = `
+                <p>📘 <span class="highlight">单元 ${currentUnit} - 课程 ${lesson}</span></p>
+                <p>Selamat pagi → 早上好</p>
+                <p>Terima kasih → 谢谢</p>
+                <p>Maaf → 对不起</p>
+                <p>Selamat tinggal → 再见</p>
+                <p>Berapa harganya? → 多少钱？</p>
+            `;
+            document.getElementById('content').innerHTML = content;
+        }
+
+        function showContent() {
+            loadLesson(currentLesson);
+        }
+
+        function playAudio() {
+            document.getElementById('content').innerHTML += `<p>🔊 正在播放发音...</p>`;
+        }
+
+        function clearContent() {
+            document.getElementById('content').innerHTML = "内容已清空 ✅";
+        }
+    </script>
+
+</body>
+</html>
