@@ -1663,13 +1663,14 @@ input:checked + .slider:before {
    大屏适配 - Desktop Optimization (≥1200px)
    ======================================== */
 
-/* 统一页面内容最大宽度 */
+/* 页面内容撑满容器 */
 #page-learn,
 #page-practice,
 #page-dashboard {
     width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 /* 学习页面：进度和推荐卡片行 */
@@ -1686,9 +1687,8 @@ input:checked + .slider:before {
 
 /* 学习卡片最大宽度 */
 .study-card {
-    max-width: 1000px;
-    margin: 0 auto;
     min-height: 350px;
+    flex: 1;
 }
 
 /* 统计页面卡片 - 4列横排 */
@@ -1709,12 +1709,14 @@ input:checked + .slider:before {
 
 /* 练习页面容器限制宽度 */
 .practice-container {
-    max-width: 900px !important;
-    margin: 0 auto !important;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 /* 练习设置卡片底部填满 */
-.practice-container > div:last-child {
+.practice-settings-card {
     margin-top: auto;
 }
 
