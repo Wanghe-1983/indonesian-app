@@ -157,6 +157,7 @@
         <div id="online-badge" class="online-badge" style="display:none;">
             <span class="dot"></span>
             <span id="online-text">在线 0 人</span>
+            <span id="max-online-text" style="margin-left:8px;color:#64748b;font-size:0.75rem;"></span>
         </div>
 
         <div class="auth-tabs">
@@ -170,14 +171,14 @@
                 <span class="input-label">账号 / Username</span>
                 <div class="input-wrapper">
                     <i class="fas fa-user icon"></i>
-                    <input type="text" id="login-username" class="login-input" placeholder="用户名" autocomplete="off">
+                    <input type="text" id="login-username" class="login-input" placeholder="用户名" autocomplete="off" data-1p-ignore>
                 </div>
             </div>
             <div class="input-group">
                 <span class="input-label">密码 / Password</span>
                 <div class="input-wrapper">
                     <i class="fas fa-lock icon"></i>
-                    <input type="password" id="login-password" class="login-input" placeholder="请输入密码">
+                    <input type="password" id="login-password" class="login-input" placeholder="请输入密码" autocomplete="new-password">
                 </div>
             </div>
             <button class="btn-primary" id="login-btn" onclick="handleLogin()">立即登录</button>
@@ -219,14 +220,14 @@
                 <span class="input-label">密码 / Password <span class="req">*</span></span>
                 <div class="input-wrapper">
                     <i class="fas fa-lock icon"></i>
-                    <input type="password" id="reg-password" class="login-input" placeholder="至少4位">
+                    <input type="password" id="reg-password" class="login-input" placeholder="至少4位" autocomplete="new-password">
                 </div>
             </div>
             <div class="input-group">
                 <span class="input-label">确认密码 <span class="req">*</span></span>
                 <div class="input-wrapper">
                     <i class="fas fa-lock icon"></i>
-                    <input type="password" id="reg-password2" class="login-input" placeholder="再次输入密码">
+                    <input type="password" id="reg-password2" class="login-input" placeholder="再次输入密码" autocomplete="new-password">
                 </div>
             </div>
 
@@ -400,9 +401,15 @@
                 const info = await API.getSystemInfo();
                 if (info.error === 'network') return;
                 const badge = document.getElementById('online-badge');
-                if (info.showOnlineLogin && info.onlineCount > 0) {
+                if (info.showOnlineLogin) {
                     badge.style.display = 'inline-flex';
-                    document.getElementById('online-text').textContent = '在线 ' + info.onlineCount + ' 人';
+                    document.getElementById('online-text').textContent = '在线 ' + (info.onlineCount || 0) + ' 人';
+                    const maxText = document.getElementById('max-online-text');
+                    if (info.maxOnline && info.maxOnline > 0) {
+                        maxText.textContent = '/ 上限 ' + info.maxOnline + ' 人';
+                    } else {
+                        maxText.textContent = '';
+                    }
                 }
                 // 更新员工验证提示
         if (info.requireEmployeeVerify === false) {
