@@ -599,7 +599,10 @@
         if (name === 'users') loadUsers();
         if (name === 'settings') loadSettings();
         if (name === 'leaderboard') loadLbConfig();
+        if (name === 'employees') loadEmployees();
+        if (name === 'whitelist') { loadWhitelist(); loadEmployees(); }
         if (name === 'study') loadStudyStats();
+        if (name === 'changelog') loadChangelog();
     }
 
     // ========== 概览 ==========
@@ -805,8 +808,9 @@
     let employeeList = [];
 
     async function loadEmployees() {
-        employeeList = await adminFetch('admin/whitelist', { method: 'GET' });
-        if (employeeList.error) { employeeList = []; return; }
+        const data = await adminFetch('admin/whitelist', { method: 'GET' });
+        if (data.error) { employeeList = []; renderEmployeeTable([]); return; }
+        employeeList = data.employees || (Array.isArray(data) ? data : []);
         const users = await adminFetch('admin/users', { method: 'GET' });
         renderEmployeeTable(users || []);
     }
@@ -1147,9 +1151,38 @@
 
         // switchTab 增加版本说明加载
         const origSwitchTab = window.switchTab;
-        window.switchTab = function(tab, el) {
+        // 白名单管理
+    async function loadWhitelist() {
+        try {
+            const data = await adminFetch('admin/whitelist', { method: 'GET' });
+            const tbody = document.getElementById('whitelistBody');
+            const empty = document.getElementById('whitelistEmpty');
+            const list = data.employees || data || [];
+            if (!Array.isArray(list) || list.length === 0) {
+                if (tbody) tbody.innerHTML = '';
+                if (empty) empty.style.display = '';
+                return;
+            }
+            if (empty) empty.style.display = 'none';
+            if (tbody) tbody.innerHTML = list.map((u, i) =>
+                '<tr><td>' + (i+1) + '</td><td>' + (u.username||u.name||'—') + '</td><td>' + (u.role||'普通用户') + '</td><td>' + (u.password||'—') + '</td><td><button onclick="deleteWhitelistUser(' + i + ')" style="background:rgba(248,113,113,0.15);color:#f87171;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;">删除</button></td></tr>'
+            ).join('');
+        } catch(e) { console.warn('loadWhitelist error:', e); }
+    }
+
+    async function deleteWhitelistUser(idx) {
+        if (!confirm('确认删除？')) return;
+        const list = JSON.parse(localStorage.getItem('fmi_admin_whitelist') || '[]');
+        list.splice(idx, 1);
+        localStorage.setItem('fmi_admin_whitelist', JSON.stringify(list));
+        await adminFetch('admin/whitelist', { method: 'PUT', body: JSON.stringify(list) });
+        loadWhitelist();
+    }
+
+    window.switchTab = function(tab, el) {
             origSwitchTab(tab, el);
             if (tab === 'changelog') loadChangelog();
+            if (tab === 'whitelist') { loadWhitelist(); }
         };
     // ========== 学习统计管理 ==========
     async function loadStudyStats() {
