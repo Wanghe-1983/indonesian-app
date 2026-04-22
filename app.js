@@ -772,7 +772,6 @@ function updateLoopCircle(val) {
 }
 
 // 隐藏/显示中文释义
-let _hideChinese = false;
 function toggleHide() {
     _hideChinese = !_hideChinese;
     const btn = document.getElementById('hide-btn');
