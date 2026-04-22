@@ -226,14 +226,18 @@ function initUI() {
     <div id="page-learn">
     <header><h1 class="main-title">印尼语学习助手</h1></header>
 
+    <header style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <h1 class="main-title">印尼语学习助手</h1>
+        <div class="user-status" id="user-status" style="font-size:0.9rem;">
+            欢迎，管理员
+        </div>
+    </header>
+
     <div class="top-info-bar">
         <div class="date-time" id="date-time">${new Date().toLocaleString()}</div>
         <div class="weather-location" id="weather-location">
             <i class="fas fa-cloud"></i>
             <span>本地 27℃ 多云</span>
-        </div>
-        <div class="user-status" id="user-status">
-            欢迎，管理员
         </div>
     </div>
 
@@ -255,7 +259,7 @@ function initUI() {
             <div style="height:8px;background:rgba(30,41,59,0.5);border-radius:4px;overflow:hidden;margin-bottom:8px;">
                 <div id="progress-bar" style="height:100%;width:${studyStats.todayWords > 0 ? Math.min(100, (studyStats.todayWords/dailyGoal)*100) : 0}%;background:linear-gradient(90deg,var(--accent),#a78bfa);border-radius:4px;transition:width 0.6s ease;"></div>
             </div>
-            <div style="font-size:12px;color:#94a3b8;">${studyStats.todayWords}/${dailyGoal} 目标单词</div>
+            <div style="font-size:12px;color:#94a3b8;cursor:pointer;" onclick="showGoalSetting()" title="点击设置学习目标">${studyStats.todayWords}/${dailyGoal} 目标单词 <i class="fas fa-edit" style="font-size:10px;margin-left:3px;"></i></div>
         </div>
         <div style="flex:1;min-width:200px;background:var(--glass);padding:15px;border-radius:15px;border:1px solid rgba(255,255,255,0.05);">
             <div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">随机推荐单词</div>
@@ -402,7 +406,7 @@ function initUI() {
                     🎯 完成率：0%
                 </div>
             </div>
-            <div class="share-tip" id="share-tip">💡 学习小贴士：${window._dailyTip || document.getElementById('tip-content')?.textContent || '坚持学习，每天进步一点点！'}</div>
+            <div class="share-tip" id="share-tip">💡 学习小贴士：加载中...</div>
             <div id="share-record-list">
                 <div class="share-record" style="text-align:center;color:#94a3b8;font-style:italic;">继续努力，坚持每天学习 💪</div>
             </div>
@@ -1054,10 +1058,23 @@ function renderTodayRecord() {
     } else {
         recordList.innerHTML = '<div style="grid-column: 1 / 3; text-align: center; color: var(--text-muted);">暂无学习记录</div>';
     }
-    // 更新分享弹窗（同步小贴士，不显示具体单词）
+    // 更新分享弹窗（同步小贴士和天气，不显示具体单词）
     const shareTip = document.getElementById('share-tip');
     const curTip = window._dailyTip || document.getElementById('tip-content')?.textContent || '坚持学习，每天进步一点点！';
     if (shareTip) shareTip.innerHTML = '💡 学习小贴士：' + curTip;
+    // 更新分享卡片中的天气信息
+    const shareStats = document.getElementById('share-stats');
+    if (shareStats) {
+        const weatherEl = document.getElementById('weather-location');
+        const weatherText = weatherEl ? weatherEl.textContent.trim() : '本地 27℃ 多云';
+        const rate = dailyGoal > 0 ? Math.min(100, Math.floor((studyStats.todayWords / dailyGoal) * 100)) : 0;
+        shareStats.querySelector('div').innerHTML =
+            '📅 日期：' + today + '<br>' +
+            '📚 今日学习：' + studyStats.todayWords + ' 个单词<br>' +
+            '⏱ 学习时长：' + Math.floor(studyStats.studySeconds/60) + '分' + (studyStats.studySeconds%60) + '秒<br>' +
+            '🎯 完成率：' + rate + '%<br>' +
+            '🌤 ' + weatherText;
+    }
     // share-record-list 保留鼓励文案不更新
 }
 
@@ -1208,11 +1225,14 @@ function openShareModal() {
 // 复制分享文案（适配朋友圈风格）
 function copyShareText() {
     const tip = window._dailyTip || document.getElementById('tip-content')?.textContent || '坚持学习，每天进步一点点！';
+    const weatherEl = document.getElementById('weather-location');
+    const weatherText = weatherEl ? weatherEl.textContent.trim() : '本地 多云';
     const rate = dailyGoal > 0 ? Math.min(100, Math.floor((studyStats.todayWords / dailyGoal) * 100)) : 0;
     const text = `🇮🇩 印尼语学习打卡｜${today}
 ✅ 今日学习：${studyStats.todayWords} 个单词
 ⏰ 学习时长：${Math.floor(studyStats.studySeconds/60)}分${studyStats.studySeconds%60}秒
 🎯 完成率：${rate}%
+🌤 ${weatherText}
 
 💡 ${tip}
 
@@ -1762,19 +1782,53 @@ function initDashboardPage() {
     } else {
         wordsHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px;">今天还没有学习记录</div>';
     }
-    c.innerHTML = '<div style="margin:0 auto;max-width:100%;"><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.8rem;font-weight:800;color:var(--text-main);display:inline-block;"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:10px;"></i>学习统计</h2><button onclick="clearStudyData()" style="margin-left:15px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;vertical-align:middle;"><i class="fas fa-trash-alt" style="margin-right:5px;"></i>清空统计</button><p style="color:var(--text-muted);font-size:0.95rem;margin-top:5px;">' + today + ' · 数据总览</p></div><div class="dash-stats-grid"><div class="dash-card" style="border-top:3px solid var(--accent);"><div style="font-size:1.8rem;color:var(--accent);margin-bottom:10px;"><i class="fas fa-book"></i></div><div class="dash-card-value">' + studyStats.todayWords + '</div><div class="dash-card-label">今日学习</div><div class="dash-card-sub" style="display:flex;align-items:center;justify-content:center;gap:4px;">目标 <input type="number" id="daily-goal-input" value="' + dailyGoal + '" min="1" max="999" onchange="setDailyGoal(this.value)" style="width:60px;text-align:center;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);color:#a5b4fc;border-radius:8px;padding:4px 8px;font-size:1rem;font-weight:600;"> 词</div></div><div class="dash-card" style="border-top:3px solid #f59e0b;"><div style="font-size:1.8rem;color:#f59e0b;margin-bottom:10px;"><i class="fas fa-clock"></i></div><div class="dash-card-value">' + mins + '<span style="font-size:0.7em;color:var(--text-muted);">分' + secs + '秒</span></div><div class="dash-card-label">在线时长</div><div class="dash-card-sub">今日累计</div></div><div class="dash-card" style="border-top:3px solid #10b981;"><div style="font-size:1.8rem;color:#10b981;margin-bottom:10px;"><i class="fas fa-layer-group"></i></div><div class="dash-card-value">' + learnedN + '<span style="font-size:0.7em;color:var(--text-muted);">/' + totalLib + '</span></div><div class="dash-card-label">累计掌握</div><div class="dash-card-sub">总词汇量</div></div><div class="dash-card" style="border-top:3px solid #a78bfa;"><div style="font-size:1.8rem;color:#a78bfa;margin-bottom:10px;"><i class="fas fa-bullseye"></i></div><div class="dash-card-value">' + learnedPct + '%</div><div class="dash-card-label">掌握率</div><div class="dash-card-sub">' + learnedN + '/' + totalLib + ' 词</div></div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-tasks" style="color:var(--accent);margin-right:8px;"></i>词汇掌握进度</div><div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + learnedPct + '%;"></div></div><div class="dash-progress-labels"><span>已掌握 ' + learnedN + ' 词</span><span>总词汇量 ' + totalLib + ' 词</span></div><div style="margin-top:20px;">' + catBreakdown + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px;"></i>练习历史</div><div class="dash-mini-grid"><div class="dash-mini-card"><div class="dash-mini-value">' + totalP + '</div><div class="dash-mini-label">练习次数</div></div><div class="dash-mini-card"><div class="dash-mini-value">' + avgS + '%</div><div class="dash-mini-label">平均正确率</div></div></div><div class="dash-history-list">' + histHTML + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>今日已学单词</div><div class="dash-words-grid">' + wordsHTML + '</div></div></div>';
+    c.innerHTML = '<div style="margin:0 auto;max-width:100%;"><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.8rem;font-weight:800;color:var(--text-main);display:inline-block;"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:10px;"></i>学习统计</h2><button onclick="clearStudyData()" style="margin-left:15px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;vertical-align:middle;"><i class="fas fa-trash-alt" style="margin-right:5px;"></i>清空统计</button><p style="color:var(--text-muted);font-size:0.95rem;margin-top:5px;">' + today + ' · 数据总览</p></div><div class="dash-stats-grid"><div class="dash-card" style="border-top:3px solid var(--accent);"><div style="font-size:1.8rem;color:var(--accent);margin-bottom:10px;"><i class="fas fa-book"></i></div><div class="dash-card-value">' + studyStats.todayWords + '</div><div class="dash-card-label">今日学习</div><div class="dash-card-sub">目标 ' + dailyGoal + ' 词 <span style="font-size:0.7rem;color:#64748b;margin-left:4px;cursor:pointer;border-bottom:1px dashed #64748b;" onclick="showGoalSetting()">修改</span></div></div><div class="dash-card" style="border-top:3px solid #f59e0b;"><div style="font-size:1.8rem;color:#f59e0b;margin-bottom:10px;"><i class="fas fa-clock"></i></div><div class="dash-card-value">' + mins + '<span style="font-size:0.7em;color:var(--text-muted);">分' + secs + '秒</span></div><div class="dash-card-label">在线时长</div><div class="dash-card-sub">今日累计</div></div><div class="dash-card" style="border-top:3px solid #10b981;"><div style="font-size:1.8rem;color:#10b981;margin-bottom:10px;"><i class="fas fa-layer-group"></i></div><div class="dash-card-value">' + learnedN + '<span style="font-size:0.7em;color:var(--text-muted);">/' + totalLib + '</span></div><div class="dash-card-label">累计掌握</div><div class="dash-card-sub">总词汇量</div></div><div class="dash-card" style="border-top:3px solid #a78bfa;"><div style="font-size:1.8rem;color:#a78bfa;margin-bottom:10px;"><i class="fas fa-bullseye"></i></div><div class="dash-card-value">' + learnedPct + '%</div><div class="dash-card-label">掌握率</div><div class="dash-card-sub">' + learnedN + '/' + totalLib + ' 词</div></div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-tasks" style="color:var(--accent);margin-right:8px;"></i>词汇掌握进度</div><div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + learnedPct + '%;"></div></div><div class="dash-progress-labels"><span>已掌握 ' + learnedN + ' 词</span><span>总词汇量 ' + totalLib + ' 词</span></div><div style="margin-top:20px;">' + catBreakdown + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px;"></i>练习历史</div><div class="dash-mini-grid"><div class="dash-mini-card"><div class="dash-mini-value">' + totalP + '</div><div class="dash-mini-label">练习次数</div></div><div class="dash-mini-card"><div class="dash-mini-value">' + avgS + '%</div><div class="dash-mini-label">平均正确率</div></div></div><div class="dash-history-list">' + histHTML + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>今日已学单词</div><div class="dash-words-grid">' + wordsHTML + '</div></div></div>';
 }
 
-// 设置每日学习目标
-function setDailyGoal(val) {
-    const n = parseInt(val);
+// 设置每日学习目标（弹窗形式）
+function showGoalSetting() {
+    const current = dailyGoal;
+    const presets = [5, 10, 15, 20, 30, 50];
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:8000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
+    dialog.innerHTML = `
+        <div style="background:var(--glass,rgba(30,41,59,0.95));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:30px;max-width:400px;width:90%;text-align:center;backdrop-filter:blur(20px);">
+            <div style="font-size:2rem;margin-bottom:10px;">🎯</div>
+            <h3 style="color:#fff;font-size:1.1rem;margin-bottom:5px;">设置今日学习目标</h3>
+            <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:20px;">当前目标：${current} 个单词</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px;">
+                ${presets.map(n => `<button class="goal-preset" onclick="applyGoal(${n})" style="padding:8px 16px;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:600;transition:all 0.2s;${n === current ? 'background:rgba(99,102,241,0.3);color:#a5b4fc;border:1px solid rgba(99,102,241,0.5);' : 'background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);'}">${n}词</button>`).join('')}
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:20px;">
+                <span style="color:#94a3b8;font-size:0.85rem;">自定义：</span>
+                <input type="number" id="goal-custom-input" value="${current}" min="1" max="999" style="width:70px;text-align:center;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc;border-radius:8px;padding:6px;font-size:1rem;font-weight:600;">
+                <span style="color:#94a3b8;font-size:0.85rem;">词</span>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button onclick="document.body.removeChild(this.closest('[style*=fixed]'))" style="background:rgba(100,116,139,0.2);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:8px 20px;border-radius:10px;cursor:pointer;">取消</button>
+                <button onclick="applyGoal(parseInt(document.getElementById('goal-custom-input').value));document.body.removeChild(this.closest('[style*=fixed]'))" style="background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3);padding:8px 20px;border-radius:10px;cursor:pointer;font-weight:600;">确定</button>
+            </div>
+        </div>`;
+    document.body.appendChild(dialog);
+}
+
+function applyGoal(n) {
     if (n && n > 0) {
         dailyGoal = n;
         localStorage.setItem('fmi_daily_goal', n);
         updateStats();
-        // 刷新统计页（如果在统计页）
-        const goalInput = document.getElementById('daily-goal-input');
-        if (goalInput) goalInput.value = n;
+        // 刷新学习区进度显示
+        const progressArea = document.querySelector('.learn-cards-row div:first-child div:last-child');
+        // 刷新统计页
+        if (currentPage === 'dashboard') initDashboardPage();
+    }
+}
+
+// 首次登录或目标未设置时自动弹出目标设置
+function checkFirstGoalSetting() {
+    const goalSet = localStorage.getItem('fmi_daily_goal');
+    if (!goalSet) {
+        setTimeout(() => showGoalSetting(), 500);
     }
 }
 
