@@ -268,28 +268,26 @@ function initUI() {
     <section class="study-card" id="main-card">
         <div class="top-meta">
             <div class="word-badge" id="word-idx">01</div>
-            <div class="compact-controls" id="learn-controls" style="display:flex;align-items:center;gap:16px;flex:1;justify-content:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:6px 14px;">
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <i class="fas fa-tachometer-alt" style="color:#a5b4fc;font-size:0.8rem;"></i>
-                    <input type="range" id="inp-rate" min="0.1" max="1.5" step="0.1" value="0.8" oninput="updateSetting('rate', this.value)" style="width:70px;height:4px;accent-color:var(--accent);cursor:pointer;">
-                    <span id="val-rate" style="color:#a5b4fc;font-size:0.8rem;font-weight:600;min-width:26px;">0.8x</span>
-                </div>
-                <div style="width:1px;height:16px;background:rgba(255,255,255,0.08);"></div>
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <i class="fas fa-redo" style="color:#34d399;font-size:0.75rem;"></i>
-                    <input type="range" id="inp-loop" min="1" max="10" step="1" value="1" oninput="updateSetting('loop', this.value)" style="width:55px;height:4px;accent-color:#34d399;cursor:pointer;">
-                    <span id="val-loop" style="color:#34d399;font-size:0.8rem;font-weight:600;min-width:20px;">1次</span>
-                </div>
-                <div style="width:1px;height:16px;background:rgba(255,255,255,0.08);"></div>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:#94a3b8;font-size:0.8rem;" title="隐藏中文释义">
-                    <i class="fas fa-eye-slash" style="font-size:0.75rem;"></i>
-                    <input type="checkbox" id="hide-toggle" onchange="renderCurrent()" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;">
-                </label>
-            </div>
             <div class="star-btn" id="fav-trigger" onclick="handleFav()"><i class="fas fa-star"></i></div>
         </div>
         <div class="indo-box" id="disp-indo">加载中...</div>
         <div class="zh-box" id="disp-zh">请稍候</div>
+        <div class="learn-controls" id="learn-controls" style="display:flex;align-items:center;justify-content:center;gap:20px;padding:10px 20px;margin:0 auto;max-width:360px;">
+            <div style="display:flex;align-items:center;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:6px 14px;">
+                <i class="fas fa-volume-up" style="color:#818cf8;font-size:0.85rem;"></i>
+                <input type="range" id="inp-rate" min="0.1" max="1.5" step="0.1" value="0.8" oninput="updateSetting('rate', this.value)" style="width:80px;height:4px;accent-color:#818cf8;cursor:pointer;">
+                <span id="val-rate" style="color:#818cf8;font-size:0.8rem;font-weight:600;min-width:28px;">0.8x</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:6px 14px;">
+                <i class="fas fa-redo-alt" style="color:#34d399;font-size:0.8rem;"></i>
+                <input type="range" id="inp-loop" min="1" max="10" step="1" value="1" oninput="updateSetting('loop', this.value)" style="width:60px;height:4px;accent-color:#34d399;cursor:pointer;">
+                <span id="val-loop" style="color:#34d399;font-size:0.8rem;font-weight:600;min-width:20px;">1次</span>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(148,163,184,0.08);border:1px solid rgba(148,163,184,0.15);border-radius:12px;padding:6px 14px;color:#94a3b8;font-size:0.8rem;" title="隐藏中文释义">
+                <i class="fas fa-eye-slash" style="font-size:0.75rem;"></i>
+                <input type="checkbox" id="hide-toggle" onchange="renderCurrent()" style="width:14px;height:14px;accent-color:#94a3b8;cursor:pointer;">
+            </label>
+        </div>
         <div class="nav-row">
             <button class="circle-btn" onclick="navWord(-1)"><i class="fas fa-chevron-left"></i></button>
             <button id="main-play" class="circle-btn play-btn" onclick="toggleSpeech()"><i class="fas fa-play" id="play-ico"></i></button>
@@ -381,6 +379,7 @@ function initUI() {
 
         <!-- 底部按钮 -->
         <div style="margin-top:15px; display:flex; gap:15px; justify-content:flex-end;">
+            <button onclick="window.open('admin.html','_blank')" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); padding:10px 20px; border-radius:10px; cursor:pointer; font-size:0.85rem;"><i class="fas fa-external-link-alt"></i> 完整后台</button>
             <button onclick="document.getElementById('admin-modal').style.display='none'; resetAdminStep()" style="background:#475569; color:white; border:none; padding:10px 25px; border-radius:10px; cursor:pointer;">关闭</button>
             <button onclick="saveWhitelist()" style="background:var(--accent); color:white; border:none; padding:10px 25px; border-radius:10px; cursor:pointer; font-weight:bold;">保存修改</button>
         </div>
@@ -729,7 +728,16 @@ function renderCurrent() {
 // 更新设置
 function updateSetting(k, v) {
     const el = document.getElementById('val-' + k);
-    if (el) el.innerText = v;
+    if (el) el.innerText = v + (k === 'rate' ? 'x' : '次');
+}
+function updatePracticeSetting(k, v) {
+    if (k === 'rate') {
+        document.getElementById('p-val-rate').innerText = v + 'x';
+    } else if (k === 'loop') {
+        document.getElementById('p-val-loop').innerText = v + '次';
+    }
+    // 同步全局设置
+    updateSetting(k, v);
 }
 
 // 打开管理员弹窗
@@ -1492,8 +1500,8 @@ function switchPage(page) {
         if (copyRight) copyRight.style.display = '';
     }
     // 功能区只在学习和练习页可见
-    const compactCtrls = document.querySelector('.compact-controls');
-    if (compactCtrls) compactCtrls.style.display = (page === 'dashboard') ? 'none' : 'flex';
+    const learnCtrls = document.getElementById('learn-controls');
+    if (learnCtrls) learnCtrls.style.display = (page === 'dashboard') ? 'none' : 'flex';
     if (page === 'practice') initPracticePage();
     else if (page === 'dashboard') initDashboardPage();
 }
@@ -1538,10 +1546,17 @@ function initPracticePage() {
         const n = catId === "1" ? "生词 Vocabulary" : catId === "2" ? "短语 Phrases" : catId;
         catOpts += '<option value="' + catId + '">' + catId + '. ' + n + '</option>';
     }
-    c.innerHTML = `<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;"><h1 class="main-title" style="font-size:1.3rem;">印尼语学习助手</h1><div style="font-size:0.85rem;color:#94a3b8;">练习模式</div></header><div class="practice-container" style="max-width:100%;"><div id="practice-setup"><div style="display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:8px 14px;margin-bottom:20px;">
-                    <div style="display:flex;align-items:center;gap:6px;"><i class="fas fa-tachometer-alt" style="color:#a5b4fc;font-size:0.8rem;"></i><input type="range" id="inp-rate" min="0.1" max="1.5" step="0.1" value="0.8" oninput="updateSetting('rate', this.value)" style="width:70px;height:4px;accent-color:var(--accent);cursor:pointer;"><span id="val-rate" style="color:#a5b4fc;font-size:0.8rem;font-weight:600;min-width:26px;">0.8x</span></div>
-                    <div style="width:1px;height:16px;background:rgba(255,255,255,0.08);"></div>
-                    <div style="display:flex;align-items:center;gap:6px;"><i class="fas fa-redo" style="color:#34d399;font-size:0.75rem;"></i><input type="range" id="inp-loop" min="1" max="10" step="1" value="1" oninput="updateSetting('loop', this.value)" style="width:55px;height:4px;accent-color:#34d399;cursor:pointer;"><span id="val-loop" style="color:#34d399;font-size:0.8rem;font-weight:600;min-width:20px;">1次</span></div>
+    c.innerHTML = `<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;"><h1 class="main-title" style="font-size:1.3rem;">印尼语学习助手</h1><div style="font-size:0.85rem;color:#94a3b8;">练习模式</div></header><div class="practice-container" style="max-width:100%;"><div id="practice-setup"><div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:25px;">
+                    <div style="display:flex;align-items:center;gap:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:6px 14px;">
+                        <i class="fas fa-volume-up" style="color:#818cf8;font-size:0.85rem;"></i>
+                        <input type="range" id="p-rate" min="0.1" max="1.5" step="0.1" value="0.8" oninput="updatePracticeSetting('rate', this.value)" style="width:80px;height:4px;accent-color:#818cf8;cursor:pointer;">
+                        <span id="p-val-rate" style="color:#818cf8;font-size:0.8rem;font-weight:600;min-width:28px;">0.8x</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:6px 14px;">
+                        <i class="fas fa-redo-alt" style="color:#34d399;font-size:0.8rem;"></i>
+                        <input type="range" id="p-loop" min="1" max="10" step="1" value="1" oninput="updatePracticeSetting('loop', this.value)" style="width:60px;height:4px;accent-color:#34d399;cursor:pointer;">
+                        <span id="p-val-loop" style="color:#34d399;font-size:0.8rem;font-weight:600;min-width:20px;">1次</span>
+                    </div>
                 </div><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.5rem;font-weight:800;color:var(--text-main);"><i class="fas fa-pen-fancy" style="color:var(--accent);margin-right:8px;"></i>练习模式</h2></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择词库分类</div><select id="practice-cat-select" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.95rem;outline:none;"><option value="all">全部词库</option>' + catOpts + '</select></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择练习类型</div><div class="practice-type-selector"><button class="practice-type-btn active" onclick="selectPracticeType('choice',this)"><i class="fas fa-th-large"></i> 选择题</button><button class="practice-type-btn" onclick="selectPracticeType('fill',this)"><i class="fas fa-keyboard"></i> 填空题</button><button class="practice-type-btn" onclick="selectPracticeType('listen',this)"><i class="fas fa-headphones"></i> 听力题</button></div></div><div style="margin-bottom:20px;padding:14px 18px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:12px;cursor:pointer;color:var(--text-main);font-size:1rem;font-weight:600;">
                 <input type="checkbox" id="practice-learned-only" style="width:22px;height:22px;accent-color:var(--accent);cursor:pointer;">
@@ -1809,10 +1824,33 @@ function clearWrongBook(event) {
 }
 
 function showWrongWords() {
-    if (practiceState.wrongWords.length === 0) { alert('没有错题，全部正确！'); return; }
-    let msg = '错题列表：\n\n';
-    practiceState.wrongWords.forEach((w, i) => { msg += (i + 1) + '. ' + w.indonesian + ' - ' + w.chinese + '\n'; });
-    alert(msg + '\n错题已自动加入错题集（收藏夹）！');
+    if (practiceState.wrongWords.length === 0) {
+        showNotice('全部正确，没有错题！');
+        return;
+    }
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:8000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
+    let wordList = practiceState.wrongWords.map((w, i) =>
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);">' +
+        '<span style="color:#fca5a5;font-weight:600;">' + (i+1) + '. ' + w.indonesian + '</span>' +
+        '<span style="color:#94a3b8;">' + w.chinese + '</span></div>'
+    ).join('');
+    dialog.innerHTML =
+        '<div style="background:rgba(30,41,59,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:25px;max-width:450px;width:90%;backdrop-filter:blur(20px);">' +
+        '<div style="text-align:center;margin-bottom:15px;"><span style="font-size:2rem;">📝</span><h3 style="color:#fff;margin:8px 0 5px;">错题列表</h3><p style="color:#f87171;font-size:0.9rem;">共 ' + practiceState.wrongWords.length + ' 道错题</p></div>' +
+        '<div style="max-height:300px;overflow-y:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.05);margin-bottom:15px;">' + wordList + '</div>' +
+        '<div style="text-align:center;color:#94a3b8;font-size:0.8rem;margin-bottom:15px;">错题已自动加入错题集</div>' +
+        '<button onclick="document.body.removeChild(this.closest(\'[style*=fixed]\'))" style="width:100%;padding:10px;background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);border-radius:10px;cursor:pointer;font-weight:600;">关闭</button></div>';
+    document.body.appendChild(dialog);
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) document.body.removeChild(dialog); });
+}
+
+function showNotice(msg) {
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:8000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
+    dialog.innerHTML = '<div style="background:rgba(30,41,59,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:25px 35px;text-align:center;"><div style="font-size:2.5rem;margin-bottom:10px;">🎉</div><p style="color:#e2e8f0;font-size:1rem;">' + msg + '</p><button onclick="document.body.removeChild(this.closest(\'[style*=fixed]\'))" style="margin-top:15px;padding:8px 25px;background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.3);border-radius:8px;cursor:pointer;font-weight:600;">好的</button></div>';
+    document.body.appendChild(dialog);
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) document.body.removeChild(dialog); });
 }
 function resetPractice() {
     document.getElementById('practice-setup').style.display = 'block';
