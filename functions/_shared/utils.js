@@ -391,7 +391,7 @@ async function handleRequest(context) {
                 // 员工用工号作为用户名（格式：公司缩写-工号）
                 username = companyCode + '-' + empNo;
             } else {
-                // 业余爱好者统一用户名 88888888
+                // 爱好者统一用户名 88888888
                 companyCode = '';
                 empNo = '88888888';
                 username = '88888888';
@@ -467,8 +467,8 @@ async function handleRequest(context) {
         if (path === 'leaderboard/submit' && method === 'POST') {
             const config = await getLeaderboardConfig(env);
             if (!config.enabled) return json({ error: '打榜未开启' }, 403);
-            // 业余爱好者不能参与排行榜
-            if (authUser.userType === 'hobby') return json({ error: '业余爱好者不能参与排行榜' }, 403);
+            // 爱好者不能参与排行榜
+            if (authUser.userType === 'hobby') return json({ error: '爱好者不能参与排行榜' }, 403);
             const entry = await request.json();
             entry.username = authUser.username; entry.name = authUser.name;
             return json({ success: true, board: await submitLeaderboard(entry, env) });

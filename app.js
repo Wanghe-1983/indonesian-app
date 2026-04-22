@@ -1588,10 +1588,10 @@ async function checkLeaderboardAndShowButton(state, pct) {
 }
 
 async function submitToLeaderboard() {
-    // 业余爱好者前端拦截
+    // 爱好者前端拦截
     const loginStatus = JSON.parse(localStorage.getItem('fmi_login_status') || '{}');
     if (loginStatus.user && loginStatus.user.userType === 'hobby') {
-        alert('业余爱好者不能参与排行榜');
+        alert('爱好者不能参与排行榜');
         return;
     }
     const s = practiceState;
