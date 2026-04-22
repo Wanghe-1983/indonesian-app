@@ -1393,13 +1393,13 @@ function getLearnedWords() {
 let _heartbeatTimer = null;
 
 function startHeartbeat() {
-    // Send heartbeat every 30 seconds
+    // Send heartbeat every 120 seconds (reduce KV writes)
     _heartbeatTimer = setInterval(async () => {
         try {
             const result = await API.heartbeat();
             if (result.error === 'kicked') return; // handled by API module
         } catch(e) {}
-    }, 30000);
+    }, 120000);
     // Send first heartbeat immediately
     API.heartbeat().catch(() => {});
 }

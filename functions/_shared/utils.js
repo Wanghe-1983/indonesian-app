@@ -171,7 +171,7 @@ async function saveStudyRecord(username, data, env) {
     const dailyKey = 'daily:' + username + ':' + today;
     const existing = JSON.parse(await env.INDO_LEARN_KV.get(dailyKey) || '{}');
     Object.assign(existing, data);
-    await env.INDO_LEARN_KV.put(dailyKey, JSON.stringify(existing), { expirationTtl: 86400 * 90 });
+    await env.INDO_LEARN_KV.put(dailyKey, JSON.stringify(existing), { expirationTtl: 86400 * 30 });
     const statsKey = 'stats:' + username;
     const stats = JSON.parse(await env.INDO_LEARN_KV.get(statsKey) || '{"learnedWords":[],"totalDays":0}');
     if (data.learnedWords) {
