@@ -238,6 +238,7 @@ async function getSystemSettings(env) {
         maxOnline: 0, maxRegistered: 0, allowRegister: true,
         showOnlineMain: true, showOnlineLogin: true,
         allowMultiDevice: true,
+        requireEmployeeVerify: true,
     }));
 }
 
@@ -377,11 +378,14 @@ async function handleRequest(context) {
             if (password.length < 4) return json({ error: '密码至少 4 位' }, 400);
             // 昵称限制：5个汉字或10个字母（支持空格）
             if (name.length > 10) return json({ error: '昵称最多5个汉字或10个字母' }, 400);
-            // 用户类型校验
+            // 用户类型校验（根据管理员开关决定是否验证工号）
             if (userType === 'employee') {
                 if (!companyCode || !empNo) return json({ error: '公司员工需填写公司缩写和工号' }, 400);
-                const verify = await verifyEmployee(companyCode, empNo, env);
-                if (!verify.valid) return json({ error: verify.error }, 400);
+                const settings2 = await getSystemSettings(env);
+                if (settings2.requireEmployeeVerify !== false) {
+                    const verify = await verifyEmployee(companyCode, empNo, env);
+                    if (!verify.valid) return json({ error: verify.error }, 400);
+                }
             } else {
                 // 业余爱好者默认工号 8888888
                 companyCode = '';
@@ -402,6 +406,8 @@ async function handleRequest(context) {
             const users = await getAllUsers(env);
             return json({
                 onlineCount: online.count, registeredCount: users.length,
+                allowMultiDevice: settings.allowMultiDevice !== false,
+                requireEmployeeVerify: settings.requireEmployeeVerify !== false,
                 allowRegister: settings.allowRegister,
                 showOnlineMain: settings.showOnlineMain, showOnlineLogin: settings.showOnlineLogin,
             });

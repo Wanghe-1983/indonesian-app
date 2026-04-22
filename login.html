@@ -401,7 +401,12 @@
                     badge.style.display = 'inline-flex';
                     document.getElementById('online-text').textContent = '在线 ' + info.onlineCount + ' 人';
                 }
-                if (!info.allowRegister) {
+                // 更新员工验证提示
+        if (info.requireEmployeeVerify === false) {
+            const hint = document.getElementById('verify-hint');
+            if (hint) hint.textContent = '无需验证';
+        }
+        if (!info.allowRegister) {
                     document.querySelectorAll('.auth-tab')[1].style.display = 'none';
                 }
             } catch (e) {}
