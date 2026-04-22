@@ -372,7 +372,7 @@ async function handleRequest(context) {
                 const users = await getAllUsers(env);
                 if (users.length >= settings.maxRegistered) return json({ error: '注册人数已满，请联系管理员' }, 403);
             }
-            const { username, password, name, userType, companyCode, empNo } = await request.json();
+            let { username, password, name, userType, companyCode, empNo } = await request.json();
             if (!username || !password || !name) return json({ error: '用户名、密码和昵称不能为空' }, 400);
             if (username.length < 2 || username.length > 20) return json({ error: '用户名长度 2-20 位' }, 400);
             if (password.length < 4) return json({ error: '密码至少 4 位' }, 400);
