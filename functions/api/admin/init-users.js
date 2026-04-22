@@ -1,16 +1,11 @@
 export const onRequest = async (context) => {
     const { env } = context;
 
-    // 内联获取所有用户
-    const keys = await env.KV.list({ prefix: 'user:' });
-    const users = [];
-    for (const key of keys.keys) {
-        const data = await env.KV.get(key.name, 'json');
-        if (data) users.push(data);
-    }
+    // 使用与 createUser/getAllUsers 相同的存储方式
+    const data = await env.INDO_LEARN_KV.get('all_users');
+    const users = data ? JSON.parse(data) : [];
 
     if (users.length === 0) {
-        // 首次访问：初始化默认超级管理员
         const adminUser = {
             username: 'admin',
             password: 'admin123',
@@ -19,10 +14,10 @@ export const onRequest = async (context) => {
             userType: 'employee',
             companyCode: 'SYS',
             empNo: '000000',
-            verified: true,
             createdAt: new Date().toISOString(),
         };
-        await env.KV.put('user:admin', JSON.stringify(adminUser));
+        users.push(adminUser);
+        await env.INDO_LEARN_KV.put('all_users', JSON.stringify(users));
 
         return new Response(JSON.stringify({
             success: true,
