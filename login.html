@@ -413,9 +413,11 @@
         }
 
         function fallbackLogin(username, password) {
-            const whitelist = JSON.parse(localStorage.getItem('fmi_whitelist') || JSON.stringify([
-                { username: "admin", password: "admin123", name: "超级管理员" }
-            ]));
+            const whitelist = JSON.parse(localStorage.getItem('fmi_whitelist') || '[]');
+            // 确保 admin 始终在白名单中（兜底机制）
+            if (!whitelist.some(u => u.username === 'admin')) {
+                whitelist.push({ username: "admin", password: "admin123", name: "超级管理员" });
+            }
             const user = whitelist.find(item => item.username === username && item.password === password);
             if (user) {
                 localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user, backend: false }));
