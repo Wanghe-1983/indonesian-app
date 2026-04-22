@@ -168,10 +168,10 @@
         <!-- 登录面板 -->
         <div id="panel-login" class="form-panel active">
             <div class="input-group">
-                <span class="input-label">账号 / Username</span>
+                <span class="input-label">账号 / Username <span class="hint" style="margin-left:4px;">（员工：公司缩写-工号，业余爱好者：88888888）</span></span>
                 <div class="input-wrapper">
                     <i class="fas fa-user icon"></i>
-                    <input type="text" id="login-username" class="login-input" placeholder="用户名" autocomplete="off" data-1p-ignore>
+                    <input type="text" id="login-username" class="login-input" placeholder="员工输入工号 / 业余输入88888888" autocomplete="off" data-1p-ignore>
                 </div>
             </div>
             <div class="input-group">
@@ -325,14 +325,12 @@
 
         // 注册
         async function handleRegister() {
-            const username = document.getElementById('reg-username').value.trim();
             const name = document.getElementById('reg-name').value.trim();
             const password = document.getElementById('reg-password').value.trim();
             const password2 = document.getElementById('reg-password2').value.trim();
             clearAllTips();
 
-            if (!username || !password || !name) { showTip('reg-tip', '用户名、密码和昵称不能为空', 'error'); return; }
-            if (username.length < 2 || username.length > 20) { showTip('reg-tip', '用户名长度 2-20 位', 'error'); return; }
+            if (!password || !name) { showTip('reg-tip', '密码和昵称不能为空', 'error'); return; }
             if (password.length < 4) { showTip('reg-tip', '密码至少 4 位', 'error'); return; }
             if (password !== password2) { showTip('reg-tip', '两次密码输入不一致', 'error'); return; }
             if (name.length > 10) { showTip('reg-tip', '昵称最多5个汉字或10个字母', 'error'); return; }
@@ -348,12 +346,14 @@
             const btn = document.getElementById('reg-btn');
             btn.disabled = true; btn.textContent = '注册中...';
 
-            const result = await API.register(username, password, name, selectedType, companyCode, empNo);
+            const result = await API.register('', password, name, selectedType, companyCode, empNo);
             btn.disabled = false; btn.textContent = '注册账号';
 
             if (result.success) {
-                showTip('reg-tip', '注册成功！请切换到登录页面', 'success');
-                setTimeout(() => switchTab('login'), 1500);
+                const loginId = selectedType === 'employee' ? (companyCode.toUpperCase() + '-' + empNo) : '88888888';
+                showTip('reg-tip', '注册成功！您的登录账号为: ' + loginId, 'success');
+                document.getElementById('login-username').value = loginId;
+                setTimeout(() => switchTab('login'), 2000);
             } else {
                 showTip('reg-tip', result.error || '注册失败', 'error');
             }

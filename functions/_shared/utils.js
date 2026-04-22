@@ -352,6 +352,7 @@ async function handleRequest(context) {
             const users = await getAllUsers(env);
             let user = users.find(u => u.username === username && u.password === password);
             if (!user) user = users.find(u => u.email === username && u.password === password);
+            if (!user) user = users.find(u => u.empNo === username && u.password === password);
             if (!user) return json({ error: '用户名或密码错误' }, 401);
             if (await isBanned(username, env)) return json({ error: '该账号已被禁止登录，请联系管理员' }, 403);
             const settings = await getSystemSettings(env);
@@ -372,32 +373,36 @@ async function handleRequest(context) {
                 const users = await getAllUsers(env);
                 if (users.length >= settings.maxRegistered) return json({ error: '注册人数已满，请联系管理员' }, 403);
             }
-            let { username, password, name, userType, companyCode, empNo } = await request.json();
-            if (!username || !password || !name) return json({ error: '用户名、密码和昵称不能为空' }, 400);
-            if (username.length < 2 || username.length > 20) return json({ error: '用户名长度 2-20 位' }, 400);
+            let { password, name, userType, companyCode, empNo } = await request.json();
+            if (!password || !name) return json({ error: '密码和昵称不能为空' }, 400);
             if (password.length < 4) return json({ error: '密码至少 4 位' }, 400);
             // 昵称限制：5个汉字或10个字母（支持空格）
             if (name.length > 10) return json({ error: '昵称最多5个汉字或10个字母' }, 400);
-            // 用户类型校验（根据管理员开关决定是否验证工号）
+            // 用户类型校验
+            let username;
             if (userType === 'employee') {
                 if (!companyCode || !empNo) return json({ error: '公司员工需填写公司缩写和工号' }, 400);
+                companyCode = companyCode.toUpperCase();
                 const settings2 = await getSystemSettings(env);
                 if (settings2.requireEmployeeVerify !== false) {
                     const verify = await verifyEmployee(companyCode, empNo, env);
                     if (!verify.valid) return json({ error: verify.error }, 400);
                 }
+                // 员工用工号作为用户名（格式：公司缩写-工号）
+                username = companyCode + '-' + empNo;
             } else {
-                // 业余爱好者默认工号 8888888
+                // 业余爱好者统一用户名 88888888
                 companyCode = '';
-                empNo = '8888888';
+                empNo = '88888888';
+                username = '88888888';
             }
             const result = await createUser({
                 username, password, name,
                 role: 'user', userType: userType || 'hobby',
-                companyCode: companyCode || '', empNo: empNo || '8888888',
+                companyCode: companyCode || '', empNo: empNo || '88888888',
             }, env);
             if (result.error) return json(result, 400);
-            return json({ success: true, message: '注册成功' });
+            return json({ success: true, message: '注册成功', username });
         }
 
         if (path === 'system/info' && method === 'GET') {
@@ -406,6 +411,7 @@ async function handleRequest(context) {
             const users = await getAllUsers(env);
             return json({
                 onlineCount: online.count, registeredCount: users.length,
+                maxOnline: settings.maxOnline || 0,
                 allowMultiDevice: settings.allowMultiDevice !== false,
                 requireEmployeeVerify: settings.requireEmployeeVerify !== false,
                 allowRegister: settings.allowRegister,
@@ -461,6 +467,8 @@ async function handleRequest(context) {
         if (path === 'leaderboard/submit' && method === 'POST') {
             const config = await getLeaderboardConfig(env);
             if (!config.enabled) return json({ error: '打榜未开启' }, 403);
+            // 业余爱好者不能参与排行榜
+            if (authUser.userType === 'hobby') return json({ error: '业余爱好者不能参与排行榜' }, 403);
             const entry = await request.json();
             entry.username = authUser.username; entry.name = authUser.name;
             return json({ success: true, board: await submitLeaderboard(entry, env) });

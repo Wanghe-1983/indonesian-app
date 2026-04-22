@@ -1588,6 +1588,12 @@ async function checkLeaderboardAndShowButton(state, pct) {
 }
 
 async function submitToLeaderboard() {
+    // 业余爱好者前端拦截
+    const loginStatus = JSON.parse(localStorage.getItem('fmi_login_status') || '{}');
+    if (loginStatus.user && loginStatus.user.userType === 'hobby') {
+        alert('业余爱好者不能参与排行榜');
+        return;
+    }
     const s = practiceState;
     const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
     const btn = document.getElementById('lb-submit-btn');
