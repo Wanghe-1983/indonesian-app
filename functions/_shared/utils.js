@@ -496,7 +496,28 @@ async function handleRequest(context) {
             return json({ ...settings, currentOnline: online.count, totalUsers: (await getAllUsers(env)).length });
         }
         if (path === 'admin/settings' && method === 'PUT') { await setSystemSettings(await request.json(), env); return json({ success: true }); }
-        if (path === 'admin/whitelist' && method === 'GET') { return json(await getWhitelist(env)); }
+        if (path === 'admin/whitelist' && method === 'GET') {
+            const action = url.searchParams.get('action');
+            if (action === 'employees') return json(await getEmployeeList(env));
+            return json(await getWhitelist(env));
+        }
+        if (path === 'admin/whitelist' && method === 'POST') {
+            const action = url.searchParams.get('action');
+            if (action === 'employees') {
+                const data = await request.json();
+                if (data.bulk) { await setEmployeeList(data.list, env); return json({ success: true }); }
+                const result = await addEmployee(data, env);
+                return json(result, result.error ? 400 : 200);
+            }
+        }
+        if (path === 'admin/whitelist' && method === 'DELETE') {
+            const action = url.searchParams.get('action');
+            if (action === 'employees') {
+                const { companyCode, empNo } = await request.json();
+                const result = await deleteEmployee(companyCode, empNo, env);
+                return json(result, result.error ? 400 : 200);
+            }
+        }
         if (path === 'admin/whitelist' && method === 'PUT') { await setWhitelist(await request.json(), env); return json({ success: true }); }
 
         // 员工名单管理
