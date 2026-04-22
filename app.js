@@ -1803,6 +1803,8 @@ function copyRosterJSON() {
 
 // 页面加载完成后初始化
 window.onload = async function() {
+    // 自动初始化默认管理员（仅首次）
+    try { await fetch(API_BASE + 'admin/init-users', { method: 'POST' }); } catch(e) {}
     await loadWhitelist(); // 先加载白名单
     checkLoginStatus(); // 优先拦截未登录状态进行跳转
     initUI();           // 渲染界面结构

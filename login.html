@@ -144,6 +144,20 @@
         [data-theme="light"] .input-wrapper i { color:var(--text-muted); }
         [data-theme="light"] .online-badge { background:rgba(16,185,129,0.1); }
         [data-theme="light"] .type-card { background:rgba(0,0,0,0.03); border-color:rgba(0,0,0,0.08); }
+            .pwd-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #64748b;
+            font-size: 0.9rem;
+            background: none;
+            border: none;
+            padding: 4px;
+            z-index: 2;
+        }
+        .pwd-toggle:hover { color: #94a3b8; }
     </style>
 </head>
 <body data-theme="dark">
@@ -176,9 +190,10 @@
             </div>
             <div class="input-group">
                 <span class="input-label">密码 / Password</span>
-                <div class="input-wrapper">
+                <div class="input-wrapper" style="position:relative;">
                     <i class="fas fa-lock icon"></i>
-                    <input type="password" id="login-password" class="login-input" placeholder="请输入密码" autocomplete="new-password">
+                    <input type="password" id="login-password" class="login-input" placeholder="请输入密码" autocomplete="new-password" style="padding-right:40px;">
+                    <button class="pwd-toggle" onclick="togglePwd('login-password', this)" type="button" tabindex="-1"><i class="fas fa-eye-slash"></i></button>
                 </div>
             </div>
             <button class="btn-primary" id="login-btn" onclick="handleLogin()">立即登录</button>
@@ -241,16 +256,18 @@
             <!-- 密码（所有用户共用） -->
             <div class="input-group">
                 <span class="input-label">设置密码 <span class="req">*</span></span>
-                <div class="input-wrapper">
+                <div class="input-wrapper" style="position:relative;">
                     <i class="fas fa-lock icon"></i>
-                    <input type="password" id="reg-password" class="login-input" placeholder="至少4位" autocomplete="new-password">
+                    <input type="password" id="reg-password" class="login-input" placeholder="至少4位" autocomplete="new-password" style="padding-right:40px;">
+                    <button class="pwd-toggle" onclick="togglePwd('reg-password', this)" type="button" tabindex="-1"><i class="fas fa-eye-slash"></i></button>
                 </div>
             </div>
             <div class="input-group">
                 <span class="input-label">确认密码 <span class="req">*</span></span>
-                <div class="input-wrapper">
+                <div class="input-wrapper" style="position:relative;">
                     <i class="fas fa-lock icon"></i>
-                    <input type="password" id="reg-password2" class="login-input" placeholder="再次输入密码" autocomplete="new-password">
+                    <input type="password" id="reg-password2" class="login-input" placeholder="再次输入密码" autocomplete="new-password" style="padding-right:40px;">
+                    <button class="pwd-toggle" onclick="togglePwd('reg-password2', this)" type="button" tabindex="-1"><i class="fas fa-eye-slash"></i></button>
                 </div>
             </div>
 
@@ -458,6 +475,17 @@
                 else handleRegister();
             }
         });
+        function togglePwd(id, btn) {
+            const inp = document.getElementById(id);
+            const icon = btn.querySelector('i');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                icon.className = 'fas fa-eye';
+            } else {
+                inp.type = 'password';
+                icon.className = 'fas fa-eye-slash';
+            }
+        }
     </script>
 </body>
 </html>
