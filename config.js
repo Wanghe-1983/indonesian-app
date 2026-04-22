@@ -98,10 +98,10 @@ const API = {
         return data;
     },
 
-    async register(username, password, name) {
+    async register(username, password, name, email) {
         return await this.request('auth/register', {
             method: 'POST',
-            body: JSON.stringify({ username, password, name }),
+            body: JSON.stringify({ username, password, name, email }),
         });
     },
 

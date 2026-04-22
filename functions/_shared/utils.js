@@ -128,7 +128,7 @@ async function createUser(userData, env) {
     users.push({
         username: userData.username, password: userData.password,
         name: userData.name || userData.username, role: userData.role || 'user',
-        createdAt: new Date().toISOString(),
+        email: userData.email || '', createdAt: new Date().toISOString(),
     });
     await saveAllUsers(users, env);
     return { success: true };
@@ -223,6 +223,7 @@ async function getSystemSettings(env) {
     return JSON.parse(await env.INDO_LEARN_KV.get('system_settings') || JSON.stringify({
         maxOnline: 0, maxRegistered: 0, allowRegister: true,
         showOnlineMain: true, showOnlineLogin: true,
+        allowMultiDevice: true,
     }));
 }
 
@@ -249,10 +250,57 @@ async function handleRequest(context) {
 
     try {
         // 公开接口
+        // 发送邮箱验证码
+        if (path === 'email/send-code' && method === 'POST') {
+            const { email } = await request.json();
+            if (!email) return json({ error: '邮箱不能为空' }, 400);
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) return json({ error: '邮箱格式不正确' }, 400);
+            // 检查邮箱是否已注册
+            const existingUsers = await getAllUsers(env);
+            if (existingUsers.find(u => u.email === email)) return json({ error: '该邮箱已被注册' }, 400);
+            // 检查发送频率（1分钟内只能发一次）
+            const lastSent = await env.INDO_LEARN_KV.get('email_rate:' + email);
+            if (lastSent) {
+                const elapsed = Date.now() - parseInt(lastSent);
+                if (elapsed < 60000) return json({ error: '请等待 ' + Math.ceil((60000 - elapsed) / 1000) + ' 秒后再试' }, 429);
+            }
+            // 生成6位验证码
+            const code = String(Math.floor(100000 + Math.random() * 900000));
+            await env.INDO_LEARN_KV.put('email_code:' + email, JSON.stringify({ code, expires: Date.now() + 300000 }), { expirationTtl: 360 });
+            await env.INDO_LEARN_KV.put('email_rate:' + email, String(Date.now()), { expirationTtl: 120 });
+            // 发送邮件（使用 Cloudflare Email Workers）
+            try {
+                await sendVerifyEmail(email, code, env);
+                return json({ success: true, message: '验证码已发送' });
+            } catch (e) {
+                console.error('发送邮件失败:', e);
+                return json({ error: '邮件发送失败，请稍后重试' }, 500);
+            }
+        }
+
+        // 验证邮箱验证码
+        if (path === 'email/verify-code' && method === 'POST') {
+            const { email, code } = await request.json();
+            if (!email || !code) return json({ error: '邮箱和验证码不能为空' }, 400);
+            const stored = await env.INDO_LEARN_KV.get('email_code:' + email);
+            if (!stored) return json({ error: '验证码已过期，请重新获取' }, 400);
+            const data = JSON.parse(stored);
+            if (Date.now() > data.expires) {
+                await env.INDO_LEARN_KV.delete('email_code:' + email);
+                return json({ error: '验证码已过期，请重新获取' }, 400);
+            }
+            if (data.code !== code) return json({ error: '验证码错误' }, 400);
+            // 验证成功，标记邮箱已验证
+            await env.INDO_LEARN_KV.put('email_verified:' + email, '1', { expirationTtl: 600 });
+            return json({ success: true, message: '邮箱验证成功' });
+        }
+
         if (path === 'auth/login' && method === 'POST') {
             const { username, password } = await request.json();
             const users = await getAllUsers(env);
-            const user = users.find(u => u.username === username && u.password === password);
+            let user = users.find(u => u.username === username && u.password === password);
+            if (!user) user = users.find(u => u.email === username && u.password === password);
             if (!user) return json({ error: '用户名或密码错误' }, 401);
             if (await isBanned(username, env)) return json({ error: '该账号已被禁止登录，请联系管理员' }, 403);
             const settings = await getSystemSettings(env);
@@ -273,11 +321,19 @@ async function handleRequest(context) {
                 const users = await getAllUsers(env);
                 if (users.length >= settings.maxRegistered) return json({ error: '注册人数已满，请联系管理员' }, 403);
             }
-            const { username, password, name } = await request.json();
+            const { username, password, name, email } = await request.json();
             if (!username || !password) return json({ error: '用户名和密码不能为空' }, 400);
             if (username.length < 2 || username.length > 20) return json({ error: '用户名长度 2-20 位' }, 400);
             if (password.length < 4) return json({ error: '密码至少 4 位' }, 400);
-            const result = await createUser({ username, password, name: name || username }, env);
+            // 如果提供了邮箱，检查是否已验证
+            if (email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) return json({ error: '邮箱格式不正确' }, 400);
+                const verified = await env.INDO_LEARN_KV.get('email_verified:' + email);
+                if (!verified) return json({ error: '请先验证邮箱' }, 400);
+                await env.INDO_LEARN_KV.delete('email_verified:' + email);
+            }
+            const result = await createUser({ username, password, name: name || username, email: email || '' }, env);
             if (result.error) return json(result, 400);
             return json({ success: true, message: '注册成功' });
         }
