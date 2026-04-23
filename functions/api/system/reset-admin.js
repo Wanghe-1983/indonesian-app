@@ -17,7 +17,9 @@ export async function onRequest(context) {
 
     try {
         await env.INDO_LEARN_DB.prepare(
-            "UPDATE users SET password = ? WHERE username = 'admin'"
+            `INSERT INTO users (username, password, role, user_type, emp_no, dept, banned, created_at)
+             VALUES ('admin', ?, 'admin', 'formal', '000000', '技术部', 0, datetime('now'))
+             ON CONFLICT(username) DO UPDATE SET password = excluded.password`
         ).bind(stored).run();
 
         return new Response(JSON.stringify({

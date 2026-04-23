@@ -80,6 +80,13 @@ function checkLoginStatus() {
                     </div>
                 </div>
             `;
+            // 访客模式隐藏注销按钮
+            if (isVisitor) {
+                const delItem = document.getElementById('delete-account-item');
+                const delSep = document.getElementById('delete-account-btn');
+                if (delItem) delItem.style.display = 'none';
+                if (delSep) delSep.style.display = 'none';
+            }
         }
     }
 }
@@ -801,8 +808,8 @@ function setLoopFromSlider(val) {
     const pEl = document.getElementById('p-val-loop'); if (pEl) pEl.innerText = display;
     updateSliderFill('loop', idx / 14);
     updateSliderFill('p-loop', idx / 5);
-    updateThumb('loop-thumb', idx / 5 * 100);
-    updateThumb('p-loop-thumb', idx / 5 * 100);
+    updateThumb('loop-thumb', idx / 14 * 100);
+    updateThumb('p-loop-thumb', idx / 14 * 100);
     const pSlider = document.getElementById('p-loop-slider');
     if (pSlider) pSlider.value = val;
     updateRing('loop-ring', _loopIdx / (LOOP_LEVELS.length - 1));
