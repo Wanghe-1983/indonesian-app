@@ -226,6 +226,13 @@
                     <button class="pwd-toggle" onclick="togglePwd('reg-password2', this)" type="button" tabindex="-1"><i class="fas fa-eye-slash"></i></button>
                 </div>
             </div>
+            <div id="reg-limit-bar" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;">
+                <span><i class="fas fa-users" style="color:var(--accent);margin-right:6px;"></i>已注册 <b id="reg-registered" style="color:var(--text-main);">0</b> 人</span>
+                <span style="color:var(--text-dim);">/ 限额 <b id="reg-max" style="color:var(--accent);">0</b> 人</span>
+            </div>
+            <div id="reg-limit-full" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);font-size:0.85rem;color:#f87171;text-align:center;">
+                <i class="fas fa-ban" style="margin-right:6px;"></i>注册人数已达上限，暂不接受新注册
+            </div>
             <button class="btn-primary" id="reg-btn" onclick="handleRegister()">注册账号</button>
             <div id="reg-tip" class="tip-box"></div>
         </div>
@@ -273,6 +280,15 @@
             var password = document.getElementById('reg-password').value;
             var password2 = document.getElementById('reg-password2').value;
             document.getElementById('reg-tip').style.display = 'none';
+            // 注册限额检查
+            var sysInfo = window._systemInfo || {};
+            if (sysInfo.maxRegistered > 0) {
+                var current = sysInfo.registeredCount || 0;
+                if (current >= sysInfo.maxRegistered) {
+                    showTip('reg-tip', '注册人数已达上限（' + current + '/' + sysInfo.maxRegistered + '），请联系管理员', 'error');
+                    return;
+                }
+            }
             if (!companyCode || !empNo || !name) { showTip('reg-tip', '请填写公司缩写、工号和昵称', 'error'); return; }
             if (!password) { showTip('reg-tip', '请设置密码', 'error'); return; }
             if (password.length < 4) { showTip('reg-tip', '密码至少 4 位', 'error'); return; }
@@ -285,7 +301,7 @@
                 var username = companyCode.toUpperCase() + '-' + empNo;
                 var result = await API.register(username, password, name, 'employee', companyCode, empNo);
                 if (result.success) {
-                    showTip('reg-tip', '注册成功！请切换到登录页面登录', 'success');
+                    showTip('reg-tip', '注册成功！请切换到登录页面登录', 'success'); window._systemInfo = window._systemInfo || {}; window._systemInfo.registeredCount = (window._systemInfo.registeredCount || 0) + 1; updateRegLimitBar();
                     document.getElementById('reg-company').value = '';
                     document.getElementById('reg-empno').value = '';
                     document.getElementById('reg-name').value = '';
@@ -424,6 +440,7 @@
             try {
                 var info = await API.getSystemInfo();
                 if (info.error === 'network') return;
+                window._systemInfo = info;
                 var badge = document.getElementById('online-badge');
                 if (info.showOnlineLogin) {
                     badge.style.display = 'inline-flex';
@@ -463,6 +480,7 @@
                 localStorage.setItem('fmi_study_date', todayStr);
             }
             loadOnlineCount();
+            updateRegLimitBar();
         };
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
@@ -476,6 +494,40 @@
             if (inp.type === 'password') { inp.type = 'text'; icon.className = 'fas fa-eye'; }
             else { inp.type = 'password'; icon.className = 'fas fa-eye-slash'; }
         }
-    </script>
+    function updateRegLimitBar() {
+            try {
+                var sysInfo = window._systemInfo || JSON.parse(localStorage.getItem('fmi_admin_settings') || '{}');
+                window._systemInfo = sysInfo;
+                var maxReg = parseInt(sysInfo.maxRegistered) || 0;
+                var currentReg = parseInt(sysInfo.registeredCount) || 0;
+                var showReg = sysInfo.showRegCount !== false;
+                var limitBar = document.getElementById('reg-limit-bar');
+                var limitFull = document.getElementById('reg-limit-full');
+                var regBtn = document.getElementById('reg-btn');
+                if (maxReg > 0 && showReg) {
+                    limitBar.style.display = 'flex';
+                    document.getElementById('reg-registered').textContent = currentReg;
+                    document.getElementById('reg-max').textContent = maxReg;
+                    if (currentReg >= maxReg) {
+                        limitFull.style.display = 'block';
+                        regBtn.disabled = true;
+                        regBtn.style.opacity = '0.5';
+                        regBtn.style.cursor = 'not-allowed';
+                    } else {
+                        limitFull.style.display = 'none';
+                        regBtn.disabled = false;
+                        regBtn.style.opacity = '1';
+                        regBtn.style.cursor = '';
+                    }
+                } else {
+                    limitBar.style.display = 'none';
+                    limitFull.style.display = 'none';
+                    regBtn.disabled = false;
+                    regBtn.style.opacity = '1';
+                    regBtn.style.cursor = '';
+                }
+            } catch(e) {}
+        }
+        </script>
 </body>
 </html>

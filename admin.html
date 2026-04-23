@@ -1317,6 +1317,23 @@
         } catch(e) { alert('请求失败'); }
     }
 
-    </script>
+    function showToast(msg, type) {
+            var existing = document.getElementById('admin-toast');
+            if (existing) existing.remove();
+            var toast = document.createElement('div');
+            toast.id = 'admin-toast';
+            toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:10000;padding:14px 28px;border-radius:14px;font-size:0.95rem;font-weight:600;color:#fff;transform:translateX(120%);transition:transform 0.4s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+            if (type === 'success') {
+                toast.style.background = 'rgba(16,185,129,0.9)';
+                toast.innerHTML = '<i class="fas fa-check-circle" style="margin-right:8px;"></i>' + msg;
+            } else {
+                toast.style.background = 'rgba(239,68,68,0.9)';
+                toast.innerHTML = '<i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>' + msg;
+            }
+            document.body.appendChild(toast);
+            requestAnimationFrame(function() { toast.style.transform = 'translateX(0)'; });
+            setTimeout(function() { toast.style.transform = 'translateX(120%)'; setTimeout(function() { toast.remove(); }, 400); }, 2500);
+        }
+        </script>
 </body>
 </html>
