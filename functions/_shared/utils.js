@@ -381,10 +381,11 @@ async function handleRequest(context) {
                 if (users.length >= settings.maxRegistered) return json({ error: '注册人数已满，请联系管理员' }, 403);
             }
             let { password, name, userType, companyCode, empNo } = await request.json();
-            if (!password || !name) return json({ error: '密码和昵称不能为空' }, 400);
+            if (!password) return json({ error: '密码不能为空' }, 400);
             if (password.length < 4) return json({ error: '密码至少 4 位' }, 400);
-            // 昵称限制：5个汉字或10个字母（支持空格）
-            if (name.length > 10) return json({ error: '昵称最多5个汉字或10个字母' }, 400);
+            // 爱好者不强制昵称，员工必须有昵称
+            if (userType === 'employee' && !name) return json({ error: '员工需填写昵称' }, 400);
+            if (name && name.length > 10) return json({ error: '昵称最多5个汉字或10个字母' }, 400);
             // 用户类型校验
             let username;
             if (userType === 'employee') {
@@ -398,10 +399,11 @@ async function handleRequest(context) {
                 // 员工用工号作为用户名（格式：公司缩写-工号）
                 username = companyCode + '-' + empNo;
             } else {
-                // 爱好者统一用户名 88888888
+                // 爱好者统一用户名 88888888，昵称可选
                 companyCode = '';
                 empNo = '88888888';
                 username = '88888888';
+                if (!name) name = '爱好者';
             }
             const result = await createUser({
                 username, password, name,
