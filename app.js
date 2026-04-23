@@ -290,8 +290,8 @@ function initUI() {
                 <span style="font-size:0.8rem;display:block;margin-top:5px;">打卡</span>
             </button>
         </div>
-        <div class="card-controls-row" id="learn-inline-controls">
-            <div class="sliders-col">
+        <div style="margin:20px 0 0;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;flex-wrap:wrap;" id="learn-inline-controls">
+            <div class="sliders-col" style="flex:1;min-width:0;">
                 <div class="vslider-box">
                     <div class="vslider-label" style="font-size:0.88rem;"><i class="fas fa-gauge-high"></i> 语速</div>
                     <div class="vslider-track-wrap">
@@ -313,14 +313,12 @@ function initUI() {
                     <div class="vslider-range"><span>1次</span><span>无限</span></div>
                 </div>
             </div>
-            <div class="vslider-box" style="min-width:60px;">
-                <div class="vslider-label" style="font-size:0.82rem;"><i class="fas fa-eye-slash"></i> 答案</div>
-                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:4px;">
-                    <button class="hide-toggle-btn" id="hide-btn" onclick="toggleHide()" title="点击切换显示/隐藏中文翻译" style="width:44px;height:44px;font-size:1.2rem;">
-                        <span id="hide-icon" class="hide-icon-show"><i class="fas fa-eye"></i></span>
-                    </button>
-                    <span class="hide-status" id="hide-status" style="font-size:0.7rem;">显示中</span>
-                </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+                <div class="vslider-label" style="font-size:0.88rem;"><i class="fas fa-eye-slash"></i> 答案</div>
+                <button class="hide-toggle-btn" id="hide-btn" onclick="toggleHide()" title="点击切换显示/隐藏中文翻译" style="width:52px;height:52px;font-size:1.3rem;">
+                    <span id="hide-icon" class="hide-icon-show"><i class="fas fa-eye"></i></span>
+                </button>
+                <span class="hide-status" id="hide-status" style="font-size:0.75rem;">显示中</span>
             </div>
         </div>
     </section>
@@ -1654,7 +1652,7 @@ function switchPage(page) {
         if (copyRight) copyRight.style.display = '';
     }
     // 功能区只在学习和练习页可见
-    const learnCtrls = document.getElementById('learn-controls');
+    const learnCtrls = document.getElementById('learn-inline-controls');
     if (learnCtrls) learnCtrls.style.display = (page === 'dashboard') ? 'none' : 'flex';
     const inlineCtrl = document.getElementById('learn-inline-controls');
     if (inlineCtrl) inlineCtrl.style.display = (page === 'dashboard') ? 'none' : 'flex';
@@ -1702,7 +1700,7 @@ function initPracticePage() {
         const n = catId === "1" ? "生词 Vocabulary" : catId === "2" ? "短语 Phrases" : catId;
         catOpts += '<option value="' + catId + '">' + catId + '. ' + n + '</option>';
     }
-    c.innerHTML = `<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><h1 class="main-title" style="font-size:1.3rem;">印尼语学习助手</h1><div style="font-size:0.85rem;color:#94a3b8;">练习模式</div></header><div class="practice-container" style="max-width:100%;"><div id="practice-setup"><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.5rem;font-weight:800;color:var(--text-main);"><i class="fas fa-pen-fancy" style="color:var(--accent);margin-right:8px;"></i>练习模式</h2></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择词库分类</div><select id="practice-cat-select" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.95rem;outline:none;"><option value="all">全部词库</option>' + catOpts + '</select></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择练习类型</div><div class="practice-type-selector"><button class="practice-type-btn active" onclick="selectPracticeType('choice',this)"><i class="fas fa-th-large"></i> 选择题</button><button class="practice-type-btn" onclick="selectPracticeType('fill',this)"><i class="fas fa-keyboard"></i> 填空题</button><button class="practice-type-btn" onclick="selectPracticeType('listen',this)"><i class="fas fa-headphones"></i> 听力题</button></div></div><div style="margin-bottom:20px;padding:14px 18px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;">
+    c.innerHTML = `<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><h1 class="main-title" style="font-size:1.3rem;">印尼语学习助手</h1><div style="font-size:0.85rem;color:#94a3b8;">练习模式</div></header><div class="practice-container" style="max-width:100%;"><div id="practice-setup"><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.5rem;font-weight:800;color:var(--text-main);"><i class="fas fa-pen-fancy" style="color:var(--accent);margin-right:8px;"></i>练习模式</h2></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择词库分类</div><select id="practice-cat-select" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.95rem;outline:none;"><option value="all">全部词库</option>' + catOpts + '</select></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择练习类型</div><div class="practice-type-selector"><button class="practice-type-btn active" onclick="selectPracticeType('choice',this)"><i class="fas fa-th-large"></i> 选择题</button><button class="practice-type-btn" onclick="selectPracticeType('fill',this)"><i class="fas fa-keyboard"></i> 填空题</button><button class="practice-type-btn" onclick="selectPracticeType('listen',this)"><i class="fas fa-headphones"></i> 听力题</button></div></div><div style="margin-bottom:20px;padding:14px 18px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;">
             <label style="display:flex;align-items:center;gap:12px;cursor:pointer;color:var(--text-main);font-size:1rem;font-weight:600;">
                 <input type="checkbox" id="practice-learned-only" style="width:22px;height:22px;accent-color:var(--accent);cursor:pointer;">
                 <i class="fas fa-check-double" style="color:var(--accent);"></i>
@@ -1710,8 +1708,8 @@ function initPracticePage() {
             </label>
             <span id="practice-learned-count" style="color:var(--accent);font-size:0.9rem;font-weight:600;"></span>
         </div>
-        <div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">题目数量</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="practice-type-btn" onclick="selectPracticeCount(10,this)">10题</button><button class="practice-type-btn active" onclick="selectPracticeCount(20,this)">20题</button><button class="practice-type-btn" onclick="selectPracticeCount(50,this)">50题</button><button class="practice-type-btn" onclick="selectPracticeCount(0,this)">全部</button></div></div><div style="margin:24px 0;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;">
-            <div class="sliders-col">
+        <div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">题目数量</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="practice-type-btn" onclick="selectPracticeCount(10,this)">10题</button><button class="practice-type-btn active" onclick="selectPracticeCount(20,this)">20题</button><button class="practice-type-btn" onclick="selectPracticeCount(50,this)">50题</button><button class="practice-type-btn" onclick="selectPracticeCount(0,this)">全部</button></div></div><div style="margin:24px 0;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;">
+            <div class="sliders-col" style="flex:1;min-width:0;">
                 <div class="vslider-box">
                     <div class="vslider-label" style="font-size:0.88rem;"><i class="fas fa-gauge-high"></i> 语速</div>
                     <div class="vslider-track-wrap">
@@ -1731,7 +1729,7 @@ function initPracticePage() {
                     <div class="vslider-range"><span>1次</span><span>无限</span></div>
                 </div>
             </div>
-            <div id="practice-preview-word" style="font-size:1.3rem;font-weight:700;color:var(--accent);padding:8px 16px;background:rgba(99,102,241,0.1);border-radius:10px;border:1px solid rgba(99,102,241,0.2);min-width:100px;text-align:center;">
+            <div id="practice-preview-word" style="font-size:1.3rem;font-weight:700;color:var(--accent);padding:8px 16px;background:rgba(99,102,241,0.1);border-radius:10px;border:1px solid rgba(99,102,241,0.2);min-width:80px;text-align:center;flex-shrink:0;">
                 <i class="fas fa-volume-up" style="font-size:0.9rem;"></i>
             </div>
         </div>

@@ -11,7 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理后台 - 印尼语学习助手</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="config.js?v=20260422"></script>
     <script>
     // ========== 后台管理本地 Fallback 模式 ==========
@@ -314,36 +314,6 @@
             <button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button>
         
 
-        <!-- 学习统计管理面板 -->
-        <div id="tab-study" class="tab-panel">
-            <div class="section-header">
-                <h2><i class="fas fa-chart-bar"></i> 学习统计管理</h2>
-                <button class="btn-accent" onclick="loadStudyStats()"><i class="fas fa-sync-alt"></i> 刷新数据</button>
-            </div>
-            <div class="card">
-                <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:15px;">查看所有用户的学习数据和累计统计</p>
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead><tr><th>用户名</th><th>昵称</th><th>角色</th><th>今日学习</th><th>累计词汇</th><th>学习时长</th><th>操作</th></tr></thead>
-                        <tbody id="studyStatsList"></tbody>
-                    </table>
-                </div>
-                <div id="studyStatsEmpty" style="display:none;text-align:center;color:#64748b;padding:30px;">暂无学习数据</div>
-            </div>
-        </div>
-
-        <!-- 版本说明面板 -->
-        <div id="tab-changelog" class="tab-panel">
-            <div class="section-header">
-                <h2><i class="fas fa-code-branch"></i> 版本说明</h2>
-                <button class="btn-accent" onclick="showVersionEditor()"><i class="fas fa-plus"></i> 新增版本</button>
-            </div>
-            <div id="changelog-list"></div>
-            <div id="changelog-empty" style="text-align:center;padding:40px 0;color:#64748b;">
-                <i class="fas fa-inbox" style="font-size:2rem;margin-bottom:12px;display:block;"></i>
-                暂无版本记录
-            </div>
-        </div>
         <!-- 版本编辑弹窗 -->
         <div id="version-modal" class="modal-overlay" style="display:none;">
             <div class="modal-card" style="width:540px;">
@@ -598,8 +568,34 @@
                     <div class="json-output-box" id="json-output-box" style="display:none;"></div>
                 </div>
             </div>
-        </div>
-    </div>
+
+            <!-- 学习统计管理面板 -->
+            <div class="tab-panel" id="tab-study">
+                <div class="panel-title"><i class="fas fa-chart-bar"></i> 学习统计</div>
+                <div class="card">
+                    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:15px;">查看所有用户的学习数据和累计统计</p>
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead><tr><th>用户名</th><th>昵称</th><th>角色</th><th>今日学习</th><th>累计词汇</th><th>学习时长</th><th>操作</th></tr></thead>
+                            <tbody id="studyStatsList"></tbody>
+                        </table>
+                    </div>
+                    <div id="studyStatsEmpty" style="display:none;text-align:center;color:#64748b;padding:30px;">暂无学习数据</div>
+                </div>
+            </div>
+
+            <!-- 版本说明面板 -->
+            <div class="tab-panel" id="tab-changelog">
+                <div class="panel-title"><i class="fas fa-code-branch"></i> 版本说明</div>
+                <button class="btn-accent" onclick="showVersionEditor()" style="margin-bottom:15px;"><i class="fas fa-plus"></i> 新增版本</button>
+                <div id="changelog-list"></div>
+                <div id="changelog-empty" style="text-align:center;padding:40px 0;color:#64748b;">
+                    <i class="fas fa-inbox" style="font-size:2rem;margin-bottom:12px;display:block;"></i>
+                    暂无版本记录
+                </div>
+            </div>
+        </div><!-- /admin-content -->
+    </div><!-- /admin-body -->
 
     <!-- SheetJS -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -637,7 +633,7 @@
     }
 
     // ========== 概览 ==========
-    async async function loadOverview() {
+    async function loadOverview() {
         try {
             let settings, online;
             try {
@@ -672,7 +668,7 @@
     }
 
     // ========== 用户管理 ==========
-    async async function loadUsers() {
+    async function loadUsers() {
         try {
             const data = await adminFetch('admin/users', { method: 'GET' });
             if (data.error) return;
@@ -782,7 +778,7 @@
     }
 
     // ========== 系统设置 ==========
-    async async function loadSettings() {
+    async function loadSettings() {
         const s = await adminFetch('admin/settings', { method: 'GET' });
         if (s.error) return;
         document.getElementById('setMaxOnline').value = s.maxOnline || 0;
@@ -1201,10 +1197,6 @@
         // switchTab 增加版本说明加载
         const origSwitchTab = window.switchTab;
         // 白名单
-        if (path === 'admin/whitelist') {
-            if (method === 'GET') return LS('fmi_admin_whitelist', '[]');
-            if (method === 'PUT') { localStorage.setItem('fmi_admin_whitelist', opts.body); return { success: true }; }
-        }
         // 员工名单管理
     async function loadWhitelist() {
         try {
