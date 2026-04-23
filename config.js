@@ -168,7 +168,7 @@ const API = {
                 if (adminCache) {
                     const adminSettings = JSON.parse(adminCache);
                     // API provides runtime data, adminCache provides configured data
-                    const merged = { ...adminSettings, ...result, ...adminSettings };
+                    const merged = { ...adminSettings, ...result };
                     localStorage.setItem('fmi_admin_settings', JSON.stringify(merged));
                     return merged;
                 }

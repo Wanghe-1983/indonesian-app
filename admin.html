@@ -377,7 +377,7 @@
             <div class="nav-item" onclick="switchTab('settings', this)"><i class="fas fa-sliders"></i> 系统设置</div>
             <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fas fa-trophy"></i> 打榜配置</div>
             <div class="nav-divider"></div>
-            <div class="nav-item" onclick="switchTab('employees', this)"><i class="fas fa-id-card-clip"></i> 员工名单</div>
+            <div class="nav-item" onclick="switchTab('employees', this)"><i class="fas fa-id-card-clip"></i> 注册信息管理</div>
             <div class="nav-item" onclick="switchTab('whitelist', this)"><i class="fas fa-clipboard-list"></i> 白名单/导入</div>
             <div class="nav-divider"></div>
             <div class="nav-item" onclick="switchTab('study', this)"><i class="fas fa-chart-bar"></i> 学习统计</div>
@@ -514,7 +514,7 @@
 
             <!-- 员工名单管理 -->
             <div class="tab-panel" id="tab-employees">
-                <div class="panel-title"><i class="fas fa-id-card-clip"></i> 员工名单管理</div>
+                <div class="panel-title"><i class="fas fa-id-card-clip"></i> 注册信息管理</div>
                 <div class="upload-section">
                     <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-plus-circle" style="color:#a78bfa;"></i> 添加员工</div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
@@ -887,9 +887,9 @@
         const data = await adminFetch('admin/whitelist', { method: 'GET' });
         if (data.error) { employeeList = []; renderEmployeeTable([]); return; }
         employeeList = data.employees || (Array.isArray(data) ? data : []);
-        // Already using correct signature
-            const users = await adminFetch('admin/users', { method: 'GET' });
-        renderEmployeeTable(users || []);
+        const usersResp = await adminFetch('admin/users', { method: 'GET' });
+        const users = usersResp.users || (Array.isArray(usersResp) ? usersResp : []);
+        renderEmployeeTable(users);
     }
 
     function renderEmployeeTable(users) {

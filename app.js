@@ -305,7 +305,7 @@ function initUI() {
                 <div class="vslider-box">
                     <div class="vslider-label"><i class="fas fa-repeat"></i> 循环</div>
                     <div class="vslider-track-wrap">
-                        <input type="range" class="vslider vslider-loop" id="loop-slider" min="0" max="5" value="0" step="1"
+                        <input type="range" class="vslider vslider-loop" id="loop-slider" min="0" max="14" value="0" step="1"
                             oninput="setLoopFromSlider(this.value)" title="拖动调整循环次数">
                         <div class="vslider-fill" id="loop-fill"></div>
                         <div class="vslider-thumb" id="loop-thumb"><span id="val-loop">1次</span></div>
@@ -763,7 +763,7 @@ function updateSetting(k, v) {
 // 语速级别：0.5, 0.8, 1.0, 1.2, 1.5, 2.0
 const RATE_LEVELS = [0.1, 0.3, 0.5, 0.8, 1.0, 1.2, 1.5];
 let _rateIdx = 4; // 默认 1.0
-const LOOP_LEVELS = [1, 3, 5, 7, 9, 0]; // 0 = 无限循环
+const LOOP_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0]; // 0 = 无限循环
 let _loopIdx = 0; // 默认 1次
 
 // 竖向滑块：语速（1-15 对应 0.1x-1.5x，步进0.1）
@@ -790,7 +790,7 @@ function setRateFromSlider(val) {
 }
 
 // 竖向滑块：循环（0-5 对应 1,3,5,7,9,无限）
-const LOOP_DISPLAY = ['1次', '3次', '5次', '7次', '9次', '∞'];
+const LOOP_DISPLAY = ['1次', '2次', '3次', '4次', '5次', '6次', '7次', '8次', '9次', '10次', '11次', '12次', '13次', '14次', '∞'];
 function setLoopFromSlider(val) {
     const idx = parseInt(val);
     _loopIdx = idx;
@@ -799,7 +799,7 @@ function setLoopFromSlider(val) {
     const display = LOOP_DISPLAY[idx];
     const el = document.getElementById('val-loop'); if (el) el.innerText = display;
     const pEl = document.getElementById('p-val-loop'); if (pEl) pEl.innerText = display;
-    updateSliderFill('loop', idx / 5);
+    updateSliderFill('loop', idx / 14);
     updateSliderFill('p-loop', idx / 5);
     updateThumb('loop-thumb', idx / 5 * 100);
     updateThumb('p-loop-thumb', idx / 5 * 100);
@@ -834,7 +834,7 @@ function cycleRate() {
 }
 function cycleLoop() {
     const slider = document.getElementById('loop-slider');
-    if (slider) { slider.value = (_loopIdx + 1) > 5 ? 0 : _loopIdx + 1; setLoopFromSlider(slider.value); }
+    if (slider) { slider.value = (_loopIdx + 1) > 14 ? 0 : _loopIdx + 1; setLoopFromSlider(slider.value); }
 }
 
 // 隐藏中文切换
@@ -861,7 +861,7 @@ function initSliders() {
     const savedLoop = parseInt(localStorage.getItem('fmi_loop')) || 1;
     const rateVal = Math.round(savedRate * 10);
     const loopIdx = LOOP_LEVELS.indexOf(savedLoop);
-    const loopVal = loopIdx >= 0 ? loopIdx : 0;
+    const loopVal = loopIdx >= 0 ? loopIdx : (LOOP_LEVELS.indexOf(savedLoop) >= 0 ? LOOP_LEVELS.indexOf(savedLoop) : 0);
     const rateSlider = document.getElementById('rate-slider');
     const loopSlider = document.getElementById('loop-slider');
     if (rateSlider) { rateSlider.value = rateVal; setRateFromSlider(rateVal); }
@@ -1732,7 +1732,7 @@ function initPracticePage() {
                 <div class="vslider-box">
                     <div class="vslider-label"><i class="fas fa-repeat"></i> 循环</div>
                     <div class="vslider-track-wrap">
-                        <input type="range" class="vslider vslider-loop" id="p-loop-slider" min="0" max="5" value="0" step="1" oninput="setLoopFromSlider(this.value)">
+                        <input type="range" class="vslider vslider-loop" id="p-loop-slider" min="0" max="14" value="0" step="1" oninput="setLoopFromSlider(this.value)">
                         <div class="vslider-fill" id="p-loop-fill"></div>
                         <div class="vslider-thumb" id="p-loop-thumb"><span id="p-val-loop">1次</span></div>
                     </div>
