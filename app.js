@@ -290,7 +290,7 @@ function initUI() {
                 <span style="font-size:0.8rem;display:block;margin-top:5px;">打卡</span>
             </button>
         </div>
-        <div style="margin-top:20px;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;" id="learn-inline-controls">
+        <div style="margin:24px 0;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;" id="learn-inline-controls">
             <div class="sliders-col" style="flex:1;min-width:0;">
                 <div class="vslider-box">
                     <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
@@ -2451,7 +2451,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         const copyright = document.getElementById('copyright');
         if (copyright) {
-            copyright.ondblclick = openAdminModal;
+            // admin entry moved to ⚙ gear icon
         }
     }, 1000);
 });

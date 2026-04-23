@@ -311,6 +311,10 @@
                 if (API.isLoggedIn === undefined) { API.init(); }
                 var result = await API.login(username, password);
                 if (result.token) {
+                    // Clear any previous visitor session
+                    localStorage.removeItem('fmi_visitor_login');
+                    localStorage.removeItem('fmi_visitor_expire');
+                    if (visitorTimerInterval) { clearInterval(visitorTimerInterval); visitorTimerInterval = null; }
                     localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: result.user, backend: true }));
                     setTimeout(function() { window.location.href = 'index.html'; }, 100);
                 } else if (result.error === 'network') {
@@ -328,6 +332,9 @@
             }
             var user = whitelist.find(function(item) { return item.username === username && item.password === password; });
             if (user) {
+                // Clear visitor session for non-visitor login
+                localStorage.removeItem('fmi_visitor_login');
+                localStorage.removeItem('fmi_visitor_expire');
                 localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: user, backend: false }));
                 setTimeout(function() { window.location.href = 'index.html'; }, 100);
             } else { showTip('login-tip', '用户名或密码错误', 'error'); }

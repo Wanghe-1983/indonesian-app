@@ -159,7 +159,22 @@ const API = {
 
     // ========== 系统信息（公开）==========
     async getSystemInfo() {
-        return await this.request('system/info');
+        try {
+            const result = await this.request('system/info');
+            // Cache the settings to localStorage for offline fallback
+            if (result && !result.error) {
+                localStorage.setItem('fmi_admin_settings', JSON.stringify(result));
+            }
+            return result;
+        } catch(e) {
+            // API failed, try localStorage cache
+            const cached = localStorage.getItem('fmi_admin_settings');
+            if (cached) {
+                return JSON.parse(cached);
+            }
+            // Return defaults
+            return { allowVisitor: true, visitorDuration: 3, maxOnline: 0, showOnlineLogin: true };
+        }
     },
 
     // ========== 管理员接口 ==========
