@@ -1,696 +1,687 @@
 /**
- * 印尼语学习助手 - 统一API处理模块
- * 每个路由文件只需: export { onRequest } from "../_shared/utils.js";
+ * 印尼语学习助手 - Cloudflare Pages Functions 后端路由
+ * KV（配置）+ D1（用户数据）混合架构
  */
 
+import { verifyToken, requireAuth, requireAdmin, hashPassword, verifyPassword, generateToken, hashStr, AuthError } from './auth.js';
 
-function utf8ToBase64(str) {
-    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1)));
-}
-function base64ToUtf8(str) {
-    return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-}
-function corsHeaders() {
-    return {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+export async function onRequest(context) {
+    const { request, env } = context;
+    const url = new URL(request.url);
+    const path = url.pathname.replace('/api/', '').replace(/\/$/, '');
+    const method = request.method;
+
+    // 路由表
+    const routes = {
+        // ========== 系统 ==========
+        'system/info':                  { get: handleSystemInfo },
+        'auth/login':                   { post: handleLogin },
+        'auth/register':                { post: handleRegister },
+        'visitor/login':                { post: handleVisitorLogin },
+
+        // ========== 用户 ==========
+        'user/me':                      { get: handleGetMe },
+        'user/heartbeat':               { post: handleHeartbeat },
+        'user/password':                { put: handleChangePassword },
+        'user/delete':                  { post: handleDeleteUser },
+
+        // ========== 学习 ==========
+        'study/save':                   { post: handleStudySave },
+        'study/stats':                  { get: handleStudyStats },
+
+        // ========== 排行榜 ==========
+        'leaderboard':                  { get: handleGetLeaderboard },
+        'leaderboard/submit':           { post: handleLeaderboardSubmit },
+
+        // ========== 管理后台 ==========
+        'admin/settings':               { get: handleAdminGetSettings, put: handleAdminPutSettings },
+        'admin/users':                  { get: handleAdminGetUsers, put: handleAdminPutUsers, delete: handleAdminDeleteUser },
+        'admin/online':                 { get: handleAdminGetOnline },
+        'admin/kick':                   { post: handleAdminKick },
+        'admin/ban':                    { post: handleAdminBan },
+        'admin/whitelist':              { get: handleAdminGetWhitelist, put: handleAdminPutWhitelist },
+        'admin/study-stats':            { get: handleAdminStudyStats },
+        'admin/study-clear':            { post: handleAdminStudyClear },
+        'admin/leaderboard-config':     { get: handleAdminGetLBConfig, put: handleAdminPutLBConfig },
+        'admin/init-users':             { post: handleAdminInitUsers },
+
+        // ========== 版本说明 ==========
+        'changelog/list':               { get: handleChangelogList },
+        'changelog/save':               { post: handleChangelogSave },
+        'changelog/delete':             { post: handleChangelogDelete },
     };
+
+    const route = routes[path];
+    if (!route) {
+        return json({ error: '接口不存在' }, 404);
+    }
+
+    const handler = route[method.toLowerCase()];
+    if (!handler) {
+        return json({ error: '方法不支持' }, 405);
+    }
+
+    try {
+        return await handler(context);
+    } catch (err) {
+        if (err instanceof AuthError) {
+            return json({ error: err.message }, err.status);
+        }
+        console.error(`API Error [${method} ${path}]:`, err);
+        return json({ error: '服务器内部错误: ' + err.message }, 500);
+    }
 }
+
+// ========== 工具函数 ==========
 
 function json(data, status = 200) {
     return new Response(JSON.stringify(data), {
         status,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
 }
 
-async function signToken(payload, env) {
-    const header = { alg: 'HS256', typ: 'JWT' };
-    const h = utf8ToBase64(JSON.stringify(header));
-    const p = utf8ToBase64(JSON.stringify(payload));
-    const secret = await env.INDO_LEARN_KV.get('JWT_SECRET') || 'default-secret-change-me';
-    const key = await crypto.subtle.importKey(
-        'raw', new TextEncoder().encode(secret),
-        { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    );
-    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(h + '.' + p));
-    const s = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    return h + '.' + p + '.' + s;
+function jsonOK(data) { return json({ success: true, ...data }); }
+function jsonErr(msg, status = 400) { return json({ error: msg }, status); }
+
+// 读取 KV 配置
+async function getSettings(env) {
+    const data = await env.INDO_LEARN_KV.get('system_settings');
+    return data ? JSON.parse(data) : null;
 }
 
-async function verifyToken(token, env) {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const secret = await env.INDO_LEARN_KV.get('JWT_SECRET') || 'default-secret-change-me';
-    const key = await crypto.subtle.importKey(
-        'raw', new TextEncoder().encode(secret),
-        { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
-    );
-    const sig = Uint8Array.from(atob(parts[2].replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-    const valid = await crypto.subtle.verify('HMAC', key, sig, new TextEncoder().encode(parts[0] + '.' + parts[1]));
-    if (!valid) return null;
-    try {
-        const payload = JSON.parse(base64ToUtf8(parts[1]));
-        // 访客 token 自动过期
-        if (payload.role === 'visitor' && payload.exp && Date.now() > payload.exp) return null;
-        return payload;
-    } catch { return null; }
+// 写入 KV 配置
+async function setSettings(env, settings) {
+    await env.INDO_LEARN_KV.put('system_settings', JSON.stringify(settings));
 }
 
-async function getAuthUser(request, env) {
-    const auth = request.headers.get('Authorization');
-    if (!auth || !auth.startsWith('Bearer ')) return null;
-    return await verifyToken(auth.slice(7), env);
-}
-
-async function heartbeat(username, env, deviceToken) {
-    const settings = await getSystemSettings(env);
-    if (!settings.allowMultiDevice && deviceToken) {
-        // 单设备模式：如果设备token不匹配，标记为需要被踢
-        const prev = await env.INDO_LEARN_KV.get('online:' + username);
-        if (prev) {
-            const prevData = JSON.parse(prev);
-            if (prevData.deviceToken && prevData.deviceToken !== deviceToken) {
-                // 其他设备登录了，标记被踢
-                await env.INDO_LEARN_KV.put('kicked:' + username, deviceToken, { expirationTtl: 60 });
-            }
-        }
-    }
-    await env.INDO_LEARN_KV.put('online:' + username, JSON.stringify({ username, ts: Date.now(), deviceToken: deviceToken || '' }), { expirationTtl: 120 });
-    return true;
-}
-
-async function getOnlineCount(env) {
-    const list = await env.INDO_LEARN_KV.list({ prefix: 'online:' });
-    const now = Date.now();
-    let count = 0;
-    const users = [];
-    for (const key of list.keys) {
-        const data = JSON.parse(await env.INDO_LEARN_KV.get(key.name) || '{}');
-        if (now - data.ts < 60000) {
-            count++;
-            users.push(data.username);
-        } else {
-            await env.INDO_LEARN_KV.delete(key.name);
-        }
-    }
-    return { count, users };
-}
-
-async function kickUser(username, env) {
-    await env.INDO_LEARN_KV.delete('online:' + username);
-    await env.INDO_LEARN_KV.put('kicked:' + username, JSON.stringify({ ts: Date.now() }), { expirationTtl: 300 });
-    return true;
-}
-
-async function banUser(username, env) {
-    await env.INDO_LEARN_KV.put('banned:' + username, '1');
-    return true;
-}
-
-async function unbanUser(username, env) {
-    await env.INDO_LEARN_KV.delete('banned:' + username);
-    return true;
-}
-
-async function isBanned(username, env) {
-    return !!(await env.INDO_LEARN_KV.get('banned:' + username));
-}
-
-async function isKicked(username, env) {
-    const data = await env.INDO_LEARN_KV.get('kicked:' + username);
-    if (!data) return false;
-    await env.INDO_LEARN_KV.delete('kicked:' + username);
-    return true;
-}
-
-async function getAllUsers(env) {
-    const data = await env.INDO_LEARN_KV.get('all_users');
-    return data ? JSON.parse(data) : [];
-}
-
-async function saveAllUsers(users, env) {
-    await env.INDO_LEARN_KV.put('all_users', JSON.stringify(users));
-}
-
-async function getUser(username, env) {
-    const users = await getAllUsers(env);
-    return users.find(u => u.username === username) || null;
-}
-
-async function createUser(userData, env) {
-    const users = await getAllUsers(env);
-    if (users.find(u => u.username === userData.username)) return { error: '用户名已存在' };
-    users.push({
-        username: userData.username, password: userData.password,
-        name: userData.name || userData.username, role: userData.role || 'user',
-        userType: userData.userType || 'hobby',
-        companyCode: userData.companyCode || '', empNo: userData.empNo || '',
-        createdAt: new Date().toISOString(),
-    });
-    await saveAllUsers(users, env);
-    return { success: true };
-}
-
-async function updateUser(username, updates, env) {
-    const users = await getAllUsers(env);
-    const idx = users.findIndex(u => u.username === username);
-    if (idx === -1) return { error: '用户不存在' };
-    Object.assign(users[idx], updates);
-    await saveAllUsers(users, env);
-    return { success: true };
-}
-
-async function deleteUser(username, env) {
-    let users = await getAllUsers(env);
-    users = users.filter(u => u.username !== username);
-    await saveAllUsers(users, env);
-    await env.INDO_LEARN_KV.delete('stats:' + username);
-    await env.INDO_LEARN_KV.delete('daily:' + username);
-    return { success: true };
-}
-
-async function saveStudyRecord(username, data, env) {
-    const today = new Date().toISOString().split('T')[0];
-    const dailyKey = 'daily:' + username + ':' + today;
-    const existing = JSON.parse(await env.INDO_LEARN_KV.get(dailyKey) || '{}');
-    Object.assign(existing, data);
-    await env.INDO_LEARN_KV.put(dailyKey, JSON.stringify(existing), { expirationTtl: 86400 * 30 });
-    const statsKey = 'stats:' + username;
-    const stats = JSON.parse(await env.INDO_LEARN_KV.get(statsKey) || '{"learnedWords":[],"totalDays":0}');
-    if (data.learnedWords) {
-        const set = new Set(stats.learnedWords || []);
-        (data.learnedWords || []).forEach(w => set.add(w));
-        stats.learnedWords = [...set];
-    }
-    const dailyList = await env.INDO_LEARN_KV.list({ prefix: 'daily:' + username + ':' });
-    stats.totalDays = dailyList.keys.length;
-    await env.INDO_LEARN_KV.put(statsKey, JSON.stringify(stats));
-    return true;
-}
-
-async function getStudyStats(username, env) {
-    const stats = JSON.parse(await env.INDO_LEARN_KV.get('stats:' + username) || '{}');
-    const list = await env.INDO_LEARN_KV.list({ prefix: 'daily:' + username + ':' });
-    stats.totalDays = list.keys.length;
-    stats.recentDays = [];
-    for (const key of list.keys.slice(-7)) {
-        const data = JSON.parse(await env.INDO_LEARN_KV.get(key.name) || '{}');
-        stats.recentDays.push({ date: key.name.split(':').pop(), ...data });
-    }
-    return stats;
-}
-
-async function submitLeaderboard(entry, env) {
-    const today = new Date().toISOString().split('T')[0];
-    const key = 'leaderboard:' + today;
-    const existing = JSON.parse(await env.INDO_LEARN_KV.get(key) || '[]');
-    const idx = existing.findIndex(e => e.username === entry.username);
-    const record = {
-        username: entry.username, name: entry.name,
-        accuracy: entry.accuracy, timeSpent: entry.timeSpent,
-        totalQuestions: entry.totalQuestions, correctCount: entry.correctCount,
-        submittedAt: new Date().toISOString(),
-    };
-    if (idx >= 0) {
-        if (record.accuracy > existing[idx].accuracy ||
-            (record.accuracy === existing[idx].accuracy && record.timeSpent < existing[idx].timeSpent)) {
-            existing[idx] = record;
-        }
-    } else {
-        existing.push(record);
-    }
-    existing.sort((a, b) => b.accuracy - a.accuracy || a.timeSpent - b.timeSpent);
-    await env.INDO_LEARN_KV.put(key, JSON.stringify(existing), { expirationTtl: 86400 * 30 });
-    return existing;
-}
-
-async function getLeaderboard(date, env) {
-    return JSON.parse(await env.INDO_LEARN_KV.get('leaderboard:' + date) || '[]');
-}
-
-async function getLeaderboardConfig(env) {
-    return JSON.parse(await env.INDO_LEARN_KV.get('leaderboard_config') || '{"enabled":false}');
-}
-
-async function setLeaderboardConfig(config, env) {
-    await env.INDO_LEARN_KV.put('leaderboard_config', JSON.stringify(config));
-}
-
-async function getSystemSettings(env) {
-    const stored = await env.INDO_LEARN_KV.get('system_settings');
-    const defaults = {
-        maxOnline: 0, maxRegistered: 0, allowRegister: true,
-        showOnlineMain: true, showOnlineLogin: true,
-        allowMultiDevice: true,
-        requireEmployeeVerify: true,
-        whitelistEnabled: false,
+// 获取默认设置
+function defaultSettings() {
+    return {
+        maxOnline: 0,
+        maxRegistered: 0,
+        allowRegister: true,
+        showOnlineMain: true,
+        showOnlineLogin: true,
+        allowMultiDevice: false,
         allowVisitor: true,
         visitorDuration: 3,
         adminPanelPassword: 'admin123',
         showOnlineCount: true,
         showRegCount: true,
     };
-    if (!stored) return defaults;
-    const settings = JSON.parse(stored);
-    // 合并默认值（防止旧数据缺少新字段）
-    for (const k in defaults) { if (settings[k] === undefined) settings[k] = defaults[k]; }
-    return settings;
 }
 
-async function setSystemSettings(settings, env) {
-    await env.INDO_LEARN_KV.put('system_settings', JSON.stringify(settings));
+// D1 查询辅助
+async function dbGet(env, sql, params = []) {
+    return await env.INDO_LEARN_DB.prepare(sql).bind(...params).first();
+}
+async function dbAll(env, sql, params = []) {
+    return (await env.INDO_LEARN_DB.prepare(sql).bind(...params).all()).results;
+}
+async function dbRun(env, sql, params = []) {
+    return await env.INDO_LEARN_DB.prepare(sql).bind(...params).run();
 }
 
-async function getWhitelist(env) {
-    return JSON.parse(await env.INDO_LEARN_KV.get('whitelist') || '[]');
+// ========== 系统信息 ==========
+
+async function handleSystemInfo(context) {
+    const { env } = context;
+    const settings = await getSettings(env) || defaultSettings();
+
+    // D1: 统计用户数
+    const totalUsers = (await dbGet(env, 'SELECT COUNT(*) as c FROM users')).c;
+    const registeredCount = (await dbGet(env, "SELECT COUNT(*) as c FROM users WHERE role != 'admin'")).c;
+
+    // D1: 统计今日学习
+    const today = new Date().toISOString().slice(0, 10);
+    const todayStats = await dbAll(env,
+        'SELECT username, name, words_learned as todayWords, study_seconds as studySeconds FROM study_stats WHERE date = ?',
+        [today]
+    );
+
+    // KV: 在线人数
+    const onlineData = await env.INDO_LEARN_KV.get('online_users');
+    const onlineUsers = onlineData ? JSON.parse(onlineData) : [];
+    const currentOnline = onlineUsers.length;
+
+    return json({
+        ...settings,
+        currentOnline,
+        totalUsers,
+        registeredCount,
+        todayStats,
+    });
 }
 
-async function setWhitelist(list, env) {
-    await env.INDO_LEARN_KV.put('whitelist', JSON.stringify(list));
-}
+// ========== 登录 ==========
 
-// ========== 员工名单管理 ==========
-async function getEmployeeList(env) {
-    return JSON.parse(await env.INDO_LEARN_KV.get('employee_list') || '[]');
-}
-
-async function setEmployeeList(list, env) {
-    await env.INDO_LEARN_KV.put('employee_list', JSON.stringify(list));
-}
-
-async function addEmployee(employee, env) {
-    const list = await getEmployeeList(env);
-    // 去重：同公司同工号
-    const exists = list.find(e => e.companyCode === employee.companyCode && e.empNo === employee.empNo);
-    if (exists) return { error: '该员工已存在（' + employee.companyCode + '-' + employee.empNo + '）' };
-    list.push(employee);
-    await setEmployeeList(list, env);
-    return { success: true };
-}
-
-async function deleteEmployee(companyCode, empNo, env) {
-    let list = await getEmployeeList(env);
-    const before = list.length;
-    list = list.filter(e => !(e.companyCode === companyCode && e.empNo === empNo));
-    if (list.length === before) return { error: '员工不存在' };
-    await setEmployeeList(list, env);
-    return { success: true };
-}
-
-async function verifyEmployee(companyCode, empNo, env) {
-    if (!companyCode || !empNo) return { valid: false, error: '公司缩写和工号不能为空' };
-    const list = await getEmployeeList(env);
-    const emp = list.find(e => e.companyCode === companyCode && e.empNo === empNo);
-    if (!emp) return { valid: false, error: '未找到该员工信息，请检查公司缩写和工号' };
-    return { valid: true, employee: emp };
-}
-
-// ========== 统一路由处理器 ==========
-async function handleRequest(context) {
+async function handleLogin(context) {
     const { request, env } = context;
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders() });
+    const { username, password } = await request.json();
 
-    const url = new URL(request.url);
-    const path = url.pathname.replace('/api/', '');
-    const method = request.method;
+    if (!username || !password) return jsonErr('请输入用户名和密码');
 
-    try {
-        // 公开接口
-        // 发送邮箱验证码
-        if (path === 'email/send-code' && method === 'POST') {
-            const { email } = await request.json();
-            if (!email) return json({ error: '邮箱不能为空' }, 400);
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) return json({ error: '邮箱格式不正确' }, 400);
-            // 检查邮箱是否已注册
-            const existingUsers = await getAllUsers(env);
-            if (existingUsers.find(u => u.email === email)) return json({ error: '该邮箱已被注册' }, 400);
-            // 检查发送频率（1分钟内只能发一次）
-            const lastSent = await env.INDO_LEARN_KV.get('email_rate:' + email);
-            if (lastSent) {
-                const elapsed = Date.now() - parseInt(lastSent);
-                if (elapsed < 60000) return json({ error: '请等待 ' + Math.ceil((60000 - elapsed) / 1000) + ' 秒后再试' }, 429);
-            }
-            // 生成6位验证码
-            const code = String(Math.floor(100000 + Math.random() * 900000));
-            await env.INDO_LEARN_KV.put('email_code:' + email, JSON.stringify({ code, expires: Date.now() + 300000 }), { expirationTtl: 360 });
-            await env.INDO_LEARN_KV.put('email_rate:' + email, String(Date.now()), { expirationTtl: 120 });
-            // 发送邮件（使用 Cloudflare Email Workers）
-            try {
-                await sendVerifyEmail(email, code, env);
-                return json({ success: true, message: '验证码已发送' });
-            } catch (e) {
-                console.error('发送邮件失败:', e);
-                return json({ error: '邮件发送失败，请稍后重试' }, 500);
-            }
-        }
+    const user = await dbGet(env, 'SELECT * FROM users WHERE username = ?', [username]);
+    if (!user) return jsonErr('用户名或密码错误');
+    if (user.banned) return jsonErr('该账号已被封禁，请联系管理员');
 
-        // 验证邮箱验证码
-        if (path === 'email/verify-code' && method === 'POST') {
-            const { email, code } = await request.json();
-            if (!email || !code) return json({ error: '邮箱和验证码不能为空' }, 400);
-            const stored = await env.INDO_LEARN_KV.get('email_code:' + email);
-            if (!stored) return json({ error: '验证码已过期，请重新获取' }, 400);
-            const data = JSON.parse(stored);
-            if (Date.now() > data.expires) {
-                await env.INDO_LEARN_KV.delete('email_code:' + email);
-                return json({ error: '验证码已过期，请重新获取' }, 400);
-            }
-            if (data.code !== code) return json({ error: '验证码错误' }, 400);
-            // 验证成功，标记邮箱已验证
-            await env.INDO_LEARN_KV.put('email_verified:' + email, '1', { expirationTtl: 600 });
-            return json({ success: true, message: '邮箱验证成功' });
-        }
-
-        if (path === 'auth/login' && method === 'POST') {
-            const { username, password } = await request.json();
-            const users = await getAllUsers(env);
-            let user = users.find(u => u.username === username && u.password === password);
-            if (!user) user = users.find(u => u.email === username && u.password === password);
-            if (!user) user = users.find(u => u.empNo === username && u.password === password);
-            if (!user) return json({ error: '用户名或密码错误' }, 401);
-            if (await isBanned(username, env)) return json({ error: '该账号已被禁止登录，请联系管理员' }, 403);
-            const settings = await getSystemSettings(env);
-            // 白名单校验
-            if (settings.whitelistEnabled) {
-                const whitelist = await getWhitelist(env);
-                const inWhitelist = whitelist.some(w => w.username === user.username || w.username === username);
-                if (!inWhitelist) return json({ error: '当前开启了白名单登录控制，您的账号不在白名单中，请联系管理员' }, 403);
-            }
-            if (settings.maxOnline > 0) {
-                const online = await getOnlineCount(env);
-                if (!online.users.includes(username) && online.count >= settings.maxOnline)
-                    return json({ error: '在线人数已满（' + settings.maxOnline + '人），请稍后再试' }, 429);
-            }
-            const token = await signToken({ username: user.username, name: user.name, role: user.role }, env);
-            await heartbeat(user.username, env, token);
-            return json({ token, user: { username: user.username, name: user.name, role: user.role, userType: user.userType, companyCode: user.companyCode || '', empNo: user.empNo || '' } });
-        }
-
-        // 访客登录（无需账号密码）
-        if (path === 'auth/visitor-login' && method === 'POST') {
-            const settings = await getSystemSettings(env);
-            if (!settings.allowVisitor) return json({ error: '当前不允许访客登录，请联系管理员' }, 403);
-            // 员工优先：在线人数已满时，访客不能登录
-            const online = await getOnlineCount(env);
-            const maxOnline = settings.maxOnline || 0;
-            if (maxOnline > 0 && online.count >= maxOnline) return json({ error: '在线人数已满，请稍后再试' }, 429);
-            // 访客使用临时用户名
-            const visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            const visitDuration = (settings.visitorDuration || 3) * 60 * 1000; // 毫秒
-            const token = await signToken({ username: visitorId, name: '访客', role: 'visitor', exp: Date.now() + visitDuration }, env);
-            await heartbeat(visitorId, env, token);
-            return json({ token, user: { username: visitorId, name: '访客', role: 'visitor', userType: 'visitor', visitDuration: settings.visitorDuration || 3 } });
-        }
-
-        if (path === 'auth/register' && method === 'POST') {
-            const settings = await getSystemSettings(env);
-            if (!settings.allowRegister) return json({ error: '当前不允许注册' }, 403);
-            if (settings.maxRegistered > 0) {
-                const users = await getAllUsers(env);
-                if (users.length >= settings.maxRegistered) return json({ error: '注册人数已满，请联系管理员' }, 403);
-            }
-            let { password, name, userType, companyCode, empNo } = await request.json();
-            if (!password) return json({ error: '密码不能为空' }, 400);
-            if (password.length < 4) return json({ error: '密码至少 4 位' }, 400);
-            // 爱好者不强制昵称，员工必须有昵称
-            if (userType === 'employee' && !name) return json({ error: '员工需填写昵称' }, 400);
-            if (name && name.length > 10) return json({ error: '昵称最多5个汉字或10个字母' }, 400);
-            // 用户类型校验
-            let username;
-            if (userType === 'employee') {
-                if (!companyCode || !empNo) return json({ error: '公司员工需填写公司缩写和工号' }, 400);
-                companyCode = companyCode.toUpperCase();
-                const settings2 = await getSystemSettings(env);
-                if (settings2.requireEmployeeVerify !== false) {
-                    const verify = await verifyEmployee(companyCode, empNo, env);
-                    if (!verify.valid) return json({ error: verify.error }, 400);
-                }
-                // 员工用工号作为用户名（格式：公司缩写-工号）
-                username = companyCode + '-' + empNo;
-            } else {
-                // 爱好者统一用户名 88888888，昵称可选
-                companyCode = '';
-                empNo = '88888888';
-                username = '88888888';
-                if (!name) name = '爱好者';
-            }
-            const result = await createUser({
-                username, password, name,
-                role: 'user', userType: userType || 'hobby',
-                companyCode: companyCode || '', empNo: empNo || '88888888',
-            }, env);
-            if (result.error) return json(result, 400);
-            return json({ success: true, message: '注册成功', username });
-        }
-
-        // 公开：获取最新版本信息
-        if (path === 'changelog/latest' && method === 'GET') {
-            const data = await env.KV.get('changelog', 'json') || [];
-            return json({ latest: data[0] || null, count: data.length });
-        }
-        if (path === 'system/info' && method === 'GET') {
-            const online = await getOnlineCount(env);
-            const settings = await getSystemSettings(env);
-            const users = await getAllUsers(env);
-            return json({
-                onlineCount: online.count, registeredCount: users.length,
-                whitelistEnabled: settings.whitelistEnabled === true,
-                maxOnline: settings.maxOnline || 0,
-                allowMultiDevice: settings.allowMultiDevice !== false,
-                requireEmployeeVerify: settings.requireEmployeeVerify !== false,
-                allowRegister: settings.allowRegister,
-                showOnlineMain: settings.showOnlineMain, showOnlineLogin: settings.showOnlineLogin,
-                allowVisitor: settings.allowVisitor === true,
-                visitorDuration: settings.visitorDuration || 3,
-            });
-        }
-
-        if (path === 'leaderboard' && method === 'GET') {
-            const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
-            const config = await getLeaderboardConfig(env);
-            const board = await getLeaderboard(date, env);
-            return json({ config, board });
-        }
-
-        // 需要登录
-        let authUser = await getAuthUser(request, env);
-        if (!authUser) return json({ error: '未登录或登录已过期' }, 401);
-        if (await isKicked(authUser.username, env)) return json({ error: 'kicked', message: '您已被管理员强制下线' }, 401);
-            // 访客时长到期检查
-            if (authUser.role === 'visitor' && authUser.exp && Date.now() > authUser.exp) {
-                return json({ error: 'visitor_expired', message: '访客登录时长已到，请注册账号继续学习' }, 401);
-            }
-
-        if (path === 'user/heartbeat' && method === 'POST') { const clientToken = request.headers.get('Authorization')?.replace('Bearer ', '') || ''; await heartbeat(authUser.username, env, clientToken); return json({ ok: true }); }
-        if (path === 'user/me' && method === 'GET') {
-            const user = await getUser(authUser.username, env);
-            if (!user) return json({ error: '用户不存在' }, 404);
-            return json({ username: user.username, name: user.name, role: user.role, createdAt: user.createdAt });
-        }
-        // 注销账号
-        if (path === 'user/delete' && method === 'POST') {
-            if (!authUser) return json({ error: '未登录' }, 401);
-            // 管理员不能注销自己
-            if (authUser.role === 'admin') {
-                const allAdmins = (await getAllUsers(env)).filter(u => u.role === 'admin');
-                if (allAdmins.length <= 1) return json({ error: '最后一个管理员不能注销' }, 400);
-            }
-            const result = await deleteUser(authUser.username, env);
-            if (result.error) return json(result, 400);
-            // 清除在线状态和学习数据
-            await env.INDO_LEARN_KV.delete('online:' + authUser.username);
-            await env.INDO_LEARN_KV.delete('study:' + authUser.username);
-            await env.INDO_LEARN_KV.delete('practice_history:' + authUser.username);
-            return json({ success: true, message: '账号已注销' });
-        }
-
-        if (path === 'user/password' && method === 'PUT') {
-            const { oldPassword, newPassword } = await request.json();
-            const user = await getUser(authUser.username, env);
-            if (!user || user.password !== oldPassword) return json({ error: '原密码错误' }, 400);
-            if (newPassword.length < 4) return json({ error: '新密码至少 4 位' }, 400);
-            await updateUser(authUser.username, { password: newPassword }, env);
-            return json({ success: true });
-        }
-        if (path === 'study/save' && method === 'POST') { await saveStudyRecord(authUser.username, await request.json(), env); return json({ ok: true }); }
-        if (path === 'study/stats' && method === 'GET') { return json(await getStudyStats(authUser.username, env)); }
-        if (path === 'leaderboard/submit' && method === 'POST') {
-            const config = await getLeaderboardConfig(env);
-            if (!config.enabled) return json({ error: '打榜未开启' }, 403);
-            // 爱好者不能参与排行榜
-            if (authUser.userType === 'hobby' || authUser.role === 'visitor') return json({ error: '访客和爱好者不能参与排行榜' }, 403);
-            const entry = await request.json();
-            entry.username = authUser.username; entry.name = authUser.name;
-            return json({ success: true, board: await submitLeaderboard(entry, env) });
-        }
-
-        // 管理员接口
-        if (authUser.role !== 'admin') return json({ error: '无管理员权限' }, 403);
-
-        if (path === 'admin/users' && method === 'GET') {
-            const users = await getAllUsers(env);
-            const online = await getOnlineCount(env);
-            const result = [];
-            for (const u of users) result.push({ ...u, isOnline: online.users.includes(u.username), isBanned: await isBanned(u.username, env) });
-            return json(result);
-        }
-        if (path === 'admin/users' && method === 'POST') { return json(await createUser({ ...(await request.json()), role: (await request.json()).role || 'user' }, env)); }
-        if (path === 'admin/users' && method === 'PUT') {
-            const data = await request.json();
-            if (!data.username && data.action !== 'batch_add') return json({ error: '缺少 username' }, 400);
-            const action = data.action;
-            if (action === 'add') {
-                if (!data.user) return json({ error: '缺少 user' }, 400);
-                const existing = await getUser(data.user.username, env);
-                if (existing) return json({ error: '用户名已存在' }, 400);
-                const result = await createUser({ ...data.user, role: data.user.role || 'user' }, env);
-                return json(result, result.error ? 400 : 200);
-            }
-            if (action === 'batch_add') {
-                let imported = 0;
-                for (const u of (data.users || [])) {
-                    const existing = await getUser(u.username, env);
-                    if (!existing) { await createUser({ ...u, role: u.role || 'user' }, env); imported++; }
-                }
-                return json({ success: true, imported });
-            }
-            if (action === 'delete') {
-                if (data.username === authUser.username) return json({ error: '不能删除自己' }, 400);
-                await deleteUser(data.username, env);
-                return json({ success: true });
-            }
-            if (action === 'kick') { await kickUser(data.username, env); return json({ success: true }); }
-            if (action === 'ban') { if (data.ban) await banUser(data.username, env); else await unbanUser(data.username, env); return json({ success: true }); }
-            if (action === 'update') {
-                const updateData = { ...data.data };
-                delete updateData.username;
-                return json(await updateUser(data.username, updateData, env));
-            }
-            // 兼容旧接口
-            return json(await updateUser(data.username, data, env));
-        }
-        if (path === 'admin/users' && method === 'DELETE') {
-            const { username } = await request.json();
-            if (!username) return json({ error: '缺少 username' }, 400);
-            if (username === authUser.username) return json({ error: '不能删除自己' }, 400);
-            await deleteUser(username, env);
-            return json({ success: true });
-        }
-        if (path === 'admin/kick' && method === 'POST') { const { username } = await request.json(); await kickUser(username, env); return json({ success: true }); }
-        if (path === 'admin/ban' && method === 'POST') {
-            const { username, ban } = await request.json();
-            if (ban) await banUser(username, env); else await unbanUser(username, env);
-            return json({ success: true });
-        }
-        if (path === 'admin/online' && method === 'GET') { return json(await getOnlineCount(env)); }
-        if (path === 'admin/settings' && method === 'GET') {
-            const settings = await getSystemSettings(env);
-            const online = await getOnlineCount(env);
-            return json({ ...settings, currentOnline: online.count, totalUsers: (await getAllUsers(env)).length });
-        }
-        if (path === 'admin/settings' && method === 'PUT') { await setSystemSettings(await request.json(), env); return json({ success: true }); }
-        if (path === 'admin/whitelist' && method === 'GET') {
-            const action = url.searchParams.get('action');
-            if (action === 'employees') return json(await getEmployeeList(env));
-            return json(await getWhitelist(env));
-        }
-        if (path === 'admin/whitelist' && method === 'PUT') {
-            const data = await request.json();
-            if (data.action === 'employees') {
-                if (data.action === 'add') {
-                    // 添加单个员工
-                    const result = await addEmployee(data.employee, env);
-                    return json(result, result.error ? 400 : 200);
-                }
-                if (data.action === 'delete') {
-                    // 删除员工
-                    const result = await deleteEmployee(data.companyCode, data.empNo, env);
-                    return json(result, result.error ? 400 : 200);
-                }
-                if (data.action === 'import') {
-                    // 批量导入
-                    await setEmployeeList(data.list, env);
-                    return json({ success: true });
-                }
-                return json({ error: '缺少 action 参数' }, 400);
-            }
-            if (data.employees) { await setWhitelist(data.employees, env); }
-            else { await setWhitelist(data, env); }
-            return json({ success: true });
-        }
-
-        // 员工名单管理
-        if (path === 'admin/employees' && method === 'GET') { return json(await getEmployeeList(env)); }
-        if (path === 'admin/employees' && method === 'POST') {
-            const data = await request.json();
-            if (data.bulk) { await setEmployeeList(data.list, env); return json({ success: true }); }
-            const result = await addEmployee(data, env);
-            return json(result, result.error ? 400 : 200);
-        }
-        if (path === 'admin/employees' && method === 'DELETE') {
-            const { companyCode, empNo } = await request.json();
-            const result = await deleteEmployee(companyCode, empNo, env);
-            return json(result, result.error ? 400 : 200);
-        }
-        if (path === 'admin/leaderboard-config' && method === 'GET') { return json(await getLeaderboardConfig(env)); }
-        if (path === 'admin/leaderboard-config' && method === 'PUT') { await setLeaderboardConfig(await request.json(), env); return json({ success: true }); }
-        // === 学习统计管理 ===
-        if (path === 'admin/study-stats' && method === 'GET') {
-            const users = await getAllUsers(env);
-            const allStats = {};
-            for (const u of users) {
-                const stats = await getStudyStats(u.username, env);
-                allStats[u.username] = {
-                    name: u.name || u.username,
-                    role: u.role || 'user',
-                    ...stats
-                };
-            }
-            return json({ stats: allStats });
-        }
-        if (path === 'admin/study-clear' && method === 'POST') {
-            const { username } = await request.json();
-            if (!username) return json({ error: '缺少 username' }, 400);
-            await env.INDO_LEARN_KV.delete('study_' + username);
-            return json({ success: true, message: `已清空 ${username} 的学习数据` });
-        }
-
-        // === 版本说明 ===
-        if (path === 'admin/changelog/list' && method === 'GET') {
-            const data = await env.KV.get('changelog', 'json') || [];
-            return json({ versions: data });
-        }
-        if (path === 'admin/changelog/save' && method === 'POST') {
-            const { version, title, content: verContent, idx } = await request.json();
-            if (!version || !verContent) return json({ error: '版本号和内容不能为空' }, 400);
-            const data = await env.KV.get('changelog', 'json') || [];
-            const today = new Date().toLocaleDateString('zh-CN');
-            if (idx >= 0 && idx < data.length) {
-                data[idx] = { ...data[idx], version, title, content: verContent, date: today };
-            } else {
-                data.unshift({ version, title, content: verContent, date: today });
-            }
-            await env.KV.put('changelog', JSON.stringify(data));
-            return json({ success: true, versions: data });
-        }
-        if (path === 'admin/changelog/delete' && method === 'POST') {
-            const { idx } = await request.json();
-            const data = await env.KV.get('changelog', 'json') || [];
-            if (idx >= 0 && idx < data.length) {
-                data.splice(idx, 1);
-                await env.KV.put('changelog', JSON.stringify(data));
-                return json({ success: true });
-            }
-            return json({ error: '索引无效' }, 400);
-        }
-
-        return json({ error: '接口不存在' }, 404);
-    } catch (err) {
-        return json({ error: '服务器错误: ' + err.message }, 500);
+    if (!await verifyPassword(password, user.password)) {
+        return jsonErr('用户名或密码错误');
     }
+
+    // 检查访客过期
+    if (user.user_type === 'visitor') {
+        const expire = parseInt(user.emp_no); // emp_no 存过期时间戳
+        if (Date.now() > expire) {
+            return jsonErr('visitor_expired');
+        }
+    }
+
+    // 多设备检测
+    const settings = await getSettings(env) || defaultSettings();
+    if (!settings.allowMultiDevice) {
+        // 踢掉旧设备
+        const onlineData = await env.INDO_LEARN_KV.get('online_users');
+        const onlineUsers = onlineData ? JSON.parse(onlineData) : [];
+        const filtered = onlineUsers.filter(u => u.username !== username);
+        await env.INDO_LEARN_KV.put('online_users', JSON.stringify(filtered));
+    }
+
+    // 生成 token（简单实现：base64(username|timestamp|sig)）
+    const token = generateToken(username);
+
+    // 记录在线
+    const onlineData = await env.INDO_LEARN_KV.get('online_users');
+    const onlineUsers = onlineData ? JSON.parse(onlineData) : [];
+    const existingIdx = onlineUsers.findIndex(u => u.username === username);
+    if (existingIdx >= 0) {
+        onlineUsers[existingIdx].lastSeen = Date.now();
+    } else {
+        onlineUsers.push({ username, name: user.name, role: user.role, lastSeen: Date.now() });
+    }
+    await env.INDO_LEARN_KV.put('online_users', JSON.stringify(onlineUsers), { expirationTtl: 300 });
+    await env.INDO_LEARN_KV.put('token_' + token, username, { expirationTtl: 86400 });
+
+    // 更新心跳时间
+    await dbRun(env, 'UPDATE users SET last_heartbeat = ? WHERE username = ?', [new Date().toISOString(), username]);
+
+    return json({
+        success: true,
+        token,
+        user: { username: user.username, name: user.name, role: user.role, userType: user.user_type },
+    });
 }
 
-export const onRequest = handleRequest;
+// ========== 注册 ==========
+
+async function handleRegister(context) {
+    const { request, env } = context;
+    const { username, password, name, userType, companyCode, empNo } = await request.json();
+
+    if (!username || !password || !name) return jsonErr('请填写完整信息');
+    if (password.length < 4) return jsonErr('密码至少4位');
+
+    // 检查注册是否开放
+    const settings = await getSettings(env) || defaultSettings();
+    if (!settings.allowRegister) return jsonErr('管理员已关闭自助注册');
+
+    // 检查注册人数限制
+    if (settings.maxRegistered > 0) {
+        const count = (await dbGet(env, "SELECT COUNT(*) as c FROM users WHERE role != 'admin'")).c;
+        if (count >= settings.maxRegistered) return jsonErr('注册人数已达上限（' + count + '/' + settings.maxRegistered + '），请联系管理员');
+    }
+
+    // 检查用户名是否已存在
+    const existing = await dbGet(env, 'SELECT username FROM users WHERE username = ?', [username]);
+    if (existing) return jsonErr('该用户名已存在');
+
+    // 员工工号验证
+    if (settings.empVerify && userType === 'employee') {
+        const emp = await dbGet(env, 'SELECT * FROM employees WHERE company_code = ? AND emp_no = ?', [companyCode, empNo]);
+        if (!emp) return jsonErr('工号验证失败：未在员工名单中找到 ' + companyCode + '-' + empNo);
+    }
+
+    // 白名单验证
+    if (settings.enableWhitelist) {
+        const emp = await dbGet(env, 'SELECT * FROM employees WHERE company_code = ? AND emp_no = ?', [companyCode || '', empNo || '']);
+        if (!emp) return jsonErr('您不在白名单中，无法注册');
+    }
+
+    const hashedPw = await hashPassword(password);
+    await dbRun(env,
+        'INSERT INTO users (username, password, name, role, user_type, company_code, emp_no) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [username, hashedPw, name, 'user', userType || 'employee', companyCode || '', empNo || '']
+    );
+
+    return jsonOK({ message: '注册成功' });
+}
+
+// ========== 访客登录 ==========
+
+async function handleVisitorLogin(context) {
+    const { env } = context;
+    const settings = await getSettings(env) || defaultSettings();
+
+    if (!settings.allowVisitor) return jsonErr('管理员已关闭访客体验模式');
+
+    // 生成访客账号
+    const guestId = 'GUEST-' + Date.now().toString(36).toUpperCase();
+    const expire = Date.now() + settings.visitorDuration * 60 * 1000;
+    const hashedPw = await hashPassword('guest');
+
+    await dbRun(env,
+        'INSERT INTO users (username, password, name, role, user_type, company_code, emp_no) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [guestId, hashedPw, '访客', 'user', 'visitor', 'GUEST', String(expire)]
+    );
+
+    return json({
+        success: true,
+        visitor: true,
+        expire,
+        username: guestId,
+        password: 'guest',
+    });
+}
+
+// ========== 用户信息 ==========
+
+async function handleGetMe(context) {
+    const { env } = await requireAuth(context);
+    const username = context.username;
+    const user = await dbGet(env, 'SELECT username, name, role, user_type as userType, company_code as companyCode, emp_no as empNo, created_at as createdAt FROM users WHERE username = ?', [username]);
+    if (!user) return jsonErr('用户不存在');
+    return json({ user });
+}
+
+async function handleChangePassword(context) {
+    const { env, username } = await requireAuth(context);
+    const { oldPassword, newPassword } = await context.request.json();
+    if (!oldPassword || !newPassword) return jsonErr('请输入旧密码和新密码');
+    if (newPassword.length < 4) return jsonErr('新密码至少4位');
+
+    const user = await dbGet(env, 'SELECT password FROM users WHERE username = ?', [username]);
+    if (!user || !await verifyPassword(oldPassword, user.password)) return jsonErr('旧密码错误');
+
+    const hashed = await hashPassword(newPassword);
+    await dbRun(env, 'UPDATE users SET password = ? WHERE username = ?', [hashed, username]);
+    return jsonOK({ message: '密码修改成功' });
+}
+
+async function handleDeleteUser(context) {
+    const { env, username } = await requireAuth(context);
+    const { targetUsername } = await context.request.json();
+    // 只能删除自己，或管理员删除他人
+    if (username !== targetUsername) {
+        await requireAdmin(context);
+    }
+    await dbRun(env, 'DELETE FROM users WHERE username = ?', [targetUsername]);
+    return jsonOK({ message: '已删除' });
+}
+
+// ========== 心跳 ==========
+
+async function handleHeartbeat(context) {
+    const { env, username } = await requireAuth(context);
+
+    // 检查是否被封禁或踢出
+    const user = await dbGet(env, 'SELECT banned, user_type, emp_no FROM users WHERE username = ?', [username]);
+    if (!user) return jsonErr('kicked');
+    if (user.banned) return jsonErr('kicked');
+
+    // 访客过期检查
+    if (user.user_type === 'visitor') {
+        const expire = parseInt(user.emp_no);
+        if (Date.now() > expire) return jsonErr('visitor_expired');
+    }
+
+    // 更新心跳时间
+    await dbRun(env, 'UPDATE users SET last_heartbeat = ? WHERE username = ?', [new Date().toISOString(), username]);
+
+    // 更新在线列表
+    const onlineData = await env.INDO_LEARN_KV.get('online_users');
+    const onlineUsers = onlineData ? JSON.parse(onlineData) : [];
+    const idx = onlineUsers.findIndex(u => u.username === username);
+    if (idx >= 0) {
+        onlineUsers[idx].lastSeen = Date.now();
+    } else {
+        onlineUsers.push({ username, name: user.name, role: user.role, lastSeen: Date.now() });
+    }
+    await env.INDO_LEARN_KV.put('online_users', JSON.stringify(onlineUsers), { expirationTtl: 300 });
+
+    return json({ success: true });
+}
+
+// ========== 学习记录 ==========
+
+async function handleStudySave(context) {
+    const { env, username } = await requireAuth(context);
+    const { wordId, category, mastered, seconds } = await context.request.json();
+    const today = new Date().toISOString().slice(0, 10);
+
+    // 更新/插入学习记录
+    const existing = await dbGet(env, 'SELECT id, attempts FROM study_records WHERE username = ? AND word_id = ?', [username, wordId]);
+    if (existing) {
+        await dbRun(env, 'UPDATE study_records SET mastered = ?, attempts = attempts + 1, last_practiced = ? WHERE id = ?',
+            [mastered ? 1 : 0, new Date().toISOString(), existing.id]);
+    } else {
+        await dbRun(env, 'INSERT INTO study_records (username, word_id, category, mastered, attempts, last_practiced) VALUES (?, ?, ?, ?, 1, ?)',
+            [username, wordId, category || '', mastered ? 1 : 0, new Date().toISOString()]);
+    }
+
+    // 更新每日统计
+    const stats = await dbGet(env, 'SELECT id FROM study_stats WHERE username = ? AND date = ?', [username, today]);
+    if (stats) {
+        await dbRun(env, 'UPDATE study_stats SET words_learned = words_learned + 1, study_seconds = study_seconds + ? WHERE id = ?',
+            [seconds || 0, stats.id]);
+    } else {
+        await dbRun(env, 'INSERT INTO study_stats (username, date, words_learned, study_seconds) VALUES (?, ?, 1, ?)',
+            [username, today, seconds || 0]);
+    }
+
+    return jsonOK();
+}
+
+async function handleStudyStats(context) {
+    const { env, username } = await requireAuth(context);
+    const stats = await dbGet(env,
+        'SELECT COALESCE(SUM(words_learned),0) as totalWords, COALESCE(SUM(study_seconds),0) as totalSeconds FROM study_stats WHERE username = ?',
+        [username]
+    );
+    const today = new Date().toISOString().slice(0, 10);
+    const todayStat = await dbGet(env,
+        'SELECT words_learned as todayWords, study_seconds as todaySeconds FROM study_stats WHERE username = ? AND date = ?',
+        [username, today]
+    );
+    return json({
+        totalWords: stats.totalWords,
+        totalSeconds: stats.totalSeconds,
+        todayWords: todayStat?.todayWords || 0,
+        todaySeconds: todayStat?.todaySeconds || 0,
+    });
+}
+
+// ========== 排行榜 ==========
+
+async function handleGetLeaderboard(context) {
+    const { env } = context;
+    const url = new URL(context.request.url);
+    const date = url.searchParams.get('date') || new Date().toISOString().slice(0, 10);
+
+    const entries = await dbAll(env,
+        `SELECT u.name, SUM(s.words_learned) as score
+         FROM study_stats s JOIN users u ON s.username = u.username
+         WHERE s.date LIKE ?
+         GROUP BY s.username ORDER BY score DESC LIMIT 50`,
+        [date.slice(0, 7) + '%']
+    );
+
+    return json({ entries });
+}
+
+async function handleLeaderboardSubmit(context) {
+    const { env, username } = await requireAuth(context);
+    const { score, period } = await context.request.json();
+
+    // 计算周期 key
+    let periodKey;
+    const now = new Date();
+    if (period === 'weekly') {
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay());
+        periodKey = weekStart.toISOString().slice(0, 10);
+    } else if (period === 'monthly') {
+        periodKey = now.toISOString().slice(0, 7);
+    } else {
+        periodKey = now.toISOString().slice(0, 10);
+    }
+
+    const user = await dbGet(env, 'SELECT name FROM users WHERE username = ?', [username]);
+    await dbRun(env,
+        'INSERT INTO leaderboard_entries (username, name, score, period, period_key) VALUES (?, ?, ?, ?, ?)',
+        [username, user?.name || username, score || 0, period || 'weekly', periodKey]
+    );
+
+    return jsonOK();
+}
+
+// ========== 管理后台 ==========
+
+async function handleAdminGetSettings(context) {
+    await requireAdmin(context);
+    const settings = await getSettings(context.env) || defaultSettings();
+    return json(settings);
+}
+
+async function handleAdminPutSettings(context) {
+    await requireAdmin(context);
+    const settings = await context.request.json();
+    await setSettings(context.env, settings);
+    return jsonOK({ message: '设置已保存' });
+}
+
+async function handleAdminGetUsers(context) {
+    await requireAdmin(context);
+    const users = await dbAll(context.env,
+        'SELECT username, name, role, user_type as userType, company_code as companyCode, emp_no as empNo, banned, last_heartbeat, created_at as createdAt FROM users ORDER BY created_at DESC'
+    );
+    return json({ users });
+}
+
+async function handleAdminPutUsers(context) {
+    await requireAdmin(context);
+    const { action, username, user, data, users: batchUsers } = await context.request.json();
+
+    if (action === 'add' && user) {
+        const existing = await dbGet(context.env, 'SELECT username FROM users WHERE username = ?', [user.username]);
+        if (existing) return jsonErr('用户已存在');
+        const hashed = await hashPassword(user.password || '123456');
+        await dbRun(context.env,
+            'INSERT INTO users (username, password, name, role, user_type, company_code, emp_no) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [user.username, hashed, user.name, user.role || 'user', user.userType || 'employee', user.companyCode || '', user.empNo || '']
+        );
+    } else if (action === 'delete') {
+        await dbRun(context.env, 'DELETE FROM users WHERE username = ?', [username]);
+    } else if (action === 'update') {
+        const updates = [];
+        const params = [];
+        if (data.name) { updates.push('name = ?'); params.push(data.name); }
+        if (data.role) { updates.push('role = ?'); params.push(data.role); }
+        if (data.password) { updates.push('password = ?'); params.push(await hashPassword(data.password)); }
+        if (updates.length) {
+            params.push(username);
+            await dbRun(context.env, `UPDATE users SET ${updates.join(', ')} WHERE username = ?`, params);
+        }
+    } else if (action === 'batch_add' && batchUsers) {
+        for (const u of batchUsers) {
+            const existing = await dbGet(context.env, 'SELECT username FROM users WHERE username = ?', [u.username]);
+            if (!existing) {
+                const hashed = await hashPassword(u.password || '123456');
+                await dbRun(context.env,
+                    'INSERT INTO users (username, password, name, role, user_type, company_code, emp_no) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    [u.username, hashed, u.name, u.role || 'user', u.userType || 'employee', u.companyCode || '', u.empNo || '']
+                );
+            }
+        }
+    }
+    return jsonOK();
+}
+
+async function handleAdminDeleteUser(context) {
+    await requireAdmin(context);
+    const { username } = await context.request.json();
+    await dbRun(context.env, 'DELETE FROM users WHERE username = ?', [username]);
+    return jsonOK({ message: '已删除' });
+}
+
+async function handleAdminGetOnline(context) {
+    await requireAdmin(context);
+    const onlineData = await context.env.INDO_LEARN_KV.get('online_users');
+    const onlineUsers = onlineData ? JSON.parse(onlineData) : [];
+
+    // 清理过期（5分钟无心跳）
+    const now = Date.now();
+    const active = onlineUsers.filter(u => now - u.lastSeen < 300000);
+    await context.env.INDO_LEARN_KV.put('online_users', JSON.stringify(active), { expirationTtl: 300 });
+
+    return json({ count: active.length, users: active });
+}
+
+async function handleAdminKick(context) {
+    await requireAdmin(context);
+    const { username } = await context.request.json();
+
+    const onlineData = await context.env.INDO_LEARN_KV.get('online_users');
+    const onlineUsers = onlineData ? JSON.parse(onlineData) : [];
+    await context.env.INDO_LEARN_KV.put('online_users', JSON.stringify(onlineUsers.filter(u => u.username !== username)), { expirationTtl: 300 });
+
+    // 标记 token 失效（通过删除在线状态，下次心跳会被拒绝）
+    return jsonOK({ message: '已踢下线' });
+}
+
+async function handleAdminBan(context) {
+    await requireAdmin(context);
+    const { username, ban } = await context.request.json();
+    await dbRun(context.env, 'UPDATE users SET banned = ? WHERE username = ?', [ban ? 1 : 0, username]);
+
+    if (ban) {
+        // 踢下线
+        const onlineData = await context.env.INDO_LEARN_KV.get('online_users');
+        const onlineUsers = onlineData ? JSON.parse(onlineData) : [];
+        await context.env.INDO_LEARN_KV.put('online_users', JSON.stringify(onlineUsers.filter(u => u.username !== username)), { expirationTtl: 300 });
+    }
+
+    return jsonOK({ message: ban ? '已封禁' : '已解封' });
+}
+
+// ========== 员工名单/白名单 ==========
+
+async function handleAdminGetWhitelist(context) {
+    await requireAdmin(context);
+    const employees = await dbAll(context.env, 'SELECT company_code as companyCode, emp_no as empNo, name, dept, created_at as createdAt FROM employees ORDER BY created_at DESC');
+    return json({ employees });
+}
+
+async function handleAdminPutWhitelist(context) {
+    await requireAdmin(context);
+    const body = await context.request.json();
+
+    if (body.action === 'add' && body.employee) {
+        const { companyCode, empNo, name, dept } = body.employee;
+        try {
+            await dbRun(context.env, 'INSERT INTO employees (company_code, emp_no, name, dept) VALUES (?, ?, ?, ?)',
+                [companyCode, empNo, name, dept || '']);
+        } catch (e) {
+            if (e.message.includes('UNIQUE')) return jsonErr('该员工已存在');
+            throw e;
+        }
+    } else if (body.action === 'delete') {
+        await dbRun(context.env, 'DELETE FROM employees WHERE company_code = ? AND emp_no = ?', [body.companyCode, body.empNo]);
+    } else if (body.action === 'import' && body.list) {
+        await dbRun(context.env, 'DELETE FROM employees');
+        for (const emp of body.list) {
+            try {
+                await dbRun(context.env, 'INSERT INTO employees (company_code, emp_no, name, dept) VALUES (?, ?, ?, ?)',
+                    [emp.companyCode, emp.companyCode, emp.name || '', emp.dept || '']);
+            } catch (e) { /* skip duplicates */ }
+        }
+    } else if (body.employees !== undefined) {
+        // 全量替换
+        await dbRun(context.env, 'DELETE FROM employees');
+        for (const emp of body.employees) {
+            try {
+                await dbRun(context.env, 'INSERT INTO employees (company_code, emp_no, name, dept) VALUES (?, ?, ?, ?)',
+                    [emp.companyCode, emp.empNo, emp.name || '', emp.dept || '']);
+            } catch (e) { /* skip duplicates */ }
+        }
+    }
+
+    return jsonOK();
+}
+
+// ========== 学习统计（管理）==========
+
+async function handleAdminStudyStats(context) {
+    await requireAdmin(context);
+    const today = new Date().toISOString().slice(0, 10);
+
+    const stats = await dbAll(context.env,
+        `SELECT u.username, u.name, COALESCE(s.words_learned, 0) as todayWords,
+                COALESCE(t.total, 0) as totalWords, COALESCE(s.study_seconds, 0) as studySeconds
+         FROM users u
+         LEFT JOIN study_stats s ON u.username = s.username AND s.date = ?
+         LEFT JOIN (SELECT username, SUM(words_learned) as total FROM study_stats GROUP BY username) t ON u.username = t.username
+         WHERE u.role != 'admin'
+         ORDER BY todayWords DESC`,
+        [today]
+    );
+
+    return json({ stats });
+}
+
+async function handleAdminStudyClear(context) {
+    await requireAdmin(context);
+    await dbRun(context.env, 'DELETE FROM study_stats');
+    await dbRun(context.env, 'DELETE FROM study_records');
+    return jsonOK({ message: '已清空' });
+}
+
+// ========== 排行榜配置 ==========
+
+async function handleAdminGetLBConfig(context) {
+    await requireAdmin(context);
+    const data = await context.env.INDO_LEARN_KV.get('lb_config');
+    return json(data ? JSON.parse(data) : { enabled: false, title: '学习排行', period: 'weekly' });
+}
+
+async function handleAdminPutLBConfig(context) {
+    await requireAdmin(context);
+    const config = await context.request.json();
+    await context.env.INDO_LEARN_KV.put('lb_config', JSON.stringify(config));
+    return jsonOK({ message: '已保存' });
+}
+
+// ========== 初始化用户 ==========
+
+async function handleAdminInitUsers(context) {
+    await requireAdmin(context);
+    const { users, force } = await context.request.json();
+
+    const admin = await dbGet(context.env, "SELECT username FROM users WHERE username = 'admin'");
+    if (!admin || force) {
+        const hashed = await hashPassword('admin123');
+        if (!admin) {
+            await dbRun(context.env,
+                "INSERT OR IGNORE INTO users (username, password, name, role, user_type, company_code, emp_no) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ['admin', hashed, '系统管理员', 'admin', 'employee', 'SYS', '000000']
+            );
+        }
+        return jsonOK({ message: '已初始化默认管理员: admin / admin123' });
+    }
+
+    return jsonOK({ message: 'admin 已存在，跳过初始化' });
+}
+
+// ========== 版本说明 ==========
+
+async function handleChangelogList(context) {
+    const logs = await dbAll(context.env, 'SELECT id, version, title, content, created_at as createdAt FROM changelogs ORDER BY id DESC');
+    return json({ versions: logs });
+}
+
+async function handleChangelogSave(context) {
+    await requireAdmin(context);
+    const { version, title, content } = await context.request.json();
+    await dbRun(context.env, 'INSERT INTO changelogs (version, title, content) VALUES (?, ?, ?)', [version, title, content || '']);
+    return jsonOK();
+}
+
+async function handleChangelogDelete(context) {
+    await requireAdmin(context);
+    const { idx } = await context.request.json();
+    // D1 autoincrement id 不同于 array index，用 id 删除
+    const id = parseInt(idx) || 0;
+    if (id > 0) await dbRun(context.env, 'DELETE FROM changelogs WHERE id = ?', [id]);
+    return jsonOK();
+}
+
