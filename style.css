@@ -463,7 +463,7 @@ body {
     width: 100%;
     margin: 25px auto 0;
     background: var(--glass);
-    padding: 24px 40px;
+    padding: 10px 20px;
     border-radius: 28px;
     border: 1px solid var(--border-light);
     display: flex;
@@ -555,7 +555,7 @@ input:checked + .slider:before {
     font-size: 0.9rem;
     text-align: center;
     color: var(--text-dim);
-    margin-top: 35px;
+    margin-top: 10px;
     letter-spacing: 0.5px;
 }
 
@@ -1837,46 +1837,43 @@ input:checked + .slider:before {
 }
 
 /* ========================================
-   Vertical Sliders - 语速 & 循环控制
+   Horizontal Sliders - 语速 & 循环控制
    ======================================== */
 .vslider-box {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: 10px;
-    min-width: 80px;
+    width: 100%;
 }
 .vslider-label {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     letter-spacing: 0.5px;
 }
 .vslider-label i {
-    font-size: 1rem;
+    font-size: 1.15rem;
     color: var(--accent);
     opacity: 0.8;
 }
 .vslider-track-wrap {
     position: relative;
-    width: 40px;
-    height: 160px;
+    height: 36px;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 1;
 }
 .vslider {
     -webkit-appearance: none;
     appearance: none;
-    width: 130px;
-    height: 6px;
+    width: 100%;
+    height: 36px;
     background: transparent;
-    transform: rotate(-90deg);
-    transform-origin: center center;
     position: absolute;
     cursor: pointer;
     z-index: 3;
@@ -1885,8 +1882,8 @@ input:checked + .slider:before {
 }
 .vslider::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: transparent;
     border: none;
@@ -1894,81 +1891,125 @@ input:checked + .slider:before {
     margin: 0;
 }
 .vslider::-webkit-slider-runnable-track {
-    height: 6px;
+    height: 36px;
     background: transparent;
+}
+/* Track background (horizontal) */
+.vslider-track-wrap::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    z-index: 0;
 }
 .vslider-fill {
     position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 8px;
-    height: 0%;
-    border-radius: 4px;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 10px;
+    width: 0%;
+    border-radius: 5px;
     pointer-events: none;
     z-index: 1;
-    transition: height 0.15s ease-out;
+    transition: width 0.15s ease-out;
 }
 .vslider-track-wrap:has(.vslider-rate) .vslider-fill,
 .vslider-fill[id^="rate"] {
-    background: linear-gradient(to top, #6366f1, #a78bfa, #c084fc);
+    background: linear-gradient(to right, #6366f1, #a78bfa, #c084fc);
     box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
 }
 .vslider-track-wrap:has(.vslider-loop) .vslider-fill,
 .vslider-fill[id^="loop"] {
-    background: linear-gradient(to top, #10b981, #34d399, #2dd4bf);
+    background: linear-gradient(to right, #10b981, #34d399, #2dd4bf);
     box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
-}
-/* Track background */
-.vslider-track-wrap::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 100%;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.06);
-    z-index: 0;
 }
 .vslider-thumb {
     position: absolute;
-    bottom: calc(0% - 16px);
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 48px;
-    padding: 6px 10px;
-    border-radius: 12px;
+    top: 50%;
+    left: 0%;
+    transform: translate(-50%, -50%);
+    min-width: 56px;
+    padding: 6px 14px;
+    border-radius: 14px;
     text-align: center;
-    font-size: 0.82rem;
+    font-size: 1rem;
     font-weight: 800;
     font-family: 'Lexend', system-ui, sans-serif;
     z-index: 4;
     pointer-events: none;
-    transition: bottom 0.15s ease-out;
+    transition: left 0.15s ease-out;
     backdrop-filter: blur(8px);
+    white-space: nowrap;
 }
 #rate-thumb {
     color: #c4b5fd;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    text-shadow: 0 0 8px rgba(129, 140, 248, 0.4);
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    text-shadow: 0 0 10px rgba(129, 140, 248, 0.5);
 }
 #loop-thumb {
     color: #6ee7b7;
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    text-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
 }
 .vslider-range {
     display: flex;
     justify-content: space-between;
     width: 100%;
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     color: var(--text-dim);
     padding: 0 2px;
 }
+
+/* ========================================
+   Card Inline Controls - 生词卡片内嵌功能区
+   ======================================== */
+.card-controls-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
+    border: 1px solid var(--border-subtle);
+}
+
+.card-controls-row .sliders-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+
+.card-controls-row .vslider-label {
+    font-size: 0.88rem;
+}
+
+.card-controls-row .vslider-range {
+    font-size: 0.65rem;
+}
+
+@media (max-width: 768px) {
+    .card-controls-row {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px 14px;
+    }
+    .card-controls-row .sliders-col {
+        gap: 12px;
+    }
+}
+
 
 /* 隐藏中文按钮 */
 .hide-toggle-btn {
@@ -2006,6 +2047,5 @@ input:checked + .slider:before {
 
 /* Mobile responsive for sliders */
 @media (max-width: 768px) {
-    .vslider-track-wrap { height: 120px; }
-    .vslider-box { min-width: 70px; }
+    .vslider-track-wrap { height: 32px; }
 }

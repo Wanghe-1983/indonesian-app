@@ -290,6 +290,39 @@ function initUI() {
                 <span style="font-size:0.8rem;display:block;margin-top:5px;">打卡</span>
             </button>
         </div>
+        <div class="card-controls-row" id="learn-inline-controls">
+            <div class="sliders-col">
+                <div class="vslider-box">
+                    <div class="vslider-label" style="font-size:0.88rem;"><i class="fas fa-gauge-high"></i> 语速</div>
+                    <div class="vslider-track-wrap">
+                        <input type="range" class="vslider vslider-rate" id="rate-slider" min="1" max="15" value="10" step="1"
+                            oninput="setRateFromSlider(this.value)" title="拖动调整语速">
+                        <div class="vslider-fill" id="rate-fill"></div>
+                        <div class="vslider-thumb" id="rate-thumb"><span id="val-rate">1.0x</span></div>
+                    </div>
+                    <div class="vslider-range"><span>0.1x</span><span>1.5x</span></div>
+                </div>
+                <div class="vslider-box">
+                    <div class="vslider-label" style="font-size:0.88rem;"><i class="fas fa-repeat"></i> 循环</div>
+                    <div class="vslider-track-wrap">
+                        <input type="range" class="vslider vslider-loop" id="loop-slider" min="0" max="5" value="0" step="1"
+                            oninput="setLoopFromSlider(this.value)" title="拖动调整循环次数">
+                        <div class="vslider-fill" id="loop-fill"></div>
+                        <div class="vslider-thumb" id="loop-thumb"><span id="val-loop">1次</span></div>
+                    </div>
+                    <div class="vslider-range"><span>1次</span><span>无限</span></div>
+                </div>
+            </div>
+            <div class="vslider-box" style="min-width:60px;">
+                <div class="vslider-label" style="font-size:0.82rem;"><i class="fas fa-eye-slash"></i> 答案</div>
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:4px;">
+                    <button class="hide-toggle-btn" id="hide-btn" onclick="toggleHide()" title="点击切换显示/隐藏中文翻译" style="width:44px;height:44px;font-size:1.2rem;">
+                        <span id="hide-icon" class="hide-icon-show"><i class="fas fa-eye"></i></span>
+                    </button>
+                    <span class="hide-status" id="hide-status" style="font-size:0.7rem;">显示中</span>
+                </div>
+            </div>
+        </div>
     </section>
 
     <div class="study-record-box">
@@ -311,41 +344,6 @@ function initUI() {
     <div id="page-practice" style="display:none;"></div>
     <div id="page-dashboard" style="display:none;"></div>
     <div class="control-panel" id="control-panel">
-    <div class="ctrl-main" id="learn-controls" style="display:flex;align-items:stretch;justify-content:center;gap:40px;flex-wrap:wrap;padding:8px 0;">
-        <!-- 语速滑块 -->
-        <div class="vslider-box">
-            <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
-            <div class="vslider-track-wrap">
-                <input type="range" class="vslider vslider-rate" id="rate-slider" min="1" max="15" value="10" step="1" orient="vertical"
-                    oninput="setRateFromSlider(this.value)" title="拖动调整语速">
-                <div class="vslider-fill" id="rate-fill"></div>
-                <div class="vslider-thumb" id="rate-thumb"><span id="val-rate">1.0x</span></div>
-            </div>
-            <div class="vslider-range"><span>0.1x</span><span>1.5x</span></div>
-        </div>
-        <!-- 循环滑块 -->
-        <div class="vslider-box">
-            <div class="vslider-label"><i class="fas fa-repeat"></i> 循环</div>
-            <div class="vslider-track-wrap">
-                <input type="range" class="vslider vslider-loop" id="loop-slider" min="0" max="5" value="0" step="1" orient="vertical"
-                    oninput="setLoopFromSlider(this.value)" title="拖动调整循环次数">
-                <div class="vslider-fill" id="loop-fill"></div>
-                <div class="vslider-thumb" id="loop-thumb"><span id="val-loop">1次</span></div>
-            </div>
-            <div class="vslider-range"><span>1次</span><span>无限</span></div>
-        </div>
-        <!-- 隐藏中文开关 -->
-        <div class="vslider-box">
-            <div class="vslider-label"><i class="fas fa-eye-slash"></i> 中文</div>
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:6px;">
-                <button class="hide-toggle-btn" id="hide-btn" onclick="toggleHide()" title="点击切换显示/隐藏中文翻译">
-                    <span id="hide-icon" class="hide-icon-show"><i class="fas fa-eye"></i></span>
-                </button>
-                <span class="hide-status" id="hide-status">显示中</span>
-            </div>
-            <div class="vslider-range"><span></span><span></span></div>
-        </div>
-    </div>
 
     <div class="copyright" id="copyright">
         仅供学习・禁止商用 © 2026｜联系：
@@ -809,8 +807,8 @@ function updateSliderFill(type, ratio) {
     const thumb = document.getElementById(type + '-thumb');
     if (!fill) return;
     const pct = Math.max(0, Math.min(100, ratio * 100));
-    fill.style.height = pct + '%';
-    if (thumb) thumb.style.bottom = 'calc(' + pct + '% - 16px)';
+    fill.style.width = pct + '%';
+    if (thumb) thumb.style.left = pct + '%';
 }
 
 // 更新圆环进度（练习页兼容）
@@ -1658,6 +1656,8 @@ function switchPage(page) {
     // 功能区只在学习和练习页可见
     const learnCtrls = document.getElementById('learn-controls');
     if (learnCtrls) learnCtrls.style.display = (page === 'dashboard') ? 'none' : 'flex';
+    const inlineCtrl = document.getElementById('learn-inline-controls');
+    if (inlineCtrl) inlineCtrl.style.display = (page === 'dashboard') ? 'none' : 'flex';
     if (page === 'practice') initPracticePage();
     else if (page === 'dashboard') initDashboardPage();
 }
@@ -1710,7 +1710,32 @@ function initPracticePage() {
             </label>
             <span id="practice-learned-count" style="color:var(--accent);font-size:0.9rem;font-weight:600;"></span>
         </div>
-        <div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">题目数量</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="practice-type-btn" onclick="selectPracticeCount(10,this)">10题</button><button class="practice-type-btn active" onclick="selectPracticeCount(20,this)">20题</button><button class="practice-type-btn" onclick="selectPracticeCount(50,this)">50题</button><button class="practice-type-btn" onclick="selectPracticeCount(0,this)">全部</button></div></div><button class="practice-start-btn" onclick="startPractice()" style="width:100%;padding:14px;font-size:1.1rem;"><i class="fas fa-play"></i> 开始练习</button><div style="display:flex;align-items:stretch;justify-content:center;gap:40px;margin-top:16px;"><div class="vslider-box"><div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div><div class="vslider-track-wrap"><input type="range" class="vslider vslider-rate" id="p-rate-slider" min="1" max="15" value="10" step="1" orient="vertical" oninput="setRateFromSlider(this.value)"><div class="vslider-fill" id="p-rate-fill"></div><div class="vslider-thumb" id="p-rate-thumb"><span id="p-val-rate">1.0x</span></div></div><div class="vslider-range"><span>0.1x</span><span>1.5x</span></div></div><div class="vslider-box"><div class="vslider-label"><i class="fas fa-repeat"></i> 循环</div><div class="vslider-track-wrap"><input type="range" class="vslider vslider-loop" id="p-loop-slider" min="0" max="5" value="0" step="1" orient="vertical" oninput="setLoopFromSlider(this.value)"><div class="vslider-fill" id="p-loop-fill"></div><div class="vslider-thumb" id="p-loop-thumb"><span id="p-val-loop">1次</span></div></div><div class="vslider-range"><span>1次</span><span>无限</span></div></div></div></div><div id="practice-quiz" style="display:none;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><div style="color:var(--text-main);font-weight:700;">练习中</div><div style="color:var(--text-muted);font-size:0.9rem;" id="practice-progress">1/20</div></div><div class="practice-score-bar"><div class="practice-score-item"><span class="score-val" id="p-correct">0</span>正确</div><div class="practice-score-item"><span class="score-val" id="p-wrong">0</span>错误</div><div class="practice-score-item"><span class="score-val" id="p-accuracy">0%</span>正确率</div></div><div class="practice-question-box"><div id="p-question-label" style="color:var(--text-muted);font-size:0.9rem;margin-bottom:8px;">请选择正确的中文翻译</div><div id="p-question-word" style="font-size:2.5rem;font-weight:800;color:var(--text-main);margin-bottom:20px;padding:15px 0;">加载中...</div><div id="p-question-hint" style="color:var(--text-dim);font-size:0.85rem;"></div></div><div id="p-options" class="practice-options"></div><div id="p-input-box" style="display:none;"><input type="text" class="practice-input" id="p-fill-input" placeholder="输入中文翻译..." autocomplete="off" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:1rem;outline:none;"><button class="practice-start-btn" onclick="submitFillAnswer()" style="margin-top:10px;width:100%;">提交答案</button></div><div id="p-feedback" class="practice-feedback"></div><div style="display:flex;gap:12px;justify-content:center;margin-top:20px;"><button class="practice-btn-sec" onclick="endPractice()">结束练习</button><button class="practice-start-btn" id="p-next-btn" onclick="nextQuestion()" style="display:none;">下一题 <i class="fas fa-arrow-right"></i></button></div></div><div id="practice-result" style="display:none;"><div style="text-align:center;padding:30px;"><div id="p-result-score" style="font-size:4rem;font-weight:900;color:var(--accent);">0%</div><div id="p-result-text" style="color:var(--text-muted);font-size:1.1rem;margin:10px 0 20px;">练习完成！</div><div style="display:flex;gap:20px;justify-content:center;margin-bottom:25px;"><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#10b981;" id="p-r-correct">0</div><div style="color:var(--text-dim);font-size:0.8rem;">正确</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#ef4444;" id="p-r-wrong">0</div><div style="color:var(--text-dim);font-size:0.8rem;">错误</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--text-main);" id="p-r-total">0</div><div style="color:var(--text-dim);font-size:0.8rem;">总题数</div></div></div><div style="display:flex;gap:12px;justify-content:center;"><button class="practice-btn-sec" onclick="showWrongWords()">查看错题</button><button id="lb-submit-btn" style="display:none;padding:10px 20px;background:#f59e0b;color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:0.9rem;" onclick="submitToLeaderboard()"><i class="fas fa-trophy"></i> 提交到排行榜</button><button class="practice-start-btn" onclick="resetPractice()">再来一次</button></div></div></div></div>`;
+        <div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">题目数量</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="practice-type-btn" onclick="selectPracticeCount(10,this)">10题</button><button class="practice-type-btn active" onclick="selectPracticeCount(20,this)">20题</button><button class="practice-type-btn" onclick="selectPracticeCount(50,this)">50题</button><button class="practice-type-btn" onclick="selectPracticeCount(0,this)">全部</button></div></div><div style="margin:24px 0;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;">
+            <div class="sliders-col">
+                <div class="vslider-box">
+                    <div class="vslider-label" style="font-size:0.88rem;"><i class="fas fa-gauge-high"></i> 语速</div>
+                    <div class="vslider-track-wrap">
+                        <input type="range" class="vslider vslider-rate" id="p-rate-slider" min="1" max="15" value="10" step="1" oninput="setRateFromSlider(this.value)">
+                        <div class="vslider-fill" id="p-rate-fill"></div>
+                        <div class="vslider-thumb" id="p-rate-thumb"><span id="p-val-rate">1.0x</span></div>
+                    </div>
+                    <div class="vslider-range"><span>0.1x</span><span>1.5x</span></div>
+                </div>
+                <div class="vslider-box">
+                    <div class="vslider-label" style="font-size:0.88rem;"><i class="fas fa-repeat"></i> 循环</div>
+                    <div class="vslider-track-wrap">
+                        <input type="range" class="vslider vslider-loop" id="p-loop-slider" min="0" max="5" value="0" step="1" oninput="setLoopFromSlider(this.value)">
+                        <div class="vslider-fill" id="p-loop-fill"></div>
+                        <div class="vslider-thumb" id="p-loop-thumb"><span id="p-val-loop">1次</span></div>
+                    </div>
+                    <div class="vslider-range"><span>1次</span><span>无限</span></div>
+                </div>
+            </div>
+            <div id="practice-preview-word" style="font-size:1.3rem;font-weight:700;color:var(--accent);padding:8px 16px;background:rgba(99,102,241,0.1);border-radius:10px;border:1px solid rgba(99,102,241,0.2);min-width:100px;text-align:center;">
+                <i class="fas fa-volume-up" style="font-size:0.9rem;"></i>
+            </div>
+        </div>
+        <button class="practice-start-btn" onclick="startPractice()" style="width:100%;padding:14px;font-size:1.1rem;"><i class="fas fa-play"></i> 开始练习</button></div><div id="practice-quiz" style="display:none;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><div style="color:var(--text-main);font-weight:700;">练习中</div><div style="color:var(--text-muted);font-size:0.9rem;" id="practice-progress">1/20</div></div><div class="practice-score-bar"><div class="practice-score-item"><span class="score-val" id="p-correct">0</span>正确</div><div class="practice-score-item"><span class="score-val" id="p-wrong">0</span>错误</div><div class="practice-score-item"><span class="score-val" id="p-accuracy">0%</span>正确率</div></div><div class="practice-question-box"><div id="p-question-label" style="color:var(--text-muted);font-size:0.9rem;margin-bottom:8px;">请选择正确的中文翻译</div><div id="p-question-word" style="font-size:2.5rem;font-weight:800;color:var(--text-main);margin-bottom:20px;padding:15px 0;">加载中...</div><div id="p-question-hint" style="color:var(--text-dim);font-size:0.85rem;"></div></div><div id="p-options" class="practice-options"></div><div id="p-input-box" style="display:none;"><input type="text" class="practice-input" id="p-fill-input" placeholder="输入中文翻译..." autocomplete="off" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:1rem;outline:none;"><button class="practice-start-btn" onclick="submitFillAnswer()" style="margin-top:10px;width:100%;">提交答案</button></div><div id="p-feedback" class="practice-feedback"></div><div style="display:flex;gap:12px;justify-content:center;margin-top:20px;"><button class="practice-btn-sec" onclick="endPractice()">结束练习</button><button class="practice-start-btn" id="p-next-btn" onclick="nextQuestion()" style="display:none;">下一题 <i class="fas fa-arrow-right"></i></button></div></div><div id="practice-result" style="display:none;"><div style="text-align:center;padding:30px;"><div id="p-result-score" style="font-size:4rem;font-weight:900;color:var(--accent);">0%</div><div id="p-result-text" style="color:var(--text-muted);font-size:1.1rem;margin:10px 0 20px;">练习完成！</div><div style="display:flex;gap:20px;justify-content:center;margin-bottom:25px;"><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#10b981;" id="p-r-correct">0</div><div style="color:var(--text-dim);font-size:0.8rem;">正确</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#ef4444;" id="p-r-wrong">0</div><div style="color:var(--text-dim);font-size:0.8rem;">错误</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--text-main);" id="p-r-total">0</div><div style="color:var(--text-dim);font-size:0.8rem;">总题数</div></div></div><div style="display:flex;gap:12px;justify-content:center;"><button class="practice-btn-sec" onclick="showWrongWords()">查看错题</button><button id="lb-submit-btn" style="display:none;padding:10px 20px;background:#f59e0b;color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:0.9rem;" onclick="submitToLeaderboard()"><i class="fas fa-trophy"></i> 提交到排行榜</button><button class="practice-start-btn" onclick="resetPractice()">再来一次</button></div></div></div></div>`;
 }
 // Update learned count when checkbox changes
 document.addEventListener('change', function(e) {
