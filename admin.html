@@ -721,9 +721,9 @@
 
         let result;
         if (editingUsername) {
-            result = await adminFetch('admin/users', { method: 'PUT', body: JSON.stringify({ action: 'update', username: editingUsername, data: { name, password, role } });
+            result = await adminFetch('admin/users', { method: 'PUT', body: JSON.stringify({ action: 'update', username: editingUsername, data: { name, password, role } }) });
         } else {
-            result = await adminFetch('admin/users', { method: 'PUT', body: JSON.stringify({ action: 'add', user: { username, password, name: name || username, role } });
+            result = await adminFetch('admin/users', { method: 'PUT', body: JSON.stringify({ action: 'add', user: { username, password, name: name || username, role } }) });
         }
 
         if (result.error) { alert(result.error); return; }
@@ -829,7 +829,8 @@
         const data = await adminFetch('admin/whitelist', { method: 'GET' });
         if (data.error) { employeeList = []; renderEmployeeTable([]); return; }
         employeeList = data.employees || (Array.isArray(data) ? data : []);
-        const users = await adminFetch('admin/users', { method: 'GET' });
+        // Already using correct signature
+            const users = await adminFetch('admin/users', { method: 'GET' });
         renderEmployeeTable(users || []);
     }
 
@@ -1144,7 +1145,7 @@
             if (!content) { alert('请输入更新内容'); return; }
 
             const body = { version, title, content, idx: editingVersionIdx };
-            const res = await adminFetch('changelog/save', 'POST', body);
+            const res = await adminFetch('changelog/save', { method: 'POST', body: JSON.stringify(body) });
             if (res && res.success) {
                 closeVersionModal();
                 loadChangelog();
@@ -1159,7 +1160,7 @@
 
         async function deleteVersion(idx) {
             if (!confirm('确定删除此版本记录？')) return;
-            const res = await adminFetch('changelog/delete', 'POST', { idx });
+            const res = await adminFetch('changelog/delete', { method: 'POST', body: JSON.stringify({ idx }) });
             if (res && res.success) {
                 loadChangelog();
             } else {
@@ -1190,10 +1191,12 @@
 
     async function deleteWhitelistUser(idx) {
         if (!confirm('确认删除？')) return;
-        const list = JSON.parse(localStorage.getItem('fmi_admin_whitelist') || '[]');
-        list.splice(idx, 1);
-        localStorage.setItem('fmi_admin_whitelist', JSON.stringify(list));
-        await adminFetch('admin/whitelist', { method: 'PUT', body: JSON.stringify(list) });
+        const result = await adminFetch('admin/whitelist', { method: 'GET' });
+        const list = (result.employees || result || []);
+        if (list && Array.isArray(list) && idx < list.length) {
+            list.splice(idx, 1);
+            await adminFetch('admin/whitelist', { method: 'PUT', body: JSON.stringify({ employees: list }) });
+        }
         loadWhitelist();
     }
 

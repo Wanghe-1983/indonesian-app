@@ -529,7 +529,36 @@ async function handleRequest(context) {
         if (path === 'admin/users' && method === 'POST') { return json(await createUser({ ...(await request.json()), role: (await request.json()).role || 'user' }, env)); }
         if (path === 'admin/users' && method === 'PUT') {
             const data = await request.json();
-            if (!data.username) return json({ error: '缺少 username' }, 400);
+            if (!data.username && data.action !== 'batch_add') return json({ error: '缺少 username' }, 400);
+            const action = data.action;
+            if (action === 'add') {
+                if (!data.user) return json({ error: '缺少 user' }, 400);
+                const existing = await getUser(data.user.username, env);
+                if (existing) return json({ error: '用户名已存在' }, 400);
+                const result = await createUser({ ...data.user, role: data.user.role || 'user' }, env);
+                return json(result, result.error ? 400 : 200);
+            }
+            if (action === 'batch_add') {
+                let imported = 0;
+                for (const u of (data.users || [])) {
+                    const existing = await getUser(u.username, env);
+                    if (!existing) { await createUser({ ...u, role: u.role || 'user' }, env); imported++; }
+                }
+                return json({ success: true, imported });
+            }
+            if (action === 'delete') {
+                if (data.username === authUser.username) return json({ error: '不能删除自己' }, 400);
+                await deleteUser(data.username, env);
+                return json({ success: true });
+            }
+            if (action === 'kick') { await kickUser(data.username, env); return json({ success: true }); }
+            if (action === 'ban') { if (data.ban) await banUser(data.username, env); else await unbanUser(data.username, env); return json({ success: true }); }
+            if (action === 'update') {
+                const updateData = { ...data.data };
+                delete updateData.username;
+                return json(await updateUser(data.username, updateData, env));
+            }
+            // 兼容旧接口
             return json(await updateUser(data.username, data, env));
         }
         if (path === 'admin/users' && method === 'DELETE') {
@@ -558,9 +587,8 @@ async function handleRequest(context) {
             return json(await getWhitelist(env));
         }
         if (path === 'admin/whitelist' && method === 'PUT') {
-            const action = url.searchParams.get('action');
-            if (action === 'employees') {
-                const data = await request.json();
+            const data = await request.json();
+            if (data.action === 'employees') {
                 if (data.action === 'add') {
                     // 添加单个员工
                     const result = await addEmployee(data.employee, env);
@@ -578,7 +606,8 @@ async function handleRequest(context) {
                 }
                 return json({ error: '缺少 action 参数' }, 400);
             }
-            await setWhitelist(await request.json(), env);
+            if (data.employees) { await setWhitelist(data.employees, env); }
+            else { await setWhitelist(data, env); }
             return json({ success: true });
         }
 
