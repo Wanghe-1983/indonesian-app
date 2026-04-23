@@ -1,5 +1,3 @@
-import { onRequest } from "../../_shared/utils.js";
-
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
@@ -13,7 +11,6 @@ CREATE TABLE IF NOT EXISTS users (
     banned INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
 );
-
 CREATE TABLE IF NOT EXISTS employees (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     company_code TEXT NOT NULL,
@@ -22,7 +19,6 @@ CREATE TABLE IF NOT EXISTS employees (
     dept TEXT DEFAULT '',
     UNIQUE(company_code, emp_no)
 );
-
 CREATE TABLE IF NOT EXISTS study_records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
@@ -32,7 +28,6 @@ CREATE TABLE IF NOT EXISTS study_records (
     attempts INTEGER NOT NULL DEFAULT 1,
     last_practiced TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
 CREATE TABLE IF NOT EXISTS study_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
@@ -41,7 +36,6 @@ CREATE TABLE IF NOT EXISTS study_stats (
     study_seconds INTEGER NOT NULL DEFAULT 0,
     UNIQUE(username, date)
 );
-
 CREATE TABLE IF NOT EXISTS leaderboard_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
@@ -52,7 +46,6 @@ CREATE TABLE IF NOT EXISTS leaderboard_entries (
     type TEXT DEFAULT 'indo2cn',
     created_at TEXT DEFAULT (datetime('now'))
 );
-
 CREATE TABLE IF NOT EXISTS changelogs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     version TEXT NOT NULL,
@@ -60,7 +53,6 @@ CREATE TABLE IF NOT EXISTS changelogs (
     content TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now'))
 );
-
 CREATE INDEX IF NOT EXISTS idx_study_records_username ON study_records(username);
 CREATE INDEX IF NOT EXISTS idx_study_records_word ON study_records(username, word_id);
 CREATE INDEX IF NOT EXISTS idx_study_stats_username ON study_stats(username);
