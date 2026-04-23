@@ -388,10 +388,10 @@ async function handleRequest(context) {
             if (maxOnline > 0 && online.count >= maxOnline) return json({ error: '在线人数已满，请稍后再试' }, 429);
             // 访客使用临时用户名
             const visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            const visitDuration = (settings.visitorDuration || 30) * 60 * 1000; // 毫秒
+            const visitDuration = (settings.visitorDuration || 3) * 60 * 1000; // 毫秒
             const token = await signToken({ username: visitorId, name: '访客', role: 'visitor', exp: Date.now() + visitDuration }, env);
             await heartbeat(visitorId, env, token);
-            return json({ token, user: { username: visitorId, name: '访客', role: 'visitor', userType: 'visitor', visitDuration: settings.visitorDuration || 30 } });
+            return json({ token, user: { username: visitorId, name: '访客', role: 'visitor', userType: 'visitor', visitDuration: settings.visitorDuration || 3 } });
         }
 
         if (path === 'auth/register' && method === 'POST') {

@@ -449,7 +449,7 @@
                     </div>
                     <div class="setting-row" id="visitor-duration-row" style="display:none;">
                         <div class="setting-info"><div class="setting-label">访客体验时长</div><div class="setting-desc">访客登录后可使用的最长时间（分钟），到期自动退出</div></div>
-                        <div class="setting-control"><input type="number" class="setting-input" id="setVisitorDuration" min="5" max="480" value="30" style="width:100px;"><span style="color:#64748b;font-size:0.8rem;">分钟</span></div>
+                        <div class="setting-control"><input type="number" class="setting-input" id="setVisitorDuration" min="5" max="480" value="3" style="width:100px;"><span style="color:#64748b;font-size:0.8rem;">分钟</span></div>
                     </div>
                     <div class="setting-row">
                         <div class="setting-info"><div class="setting-label">主界面显示在线人数</div><div class="setting-desc">在学习页面显示当前在线人数</div></div>
@@ -767,7 +767,7 @@
         document.getElementById('setWhitelistEnabled').checked = s.whitelistEnabled === true;
         // 访客设置
         document.getElementById('setAllowVisitor').checked = s.allowVisitor === true;
-        document.getElementById('setVisitorDuration').value = s.visitorDuration || 30;
+        document.getElementById('setVisitorDuration').value = s.visitorDuration || 3;
         document.getElementById('visitor-duration-row').style.display = s.allowVisitor ? '' : 'none';
     }
 
@@ -782,7 +782,7 @@
             requireEmployeeVerify: document.getElementById('setRequireEmployeeVerify').checked,
             whitelistEnabled: document.getElementById('setWhitelistEnabled').checked,
             allowVisitor: document.getElementById('setAllowVisitor').checked,
-            visitorDuration: parseInt(document.getElementById('setVisitorDuration').value) || 30,
+            visitorDuration: parseInt(document.getElementById('setVisitorDuration').value) || 3,
         };
         const result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
         if (result.success) alert('设置已保存');
