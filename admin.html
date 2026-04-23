@@ -22,7 +22,7 @@
     let _apiChecked = false;
     let _apiAvailable = false;
 
-    async async function checkApiAvailable() {
+    async function checkApiAvailable() {
         if (_apiChecked) return _apiAvailable;
         _apiChecked = true;
         const base = (CONFIG.apiBase || '');
@@ -38,7 +38,7 @@
         return _apiAvailable;
     }
 
-    async async function adminFetch(path, opts = {}) {
+    async function adminFetch(path, opts = {}) {
         const available = await checkApiAvailable();
         if (available) {
             try {
@@ -327,7 +327,11 @@
         .version-actions .btn-edit:hover { background: rgba(99,102,241,0.25); }
         .version-actions .btn-del { background: rgba(239,68,68,0.15); color: #f87171; }
         .version-actions .btn-del:hover { background: rgba(239,68,68,0.25); }
-    </style>
+        @keyframes slideInRight {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
 </head>
 <body>
     <!-- 版本标识 v20260422c -->
@@ -484,6 +488,14 @@
                     <div class="setting-row">
                         <div class="setting-info"><div class="setting-label">白名单登录控制</div><div class="setting-desc">开启后只有白名单中的用户才能登录，未在白名单的用户将被拒绝</div></div>
                         <div class="setting-control"><label class="toggle"><input type="checkbox" id="setWhitelistEnabled"><span class="slider"></span></label></div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info"><div class="setting-label">登录页在线人数显示</div><div class="setting-desc">控制登录页面是否显示当前在线人数 <span id="showOnlineCount-hint" style="color:#22c55e;margin-left:8px;font-size:0.8rem;">显示中</span></div></div>
+                        <div class="setting-control"><label class="toggle"><input type="checkbox" id="setShowOnlineCount" checked><span class="slider"></span></label></div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info"><div class="setting-label">登录页注册人数显示</div><div class="setting-desc">控制登录页面是否显示已注册人数 <span id="showRegCount-hint" style="color:#22c55e;margin-left:8px;font-size:0.8rem;">显示中</span></div></div>
+                        <div class="setting-control"><label class="toggle"><input type="checkbox" id="setShowRegCount" checked><span class="slider"></span></label></div>
                     </div>
                     <div style="margin-top:20px;"><button class="hdr-btn primary" onclick="saveSettings()"><i class="fas fa-save"></i> 保存设置</button></div>
                 </div>
@@ -788,7 +800,7 @@
         if (!confirm('确定要删除用户 ' + username + ' 吗？该操作不可恢复。')) return;
         const result = await adminFetch('admin/users', { method: 'PUT', body: JSON.stringify({ action: 'delete', username }) });
         if (result.success) { loadUsers(); loadOverview(); }
-        else if (result.error) alert(result.error);
+        else if (result.error) showAdminToast(result.error, 'error');
     }
 
     async function kickUser(username) {
@@ -843,8 +855,8 @@
             showRegCount: document.getElementById('setShowRegCount').checked,
         };
         const result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
-        if (result.success) alert('设置已保存');
-        else if (result.error) alert(result.error);
+        if (result.success) showAdminToast('设置保存成功', 'success');
+        else if (result.error) showAdminToast(result.error, 'error');
     }
 
     // ========== 打榜配置 ==========
@@ -877,7 +889,7 @@
         };
         const result = await adminFetch('admin/leaderboard-config', { method: 'PUT', body: JSON.stringify(config) });
         if (result.success) alert('打榜配置已保存');
-        else if (result.error) alert(result.error);
+        else if (result.error) showAdminToast(result.error, 'error');
     }
 
     // ========== 员工名单管理 ==========
