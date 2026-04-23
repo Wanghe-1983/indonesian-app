@@ -136,7 +136,8 @@ async function handleSystemInfo(context) {
     // D1: 统计今日学习
     const today = new Date().toISOString().slice(0, 10);
     const todayStats = await dbAll(env,
-        'SELECT username, name, words_learned as todayWords, study_seconds as studySeconds FROM study_stats WHERE date = ?',
+        `SELECT s.username, u.name, s.words_learned as todayWords, s.study_seconds as studySeconds
+         FROM study_stats s LEFT JOIN users u ON s.username = u.username WHERE s.date = ?`,
         [today]
     );
 
