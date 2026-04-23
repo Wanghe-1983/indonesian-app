@@ -356,9 +356,17 @@
                 showTip('login-tip', '登录成功，正在跳转...', 'success');
                 setTimeout(function() { location.href = 'index.html'; }, 600);
             } catch(e) {
-                showTip('login-tip', '网络错误，请重试', 'error');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-user-secret"></i> 访客体验（无需注册）';
+                // 网络错误时使用本地访客模式 fallback
+                console.warn('API visitor login failed, using local fallback');
+                var guestUser = { username: 'visitor', name: '访客', role: 'guest', visitDuration: 3 };
+                localStorage.setItem('fmi_token', 'guest_local_' + Date.now());
+                localStorage.setItem('fmi_user', JSON.stringify(guestUser));
+                localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: guestUser, backend: false }));
+                localStorage.setItem('fmi_visitor_login', '1');
+                localStorage.setItem('fmi_visitor_expire', String(Date.now() + 3 * 60 * 1000));
+                startVisitorTimer(3 * 60 * 1000);
+                showTip('login-tip', '访客模式已启动（离线）', 'success');
+                setTimeout(function() { location.href = 'index.html'; }, 600);
             }
         }
         function startVisitorTimer(durationMs) {

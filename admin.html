@@ -884,7 +884,7 @@
                 + '<td style="padding:8px 6px;">' + (emp.name || '') + '</td>'
                 + '<td style="padding:8px 6px;color:#94a3b8;">' + (emp.dept || '-') + '</td>'
                 + '<td style="padding:8px 6px;">' + (isRegistered ? '<span style="color:#10b981;">已注册</span>' : '<span style="color:#6b7280;">未注册</span>') + '</td>'
-                + '<td style="padding:8px 6px;text-align:right;"><button class="hdr-btn danger" onclick="removeEmployee('' + emp.companyCode + '','' + emp.empNo + '')" style="padding:4px 10px;font-size:0.78rem;"><i class="fas fa-trash"></i></button></td>'
+                + `<td style="padding:8px 6px;text-align:right;"><button class="hdr-btn danger" onclick="removeEmployee('${emp.companyCode}','${emp.empNo}')" style="padding:4px 10px;font-size:0.78rem;"><i class="fas fa-trash"></i></button></td>`
                 + '</tr>';
         }).join('');
     }

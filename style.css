@@ -1841,29 +1841,31 @@ input:checked + .slider:before {
    ======================================== */
 .vslider-box {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    align-items: center;
+    gap: 14px;
     width: 100%;
 }
 .vslider-label {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 .vslider-label i {
-    font-size: 1.15rem;
+    font-size: 1rem;
     color: var(--accent);
     opacity: 0.8;
 }
 .vslider-track-wrap {
     position: relative;
     height: 36px;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1947,13 +1949,13 @@ input:checked + .slider:before {
     backdrop-filter: blur(8px);
     white-space: nowrap;
 }
-#rate-thumb {
+#rate-thumb, #p-rate-thumb {
     color: #c4b5fd;
     background: rgba(99, 102, 241, 0.2);
     border: 1px solid rgba(99, 102, 241, 0.3);
     text-shadow: 0 0 10px rgba(129, 140, 248, 0.5);
 }
-#loop-thumb {
+#loop-thumb, #p-loop-thumb {
     color: #6ee7b7;
     background: rgba(16, 185, 129, 0.2);
     border: 1px solid rgba(16, 185, 129, 0.3);
@@ -1962,7 +1964,8 @@ input:checked + .slider:before {
 .vslider-range {
     display: flex;
     justify-content: space-between;
-    width: 100%;
+    flex-shrink: 0;
+    width: 90px;
     font-size: 0.72rem;
     color: var(--text-dim);
     padding: 0 2px;
@@ -1973,8 +1976,7 @@ input:checked + .slider:before {
    ======================================== */
 .card-controls-row {
     display: flex;
-    align-items: stretch;
-    justify-content: space-between;
+    align-items: center;
     gap: 16px;
     margin-top: 20px;
     padding: 16px 20px;
@@ -1983,30 +1985,12 @@ input:checked + .slider:before {
     border: 1px solid var(--border-subtle);
 }
 
-.card-controls-row .sliders-col {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    flex: 1;
-    min-width: 0;
-}
-
-.card-controls-row .vslider-label {
-    font-size: 0.88rem;
-}
-
-.card-controls-row .vslider-range {
-    font-size: 0.65rem;
-}
-
 @media (max-width: 768px) {
     .card-controls-row {
         flex-direction: column;
+        align-items: stretch;
         gap: 12px;
         padding: 12px 14px;
-    }
-    .card-controls-row .sliders-col {
-        gap: 12px;
     }
 }
 
@@ -2048,4 +2032,7 @@ input:checked + .slider:before {
 /* Mobile responsive for sliders */
 @media (max-width: 768px) {
     .vslider-track-wrap { height: 32px; }
+    .vslider-box { gap: 10px; }
+    .vslider-range { width: 72px; font-size: 0.65rem; }
+    .vslider-label { font-size: 0.82rem; }
 }
