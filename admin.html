@@ -451,6 +451,13 @@
                         <div class="setting-info"><div class="setting-label">访客体验时长</div><div class="setting-desc">访客登录后可使用的最长时间（分钟），到期自动退出</div></div>
                         <div class="setting-control"><input type="number" class="setting-input" id="setVisitorDuration" min="5" max="480" value="3" style="width:100px;"><span style="color:#64748b;font-size:0.8rem;">分钟</span></div>
                     </div>
+                    <div class="setting-row" style="border-top:1px solid rgba(245,158,11,0.15);padding-top:14px;margin-top:6px;">
+                        <div class="setting-info">
+                            <div class="setting-label" style="display:flex;align-items:center;gap:6px;"><i class="fas fa-key" style="color:#f59e0b;font-size:0.9rem;"></i> 后台管理密码</div>
+                            <div class="setting-desc">进入管理后台需要输入此密码，修改后立即生效</div>
+                        </div>
+                        <div class="setting-control"><input type="password" class="setting-input" id="setAdminPassword" placeholder="admin123" style="width:160px;font-family:monospace;letter-spacing:2px;"></div>
+                    </div>
                     <div class="setting-row">
                         <div class="setting-info"><div class="setting-label">主界面显示在线人数</div><div class="setting-desc">在学习页面显示当前在线人数</div></div>
                         <div class="setting-control"><label class="toggle"><input type="checkbox" id="setShowOnlineMain" checked><span class="slider"></span></label></div>
@@ -769,6 +776,7 @@
         document.getElementById('setAllowVisitor').checked = s.allowVisitor === true;
         document.getElementById('setVisitorDuration').value = s.visitorDuration || 3;
         document.getElementById('visitor-duration-row').style.display = s.allowVisitor ? '' : 'none';
+        document.getElementById('setAdminPassword').value = s.adminPanelPassword || '';
     }
 
     async function saveSettings() {
@@ -783,6 +791,7 @@
             whitelistEnabled: document.getElementById('setWhitelistEnabled').checked,
             allowVisitor: document.getElementById('setAllowVisitor').checked,
             visitorDuration: parseInt(document.getElementById('setVisitorDuration').value) || 3,
+            adminPanelPassword: document.getElementById('setAdminPassword').value || 'admin123',
         };
         const result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
         if (result.success) alert('设置已保存');

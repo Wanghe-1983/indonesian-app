@@ -311,6 +311,40 @@ function initUI() {
     <div id="page-practice" style="display:none;"></div>
     <div id="page-dashboard" style="display:none;"></div>
     <div class="control-panel" id="control-panel">
+    <div class="ctrl-main" id="learn-controls" style="display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;">
+        <!-- 语速控制 - 渐变环形 -->
+        <div class="ctrl-ring-wrap" onclick="cycleRate()" title="播放语速（点击切换）" style="position:relative;width:76px;height:76px;cursor:pointer;">
+            <svg viewBox="0 0 76 76" width="76" height="76" style="filter:drop-shadow(0 0 8px rgba(129,140,248,0.25));">
+                <circle cx="38" cy="38" r="30" fill="rgba(99,102,241,0.04)" stroke="rgba(165,180,252,0.06)" stroke-width="4"/>
+                <circle id="rate-ring" cx="38" cy="38" r="30" fill="none" stroke="url(#rate-grad)" stroke-width="4" stroke-dasharray="188.5" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 38 38)" style="transition:stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1);"/>
+                <defs><linearGradient id="rate-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#818cf8"/><stop offset="50%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs>
+                <text x="38" y="35" text-anchor="middle" fill="#c4b5fd" font-size="14" font-weight="800" id="val-rate">1.0x</text>
+                <text x="38" y="50" text-anchor="middle" fill="#475569" font-size="9" font-weight="500">语速</text>
+                <text x="38" y="62" text-anchor="middle" fill="#374151" font-size="7"><tspan fill="#6366f1">●</tspan> <tspan id="val-rate-hint" fill="#475569">点击切换</tspan></text>
+            </svg>
+        </div>
+        <!-- 循环次数控制 -->
+        <div class="ctrl-ring-wrap" onclick="cycleLoop()" title="播放次数（点击切换）" style="position:relative;width:76px;height:76px;cursor:pointer;">
+            <svg viewBox="0 0 76 76" width="76" height="76" style="filter:drop-shadow(0 0 8px rgba(52,211,153,0.25));">
+                <circle cx="38" cy="38" r="30" fill="rgba(16,185,129,0.04)" stroke="rgba(110,231,183,0.06)" stroke-width="4"/>
+                <circle id="loop-ring" cx="38" cy="38" r="30" fill="none" stroke="url(#loop-grad)" stroke-width="4" stroke-dasharray="188.5" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 38 38)" style="transition:stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1);"/>
+                <defs><linearGradient id="loop-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34d399"/><stop offset="50%" stop-color="#2dd4bf"/><stop offset="100%" stop-color="#22d3ee"/></linearGradient></defs>
+                <text x="38" y="35" text-anchor="middle" fill="#6ee7b7" font-size="14" font-weight="800" id="val-loop">1次</text>
+                <text x="38" y="50" text-anchor="middle" fill="#475569" font-size="9" font-weight="500">循环</text>
+                <text x="38" y="62" text-anchor="middle" fill="#374151" font-size="7"><tspan fill="#10b981">●</tspan> <tspan id="val-loop-hint" fill="#475569">点击切换</tspan></text>
+            </svg>
+        </div>
+        <!-- 隐藏中文答案 -->
+        <div class="ctrl-ring-wrap" onclick="toggleHide()" title="显示/隐藏中文翻译" id="hide-btn" style="position:relative;width:76px;height:76px;cursor:pointer;border-radius:50%;background:rgba(148,163,184,0.06);border:1px solid rgba(148,163,184,0.12);transition:all 0.3s;display:flex;align-items:center;justify-content:center;">
+            <svg viewBox="0 0 76 76" width="76" height="76">
+                <circle cx="38" cy="30" r="14" fill="none" stroke="#64748b" stroke-width="2.5"/>
+                <path id="hide-eye-path" d="M24 30 Q38 20 52 30" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
+                <circle id="hide-pupil" cx="38" cy="30" r="5" fill="#64748b"/>
+                <path d="M24 44 Q38 54 52 44" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                <text x="38" y="66" text-anchor="middle" fill="#475569" font-size="9" font-weight="500" id="hide-label">隐藏</text>
+            </svg>
+        </div>
+    </div>
 
     <div class="copyright" id="copyright">
         仅供学习・禁止商用 © 2026｜联系：
@@ -727,18 +761,18 @@ function updateSetting(k, v) {
 // 圆环控件：语速 1-20 对应 0.1-2.0
 // 语速级别：0.5, 0.8, 1.0, 1.2, 1.5, 2.0
 const RATE_LEVELS = [0.1, 0.3, 0.5, 0.8, 1.0, 1.2, 1.5];
-let _rateIdx = 1; // 默认 0.8
-// 循环级别：1, 2, 3, 5, 10
-const LOOP_LEVELS = [1, 2, 3, 5, 7, 9];
-let _loopIdx = 0; // 默认 1
+let _rateIdx = 4; // 默认 1.0
+const LOOP_LEVELS = [1, 3, 5, 7, 9, 0]; // 0 = 无限循环
+let _loopIdx = 0; // 默认 1次
 
 function cycleRate() {
     _rateIdx = (_rateIdx + 1) % RATE_LEVELS.length;
     const rate = RATE_LEVELS[_rateIdx];
     _rate = rate;
     localStorage.setItem('fmi_rate', rate);
-    const el = document.getElementById('val-rate'); if (el) el.innerText = rate + 'x';
-    const pEl = document.getElementById('p-val-rate'); if (pEl) pEl.innerText = rate + 'x';
+    const val = rate.toFixed(1) + 'x';
+    const el = document.getElementById('val-rate'); if (el) el.innerText = val;
+    const pEl = document.getElementById('p-val-rate'); if (pEl) pEl.innerText = val;
     updateRing('rate-ring', _rateIdx / (RATE_LEVELS.length - 1));
     updateRing('p-rate-ring', _rateIdx / (RATE_LEVELS.length - 1));
 }
@@ -748,8 +782,9 @@ function cycleLoop() {
     const loop = LOOP_LEVELS[_loopIdx];
     _loop = loop;
     localStorage.setItem('fmi_loop', loop);
-    const el = document.getElementById('val-loop'); if (el) el.innerText = loop + '次';
-    const pEl = document.getElementById('p-val-loop'); if (pEl) pEl.innerText = loop + '次';
+    const val = loop === 0 ? '∞' : loop + '次';
+    const el = document.getElementById('val-loop'); if (el) el.innerText = val;
+    const pEl = document.getElementById('p-val-loop'); if (pEl) pEl.innerText = val;
     updateRing('loop-ring', _loopIdx / (LOOP_LEVELS.length - 1));
     updateRing('p-loop-ring', _loopIdx / (LOOP_LEVELS.length - 1));
 }
@@ -758,21 +793,27 @@ function cycleLoop() {
 function updateRing(id, ratio) {
     const el = document.getElementById(id);
     if (!el) return;
-    const circumference = 175.9; // 2 * PI * 28
+    const circumference = 188.5; // 2 * PI * 30
     el.style.strokeDashoffset = circumference * (1 - Math.max(0.05, ratio));
 }
 
 // 隐藏按钮切换
 function toggleHide() {
     _hideChinese = !_hideChinese;
-    const path = document.getElementById('hide-eye-path');
+    const eyeCircle = document.getElementById('hide-eye-path');
+    const pupil = document.getElementById('hide-pupil');
+    const label = document.getElementById('hide-label');
     const btn = document.getElementById('hide-btn');
     if (_hideChinese) {
-        if (path) path.setAttribute('fill', '#f87171');
-        if (btn) { btn.style.background = 'rgba(248,113,113,0.1)'; btn.style.borderColor = 'rgba(248,113,113,0.2)'; }
+        if (eyeCircle) eyeCircle.setAttribute('stroke', '#f87171');
+        if (pupil) { pupil.setAttribute('fill', '#f87171'); pupil.setAttribute('r', '0'); }
+        if (label) label.textContent = '显示';
+        if (btn) { btn.style.background = 'rgba(248,113,113,0.08)'; btn.style.borderColor = 'rgba(248,113,113,0.2)'; btn.style.boxShadow = '0 0 20px rgba(248,113,113,0.15)'; }
     } else {
-        if (path) path.setAttribute('fill', '#64748b');
-        if (btn) { btn.style.background = 'rgba(148,163,184,0.06)'; btn.style.borderColor = 'rgba(148,163,184,0.12)'; }
+        if (eyeCircle) eyeCircle.setAttribute('stroke', '#64748b');
+        if (pupil) { pupil.setAttribute('fill', '#64748b'); pupil.setAttribute('r', '5'); }
+        if (label) label.textContent = '隐藏';
+        if (btn) { btn.style.background = 'rgba(148,163,184,0.06)'; btn.style.borderColor = 'rgba(148,163,184,0.12)'; btn.style.boxShadow = 'none'; }
     }
     renderCurrent();
 }
@@ -780,22 +821,53 @@ function toggleHide() {
 
 
 
-// 打开管理员弹窗
+// 打开管理员弹窗（需后台密码验证）
 function openAdminModal() {
-    window.open('admin.html', '_blank');
+    // 从 localStorage 读取管理员设置的后台密码，默认 admin123
+    const adminSettings = JSON.parse(localStorage.getItem('fmi_admin_settings') || '{}');
+    const storedPass = adminSettings.adminPanelPassword || 'admin123';
+    // 创建密码输入弹窗
+    const overlay = document.createElement('div');
+    overlay.id = 'admin-prompt-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;justify-content:center;align-items:center;backdrop-filter:blur(10px);';
+    overlay.innerHTML = '<div style="background:var(--glass,rgba(17,24,39,0.95));padding:30px;border-radius:25px;border:1px solid rgba(99,102,241,0.2);width:380px;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);"><div style="font-size:2.5rem;color:var(--accent,#6366f1);margin-bottom:15px;"><i class="fas fa-shield-alt"></i></div><h3 style="color:var(--text-main,#f9fafb);margin-bottom:8px;font-size:1.15rem;">后台管理员验证</h3><p style="color:var(--text-muted,#94a3b8);font-size:0.85rem;margin-bottom:20px;">请输入后台管理密码</p><input type="password" id="admin-prompt-pass" placeholder="请输入后台密码" style="width:100%;padding:12px 16px;border-radius:12px;background:rgba(30,41,59,0.5);color:#fff;border:1px solid rgba(255,255,255,0.1);font-size:1rem;outline:none;text-align:center;letter-spacing:2px;margin-bottom:20px;"><div style="display:flex;gap:12px;justify-content:center;"><button onclick="cancelAdminPrompt()" style="padding:10px 25px;border-radius:10px;background:rgba(100,116,139,0.3);color:#94a3b8;border:none;cursor:pointer;font-weight:600;">取消</button><button onclick="verifyAdminPrompt()" style="padding:10px 25px;border-radius:10px;background:var(--accent,#6366f1);color:#fff;border:none;cursor:pointer;font-weight:700;box-shadow:0 10px 15px -3px rgba(99,102,241,0.3);">验证</button></div><p id="admin-prompt-error" style="color:#f87171;font-size:0.8rem;margin-top:12px;display:none;">密码错误，请重试</p></div>';
+    overlay.addEventListener('keydown', function(e) { if (e.key === 'Enter') verifyAdminPrompt(); });
+    document.body.appendChild(overlay);
+    setTimeout(function() { document.getElementById('admin-prompt-pass').focus(); }, 100);
 }
 
-// 验证管理员密码
+function verifyAdminPrompt() {
+    const adminSettings = JSON.parse(localStorage.getItem('fmi_admin_settings') || '{}');
+    const storedPass = adminSettings.adminPanelPassword || 'admin123';
+    const pass = document.getElementById('admin-prompt-pass').value;
+    if (pass === storedPass) {
+        cancelAdminPrompt();
+        window.open('admin.html', '_blank');
+    } else {
+        const errEl = document.getElementById('admin-prompt-error');
+        errEl.style.display = 'block';
+        errEl.textContent = '密码错误，请重试';
+        document.getElementById('admin-prompt-pass').value = '';
+        document.getElementById('admin-prompt-pass').focus();
+    }
+}
+
+function cancelAdminPrompt() {
+    const overlay = document.getElementById('admin-prompt-overlay');
+    if (overlay) overlay.remove();
+}
+
+// 验证管理员密码（旧版白名单弹窗，保留兼容）
 function checkAdminPass() {
     const pass = document.getElementById('admin-pass').value;
-    if (pass !== 'admin123') {
-        alert('密码错误！请输入正确的超级管理员密码');
+    const adminSettings = JSON.parse(localStorage.getItem('fmi_admin_settings') || '{}');
+    const storedPass = adminSettings.adminPanelPassword || 'admin123';
+    if (pass !== storedPass) {
+        alert('密码错误！请输入正确的后台管理密码');
         return;
     }
-    // 隐藏第一步，显示第二步（白名单管理）
     document.getElementById('admin-step1').style.display = 'none';
     document.getElementById('admin-step2').style.display = 'block';
-    // 渲染白名单
     renderWhitelist();
 }
 
@@ -1594,7 +1666,7 @@ function initPracticePage() {
             </label>
             <span id="practice-learned-count" style="color:var(--accent);font-size:0.9rem;font-weight:600;"></span>
         </div>
-        <div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">题目数量</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="practice-type-btn" onclick="selectPracticeCount(10,this)">10题</button><button class="practice-type-btn active" onclick="selectPracticeCount(20,this)">20题</button><button class="practice-type-btn" onclick="selectPracticeCount(50,this)">50题</button><button class="practice-type-btn" onclick="selectPracticeCount(0,this)">全部</button></div></div><button class="practice-start-btn" onclick="startPractice()" style="width:100%;padding:14px;font-size:1.1rem;"><i class="fas fa-play"></i> 开始练习</button><div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:20px;"><div style="position:relative;width:68px;height:68px;cursor:pointer;" onclick="cycleRate()" title="语速调节（点击切换）"><svg viewBox="0 0 72 72" width="68" height="68"><circle cx="36" cy="36" r="28" fill="none" stroke="rgba(165,180,252,0.08)" stroke-width="5"/><circle id="p-rate-ring" cx="36" cy="36" r="28" fill="none" stroke="url(#p-rate-grad)" stroke-width="5" stroke-dasharray="175.9" stroke-dashoffset="125.7" stroke-linecap="round" style="transition:stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1), filter 0.3s; filter:drop-shadow(0 0 4px rgba(129,140,248,0.3));"/><defs><linearGradient id="p-rate-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#818cf8"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs><text x="36" y="34" text-anchor="middle" fill="#c4b5fd" font-size="13" font-weight="800" id="p-val-rate">0.8x</text><text x="36" y="48" text-anchor="middle" fill="#475569" font-size="8">语速</text></svg></div><div style="position:relative;width:68px;height:68px;cursor:pointer;" onclick="cycleLoop()" title="循环调节（点击切换）"><svg viewBox="0 0 72 72" width="68" height="68"><circle cx="36" cy="36" r="28" fill="none" stroke="rgba(110,231,183,0.08)" stroke-width="5"/><circle id="p-loop-ring" cx="36" cy="36" r="28" fill="none" stroke="url(#p-loop-grad)" stroke-width="5" stroke-dasharray="175.9" stroke-dashoffset="140.7" stroke-linecap="round" style="transition:stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1), filter 0.3s; filter:drop-shadow(0 0 4px rgba(52,211,153,0.3));"/><defs><linearGradient id="p-loop-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#2dd4bf"/></linearGradient></defs><text x="36" y="34" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="800" id="p-val-loop">1次</text><text x="36" y="48" text-anchor="middle" fill="#475569" font-size="8">循环</text></svg></div></div></div><div id="practice-quiz" style="display:none;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><div style="color:var(--text-main);font-weight:700;">练习中</div><div style="color:var(--text-muted);font-size:0.9rem;" id="practice-progress">1/20</div></div><div class="practice-score-bar"><div class="practice-score-item"><span class="score-val" id="p-correct">0</span>正确</div><div class="practice-score-item"><span class="score-val" id="p-wrong">0</span>错误</div><div class="practice-score-item"><span class="score-val" id="p-accuracy">0%</span>正确率</div></div><div class="practice-question-box"><div id="p-question-label" style="color:var(--text-muted);font-size:0.9rem;margin-bottom:8px;">请选择正确的中文翻译</div><div id="p-question-word" style="font-size:2.5rem;font-weight:800;color:var(--text-main);margin-bottom:20px;padding:15px 0;">加载中...</div><div id="p-question-hint" style="color:var(--text-dim);font-size:0.85rem;"></div></div><div id="p-options" class="practice-options"></div><div id="p-input-box" style="display:none;"><input type="text" class="practice-input" id="p-fill-input" placeholder="输入中文翻译..." autocomplete="off" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:1rem;outline:none;"><button class="practice-start-btn" onclick="submitFillAnswer()" style="margin-top:10px;width:100%;">提交答案</button></div><div id="p-feedback" class="practice-feedback"></div><div style="display:flex;gap:12px;justify-content:center;margin-top:20px;"><button class="practice-btn-sec" onclick="endPractice()">结束练习</button><button class="practice-start-btn" id="p-next-btn" onclick="nextQuestion()" style="display:none;">下一题 <i class="fas fa-arrow-right"></i></button></div></div><div id="practice-result" style="display:none;"><div style="text-align:center;padding:30px;"><div id="p-result-score" style="font-size:4rem;font-weight:900;color:var(--accent);">0%</div><div id="p-result-text" style="color:var(--text-muted);font-size:1.1rem;margin:10px 0 20px;">练习完成！</div><div style="display:flex;gap:20px;justify-content:center;margin-bottom:25px;"><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#10b981;" id="p-r-correct">0</div><div style="color:var(--text-dim);font-size:0.8rem;">正确</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#ef4444;" id="p-r-wrong">0</div><div style="color:var(--text-dim);font-size:0.8rem;">错误</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--text-main);" id="p-r-total">0</div><div style="color:var(--text-dim);font-size:0.8rem;">总题数</div></div></div><div style="display:flex;gap:12px;justify-content:center;"><button class="practice-btn-sec" onclick="showWrongWords()">查看错题</button><button id="lb-submit-btn" style="display:none;padding:10px 20px;background:#f59e0b;color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:0.9rem;" onclick="submitToLeaderboard()"><i class="fas fa-trophy"></i> 提交到排行榜</button><button class="practice-start-btn" onclick="resetPractice()">再来一次</button></div></div></div></div>`;
+        <div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">题目数量</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="practice-type-btn" onclick="selectPracticeCount(10,this)">10题</button><button class="practice-type-btn active" onclick="selectPracticeCount(20,this)">20题</button><button class="practice-type-btn" onclick="selectPracticeCount(50,this)">50题</button><button class="practice-type-btn" onclick="selectPracticeCount(0,this)">全部</button></div></div><button class="practice-start-btn" onclick="startPractice()" style="width:100%;padding:14px;font-size:1.1rem;"><i class="fas fa-play"></i> 开始练习</button><div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:20px;"><div style="position:relative;width:68px;height:68px;cursor:pointer;" onclick="cycleRate()" title="语速调节（点击切换）"><svg viewBox="0 0 72 72" width="68" height="68"><circle cx="38" cy="38" r="30" fill="rgba(99,102,241,0.04)" stroke="rgba(165,180,252,0.06)" stroke-width="4"/><circle id="p-rate-ring" cx="38" cy="38" r="30" fill="none" stroke="url(#p-rate-grad)" stroke-width="4" stroke-dasharray="188.5" stroke-dashoffset="0" transform="rotate(-90 38 38)" stroke-linecap="round" style="transition:stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1), filter 0.3s; filter:drop-shadow(0 0 4px rgba(129,140,248,0.3));"/><defs><linearGradient id="p-rate-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#818cf8"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs><text x="36" y="34" text-anchor="middle" fill="#c4b5fd" font-size="13" font-weight="800" id="p-val-rate">1.0x</text><text x="38" y="50" text-anchor="middle" fill="#475569" font-size="9" font-weight="500">语速</text></svg></div><div style="position:relative;width:68px;height:68px;cursor:pointer;" onclick="cycleLoop()" title="循环调节（点击切换）"><svg viewBox="0 0 72 72" width="68" height="68"><circle cx="38" cy="38" r="30" fill="rgba(16,185,129,0.04)" stroke="rgba(110,231,183,0.06)" stroke-width="4"/><circle id="p-loop-ring" cx="38" cy="38" r="30" fill="none" stroke="url(#p-loop-grad)" stroke-width="4" stroke-dasharray="188.5" stroke-dashoffset="0" transform="rotate(-90 38 38)" stroke-linecap="round" style="transition:stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1), filter 0.3s; filter:drop-shadow(0 0 4px rgba(52,211,153,0.3));"/><defs><linearGradient id="p-loop-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#2dd4bf"/></linearGradient></defs><text x="36" y="34" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="800" id="p-val-loop">1次</text><text x="38" y="50" text-anchor="middle" fill="#475569" font-size="9" font-weight="500">循环</text></svg></div></div></div><div id="practice-quiz" style="display:none;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><div style="color:var(--text-main);font-weight:700;">练习中</div><div style="color:var(--text-muted);font-size:0.9rem;" id="practice-progress">1/20</div></div><div class="practice-score-bar"><div class="practice-score-item"><span class="score-val" id="p-correct">0</span>正确</div><div class="practice-score-item"><span class="score-val" id="p-wrong">0</span>错误</div><div class="practice-score-item"><span class="score-val" id="p-accuracy">0%</span>正确率</div></div><div class="practice-question-box"><div id="p-question-label" style="color:var(--text-muted);font-size:0.9rem;margin-bottom:8px;">请选择正确的中文翻译</div><div id="p-question-word" style="font-size:2.5rem;font-weight:800;color:var(--text-main);margin-bottom:20px;padding:15px 0;">加载中...</div><div id="p-question-hint" style="color:var(--text-dim);font-size:0.85rem;"></div></div><div id="p-options" class="practice-options"></div><div id="p-input-box" style="display:none;"><input type="text" class="practice-input" id="p-fill-input" placeholder="输入中文翻译..." autocomplete="off" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:1rem;outline:none;"><button class="practice-start-btn" onclick="submitFillAnswer()" style="margin-top:10px;width:100%;">提交答案</button></div><div id="p-feedback" class="practice-feedback"></div><div style="display:flex;gap:12px;justify-content:center;margin-top:20px;"><button class="practice-btn-sec" onclick="endPractice()">结束练习</button><button class="practice-start-btn" id="p-next-btn" onclick="nextQuestion()" style="display:none;">下一题 <i class="fas fa-arrow-right"></i></button></div></div><div id="practice-result" style="display:none;"><div style="text-align:center;padding:30px;"><div id="p-result-score" style="font-size:4rem;font-weight:900;color:var(--accent);">0%</div><div id="p-result-text" style="color:var(--text-muted);font-size:1.1rem;margin:10px 0 20px;">练习完成！</div><div style="display:flex;gap:20px;justify-content:center;margin-bottom:25px;"><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#10b981;" id="p-r-correct">0</div><div style="color:var(--text-dim);font-size:0.8rem;">正确</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#ef4444;" id="p-r-wrong">0</div><div style="color:var(--text-dim);font-size:0.8rem;">错误</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--text-main);" id="p-r-total">0</div><div style="color:var(--text-dim);font-size:0.8rem;">总题数</div></div></div><div style="display:flex;gap:12px;justify-content:center;"><button class="practice-btn-sec" onclick="showWrongWords()">查看错题</button><button id="lb-submit-btn" style="display:none;padding:10px 20px;background:#f59e0b;color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:0.9rem;" onclick="submitToLeaderboard()"><i class="fas fa-trophy"></i> 提交到排行榜</button><button class="practice-start-btn" onclick="resetPractice()">再来一次</button></div></div></div></div>`;
 }
 // Update learned count when checkbox changes
 document.addEventListener('change', function(e) {
@@ -1918,14 +1990,14 @@ function initDashboardPage() {
         let catTotal = 0;
         for (const lid in db[catId].lessons) catTotal += db[catId].lessons[lid].words.length;
         const cn = catId === "1" ? "生词 Vocabulary" : catId === "2" ? "短语 Phrases" : catId;
-        catBreakdown += '<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:0.85rem;margin-bottom:4px;"><span>' + catId + '. ' + cn + '</span><span>' + catTotal + ' 词</span></div><div class="dash-progress-bar" style="height:6px;"><div class="dash-progress-fill" style="width:' + (catTotal > 0 ? Math.min(100, Math.round((learnedN / totalLib) * 100)) : 0) + '%;"></div></div></div>';
+        catBreakdown += '<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:0.85rem;margin-bottom:4px;"><span>' + catId + '. ' + cn + '</span><span>' + catTotal + ' 词</span></div><div class="dash-progress-bar" style="height:6px;"><div class="dash-progress-fill" style="width:' + (catTotal > 0 ? Math.min(100, Math.round((learnedN / totalLib) * 100)) : 0) + '%;"></div></div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 1.1</div></div>';
     }
     let histHTML = '';
     if (hist.length > 0) {
         histHTML = hist.slice(-10).reverse().map(h => {
             const tn = h.type === 'choice' ? '选择题' : h.type === 'fill' ? '填空题' : '听力题';
             const clr = h.percent >= 70 ? 'var(--success)' : 'var(--danger)';
-            return '<div class="dash-history-item"><div class="dash-history-date">' + h.date + '</div><div class="dash-history-type">' + tn + '</div><div class="dash-history-score" style="color:' + clr + ';">' + h.score + '/' + h.total + ' (' + h.percent + '%)</div></div>';
+            return '<div class="dash-history-item"><div class="dash-history-date">' + h.date + '</div><div class="dash-history-type">' + tn + '</div><div class="dash-history-score" style="color:' + clr + ';">' + h.score + '/' + h.total + ' (' + h.percent + '%)</div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 1.1</div></div>';
         }).join('');
     } else {
         histHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px;">暂无练习记录</div>';
@@ -1936,7 +2008,7 @@ function initDashboardPage() {
     } else {
         wordsHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px;">今天还没有学习记录</div>';
     }
-    c.innerHTML = '<div style="margin:0 auto;max-width:100%;"><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.8rem;font-weight:800;color:var(--text-main);display:inline-block;"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:10px;"></i>学习统计</h2><button onclick="clearStudyData()" style="margin-left:15px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;vertical-align:middle;"><i class="fas fa-trash-alt" style="margin-right:5px;"></i>清空统计</button><p style="color:var(--text-muted);font-size:0.95rem;margin-top:5px;">' + today + ' · 数据总览</p></div><div class="dash-stats-grid"><div class="dash-card" style="border-top:3px solid var(--accent);"><div style="font-size:1.8rem;color:var(--accent);margin-bottom:10px;"><i class="fas fa-book"></i></div><div class="dash-card-value">' + studyStats.todayWords + '</div><div class="dash-card-label">今日学习</div><div class="dash-card-sub">目标 ' + dailyGoal + ' 词 <span style="font-size:0.7rem;color:#64748b;margin-left:4px;cursor:pointer;border-bottom:1px dashed #64748b;" onclick="showGoalSetting()">修改</span></div></div><div class="dash-card" style="border-top:3px solid #f59e0b;"><div style="font-size:1.8rem;color:#f59e0b;margin-bottom:10px;"><i class="fas fa-clock"></i></div><div class="dash-card-value">' + mins + '<span style="font-size:0.7em;color:var(--text-muted);">分' + secs + '秒</span></div><div class="dash-card-label">在线时长</div><div class="dash-card-sub">今日累计</div></div><div class="dash-card" style="border-top:3px solid #10b981;"><div style="font-size:1.8rem;color:#10b981;margin-bottom:10px;"><i class="fas fa-layer-group"></i></div><div class="dash-card-value">' + learnedN + '<span style="font-size:0.7em;color:var(--text-muted);">/' + totalLib + '</span></div><div class="dash-card-label">累计掌握</div><div class="dash-card-sub">总词汇量</div></div><div class="dash-card" style="border-top:3px solid #a78bfa;"><div style="font-size:1.8rem;color:#a78bfa;margin-bottom:10px;"><i class="fas fa-bullseye"></i></div><div class="dash-card-value">' + learnedPct + '%</div><div class="dash-card-label">掌握率</div><div class="dash-card-sub">' + learnedN + '/' + totalLib + ' 词</div></div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-tasks" style="color:var(--accent);margin-right:8px;"></i>词汇掌握进度</div><div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + learnedPct + '%;"></div></div><div class="dash-progress-labels"><span>已掌握 ' + learnedN + ' 词</span><span>总词汇量 ' + totalLib + ' 词</span></div><div style="margin-top:20px;">' + catBreakdown + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px;"></i>练习历史</div><div class="dash-mini-grid"><div class="dash-mini-card"><div class="dash-mini-value">' + totalP + '</div><div class="dash-mini-label">练习次数</div></div><div class="dash-mini-card"><div class="dash-mini-value">' + avgS + '%</div><div class="dash-mini-label">平均正确率</div></div></div><div class="dash-history-list">' + histHTML + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>今日已学单词</div><div class="dash-words-grid">' + wordsHTML + '</div></div></div>';
+    c.innerHTML = '<div style="margin:0 auto;max-width:100%;"><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.8rem;font-weight:800;color:var(--text-main);display:inline-block;"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:10px;"></i>学习统计</h2><button onclick="clearStudyData()" style="margin-left:15px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;vertical-align:middle;"><i class="fas fa-trash-alt" style="margin-right:5px;"></i>清空统计</button><p style="color:var(--text-muted);font-size:0.95rem;margin-top:5px;">' + today + ' · 数据总览</p></div><div class="dash-stats-grid"><div class="dash-card" style="border-top:3px solid var(--accent);"><div style="font-size:1.8rem;color:var(--accent);margin-bottom:10px;"><i class="fas fa-book"></i></div><div class="dash-card-value">' + studyStats.todayWords + '</div><div class="dash-card-label">今日学习</div><div class="dash-card-sub">目标 ' + dailyGoal + ' 词 <span style="font-size:0.7rem;color:#64748b;margin-left:4px;cursor:pointer;border-bottom:1px dashed #64748b;" onclick="showGoalSetting()">修改</span></div></div><div class="dash-card" style="border-top:3px solid #f59e0b;"><div style="font-size:1.8rem;color:#f59e0b;margin-bottom:10px;"><i class="fas fa-clock"></i></div><div class="dash-card-value">' + mins + '<span style="font-size:0.7em;color:var(--text-muted);">分' + secs + '秒</span></div><div class="dash-card-label">在线时长</div><div class="dash-card-sub">今日累计</div></div><div class="dash-card" style="border-top:3px solid #10b981;"><div style="font-size:1.8rem;color:#10b981;margin-bottom:10px;"><i class="fas fa-layer-group"></i></div><div class="dash-card-value">' + learnedN + '<span style="font-size:0.7em;color:var(--text-muted);">/' + totalLib + '</span></div><div class="dash-card-label">累计掌握</div><div class="dash-card-sub">总词汇量</div></div><div class="dash-card" style="border-top:3px solid #a78bfa;"><div style="font-size:1.8rem;color:#a78bfa;margin-bottom:10px;"><i class="fas fa-bullseye"></i></div><div class="dash-card-value">' + learnedPct + '%</div><div class="dash-card-label">掌握率</div><div class="dash-card-sub">' + learnedN + '/' + totalLib + ' 词</div></div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-tasks" style="color:var(--accent);margin-right:8px;"></i>词汇掌握进度</div><div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + learnedPct + '%;"></div></div><div class="dash-progress-labels"><span>已掌握 ' + learnedN + ' 词</span><span>总词汇量 ' + totalLib + ' 词</span></div><div style="margin-top:20px;">' + catBreakdown + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px;"></i>练习历史</div><div class="dash-mini-grid"><div class="dash-mini-card"><div class="dash-mini-value">' + totalP + '</div><div class="dash-mini-label">练习次数</div></div><div class="dash-mini-card"><div class="dash-mini-value">' + avgS + '%</div><div class="dash-mini-label">平均正确率</div></div></div><div class="dash-history-list">' + histHTML + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>今日已学单词</div><div class="dash-words-grid">' + wordsHTML + '</div></div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 1.1</div></div>';
 }
 
 // 设置每日学习目标（弹窗形式）
