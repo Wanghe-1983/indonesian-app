@@ -1842,23 +1842,22 @@ input:checked + .slider:before {
 .vslider-box {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     width: 100%;
 }
 .vslider-label {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 700;
     color: var(--text-muted);
     display: flex;
     align-items: center;
     gap: 6px;
-    letter-spacing: 0.5px;
     flex-shrink: 0;
     white-space: nowrap;
-    min-width: 64px;
+    min-width: 58px;
 }
 .vslider-label i {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--accent);
     opacity: 0.8;
 }
@@ -1867,17 +1866,17 @@ input:checked + .slider:before {
     height: 40px;
     flex: 1;
     min-width: 0;
-    padding-left: 28px;
     overflow: visible;
 }
 .vslider {
     -webkit-appearance: none;
     appearance: none;
-    width: calc(100% - 28px);
-    height: 36px;
+    width: 100%;
+    height: 40px;
     background: transparent;
     position: absolute;
-    left: 28px;
+    top: 0;
+    left: 0;
     cursor: pointer;
     z-index: 3;
     opacity: 0;
@@ -1894,17 +1893,29 @@ input:checked + .slider:before {
     margin: 0;
 }
 .vslider::-webkit-slider-runnable-track {
-    height: 36px;
+    height: 40px;
     background: transparent;
 }
-/* Track background (horizontal) */
+.vslider::-moz-range-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    cursor: grab;
+}
+.vslider::-moz-range-track {
+    height: 40px;
+    background: transparent;
+}
+/* Track background */
 .vslider-track-wrap::before {
     content: '';
     position: absolute;
-    left: 28px;
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: calc(100% - 28px);
+    width: 100%;
     height: 10px;
     border-radius: 5px;
     background: rgba(255, 255, 255, 0.06);
@@ -1912,7 +1923,7 @@ input:checked + .slider:before {
 }
 .vslider-fill {
     position: absolute;
-    left: 28px;
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
     height: 10px;
@@ -1921,15 +1932,14 @@ input:checked + .slider:before {
     pointer-events: none;
     z-index: 1;
     transition: width 0.15s ease-out;
-    max-width: calc(100% - 28px);
 }
-.vslider-track-wrap:has(.vslider-rate) .vslider-fill,
-.vslider-fill[id^="rate"] {
+.vslider-fill[id^="rate"], .vslider-fill[id^="p-rate"],
+.vslider-track-wrap:has(.vslider-rate) .vslider-fill {
     background: linear-gradient(to right, #6366f1, #a78bfa, #c084fc);
     box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
 }
-.vslider-track-wrap:has(.vslider-loop) .vslider-fill,
-.vslider-fill[id^="loop"] {
+.vslider-fill[id^="loop"], .vslider-fill[id^="p-loop"],
+.vslider-track-wrap:has(.vslider-loop) .vslider-fill {
     background: linear-gradient(to right, #10b981, #34d399, #2dd4bf);
     box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
 }
@@ -1939,10 +1949,10 @@ input:checked + .slider:before {
     left: 0%;
     transform: translate(-50%, -50%);
     min-width: 56px;
-    padding: 6px 14px;
+    padding: 6px 12px;
     border-radius: 14px;
     text-align: center;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 800;
     font-family: 'Lexend', system-ui, sans-serif;
     z-index: 4;
@@ -1967,15 +1977,12 @@ input:checked + .slider:before {
     display: flex;
     justify-content: space-between;
     flex-shrink: 0;
-    width: 90px;
-    font-size: 0.72rem;
+    width: 80px;
+    font-size: 0.7rem;
     color: var(--text-dim);
     padding: 0 2px;
 }
 
-/* ========================================
-   Card Inline Controls - 生词卡片内嵌功能区
-   ======================================== */
 .card-controls-row {
     display: flex;
     align-items: center;
@@ -2041,4 +2048,21 @@ input:checked + .slider:before {
     .vslider-box { gap: 10px; }
     .vslider-range { width: 72px; font-size: 0.65rem; }
     .vslider-label { font-size: 0.82rem; }
+}
+
+/* Inline controls wrappers */
+#learn-inline-controls,
+.sliders-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .vslider-label { min-width: 50px; font-size: 0.85rem; }
+    .vslider-thumb { min-width: 48px; font-size: 0.88rem; padding: 5px 10px; }
+    .vslider-range { width: 70px; font-size: 0.65rem; }
+    #learn-inline-controls > .vslider-box,
+    .sliders-col > .vslider-box { gap: 6px; }
 }
