@@ -81,6 +81,7 @@ function checkLoginStatus() {
                 </div>
             `;
             // 访客模式隐藏注销按钮
+            const isVisitor = localStorage.getItem('fmi_visitor_login');
             if (isVisitor) {
                 const delItem = document.getElementById('delete-account-item');
                 const delSep = document.getElementById('delete-account-btn');
@@ -785,10 +786,6 @@ function setRateFromSlider(val) {
     // 更新滑块填充
     updateSliderFill('rate', (parseInt(val) - 1) / 14);
     updateSliderFill('p-rate', (parseInt(val) - 1) / 14);
-    // Update thumb positions
-    const pct = ((parseInt(val) - 1) / 14 * 100);
-    updateThumb('rate-thumb', pct);
-    updateThumb('p-rate-thumb', pct);
     // 同步练习页
     const pSlider = document.getElementById('p-rate-slider');
     if (pSlider) pSlider.value = val;
@@ -807,9 +804,7 @@ function setLoopFromSlider(val) {
     const el = document.getElementById('val-loop'); if (el) el.innerText = display;
     const pEl = document.getElementById('p-val-loop'); if (pEl) pEl.innerText = display;
     updateSliderFill('loop', idx / 14);
-    updateSliderFill('p-loop', idx / 5);
-    updateThumb('loop-thumb', idx / 14 * 100);
-    updateThumb('p-loop-thumb', idx / 14 * 100);
+    updateSliderFill('p-loop', idx / 14);
     const pSlider = document.getElementById('p-loop-slider');
     if (pSlider) pSlider.value = val;
     updateRing('loop-ring', _loopIdx / (LOOP_LEVELS.length - 1));
