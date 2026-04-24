@@ -1,11 +1,19 @@
-/admin.html
-  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
-  Surrogate-Control: no-store
-  Pragma: no-cache
-  Expires: 0
+# 静态资源缓存控制（Cloudflare Pages 自动读取）
+# API 路由不缓存
+/api/*
+  Cache-Control: no-cache, no-store, must-revalidate
 
-/admin
+# HTML 页面不缓存
+/*.html
   Cache-Control: no-cache, no-store, must-revalidate, max-age=0
-  Surrogate-Control: no-store
-  Pragma: no-cache
-  Expires: 0
+
+# JS/CSS 文件短缓存（1小时）
+/*.js
+  Cache-Control: public, max-age=3600
+
+/*.css
+  Cache-Control: public, max-age=3600
+
+# JSON 数据文件短缓存
+/*.json
+  Cache-Control: public, max-age=3600
