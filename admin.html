@@ -25,7 +25,7 @@
     async function checkApiAvailable() {
         if (_apiChecked) return _apiAvailable;
         _apiChecked = true;
-        const base = (CONFIG.apiBase || '');
+        const base = CONFIG.apiBase || location.origin;
         if (!base) { _apiAvailable = false; return false; }
         try {
             const r = await fetch(base + '/api/admin/settings', {
@@ -43,7 +43,7 @@
         if (available) {
             try {
                 const method = opts.method || 'GET';
-                const url = (CONFIG.apiBase || '') + '/api/' + path;
+                const url = (CONFIG.apiBase || location.origin) + '/api/' + path;
                 const headers = {};
                 if (opts.method && opts.method !== 'GET') headers['Content-Type'] = 'application/json';
                 const token = localStorage.getItem('fmi_token');
