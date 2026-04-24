@@ -67,10 +67,16 @@ CREATE INDEX IF NOT EXISTS idx_changelogs_id ON changelogs(id);
 
 // 补全缺失列（ALTER TABLE ADD COLUMN 在列已存在时会报错，用 try-catch 忽略）
 const ALTERS = [
-    'ALTER TABLE employees ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime(\'now\'))',
+    'ALTER TABLE employees ADD COLUMN created_at TEXT',
     'ALTER TABLE users ADD COLUMN last_heartbeat TEXT',
-    'ALTER TABLE leaderboard_entries ADD COLUMN name TEXT NOT NULL DEFAULT \'\'',
-    'ALTER TABLE leaderboard_entries ADD COLUMN period TEXT NOT NULL DEFAULT \'weekly\'',
+    'ALTER TABLE leaderboard_entries ADD COLUMN name TEXT',
+    'ALTER TABLE leaderboard_entries ADD COLUMN period TEXT',
+];
+// 补全新增列的默认值
+const UPDATES = [
+    "UPDATE employees SET created_at = datetime('now') WHERE created_at IS NULL",
+    "UPDATE leaderboard_entries SET name = '' WHERE name IS NULL",
+    "UPDATE leaderboard_entries SET period = 'weekly' WHERE period IS NULL",
 ];
 export async function onRequest(context) {
     const { env } = context;
@@ -92,6 +98,12 @@ export async function onRequest(context) {
         } catch (e) {
             results.push({ ok: true, skipped: stmt.slice(0, 60), note: e.message });
         }
+    }
+    // 3. 填充默认值
+    for (const stmt of UPDATES) {
+        try {
+            await env.INDO_LEARN_DB.prepare(stmt).run();
+        } catch (e) {}
     }
     return new Response(JSON.stringify({ success: true, operations: results.length, details: results }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
