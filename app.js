@@ -72,8 +72,8 @@ function checkLoginStatus() {
                             <div onclick="logout()" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(248,113,113,0.1)'" onmouseout="this.style.background='transparent'">
                                 <i class="fas fa-sign-out-alt" style="color:#f87171;width:16px;text-align:center;"></i> 退出登录
                             </div>
-                            <div style="height:1px;background:rgba(255,255,255,0.05);margin:4px 8px;"></div>
-                            <div onclick="showDeleteAccountDialog();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#ef4444;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">
+                            <div id="delete-account-btn" style="height:1px;background:rgba(255,255,255,0.05);margin:4px 8px;"></div>
+                            <div id="delete-account-item" onclick="showDeleteAccountDialog();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#ef4444;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">
                                 <i class="fas fa-user-slash" style="width:16px;text-align:center;"></i> 注销账号
                             </div>
                         </div>
