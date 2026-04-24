@@ -2,21 +2,22 @@ const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
     password TEXT NOT NULL,
-    name TEXT DEFAULT '',
-    role TEXT DEFAULT 'user',
-    user_type TEXT DEFAULT 'formal',
-    emp_no TEXT DEFAULT '',
-    company_code TEXT DEFAULT '',
-    dept TEXT DEFAULT '',
-    banned INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now'))
+    name TEXT NOT NULL DEFAULT '',
+    role TEXT NOT NULL DEFAULT 'user',
+    user_type TEXT NOT NULL DEFAULT 'employee',
+    company_code TEXT NOT NULL DEFAULT '',
+    emp_no TEXT NOT NULL DEFAULT '',
+    banned INTEGER NOT NULL DEFAULT 0,
+    last_heartbeat TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS employees (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     company_code TEXT NOT NULL,
     emp_no TEXT NOT NULL,
-    name TEXT NOT NULL,
-    dept TEXT DEFAULT '',
+    name TEXT NOT NULL DEFAULT '',
+    dept TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(company_code, emp_no)
 );
 CREATE TABLE IF NOT EXISTS study_records (
@@ -39,19 +40,18 @@ CREATE TABLE IF NOT EXISTS study_stats (
 CREATE TABLE IF NOT EXISTS leaderboard_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    period TEXT NOT NULL DEFAULT 'weekly',
     period_key TEXT NOT NULL,
     score INTEGER DEFAULT 0,
-    question_count INTEGER DEFAULT 20,
-    category TEXT DEFAULT 'all',
-    type TEXT DEFAULT 'indo2cn',
-    created_at TEXT DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS changelogs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     version TEXT NOT NULL,
     title TEXT DEFAULT '',
     content TEXT DEFAULT '',
-    created_at TEXT DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_study_records_username ON study_records(username);
 CREATE INDEX IF NOT EXISTS idx_study_records_word ON study_records(username, word_id);
@@ -63,9 +63,19 @@ CREATE INDEX IF NOT EXISTS idx_leaderboard_period ON leaderboard_entries(period_
 CREATE INDEX IF NOT EXISTS idx_changelogs_id ON changelogs(id);
 `;
 
+
+
+// 补全缺失列（ALTER TABLE ADD COLUMN 在列已存在时会报错，用 try-catch 忽略）
+const ALTERS = [
+    'ALTER TABLE employees ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime(\'now\'))',
+    'ALTER TABLE users ADD COLUMN last_heartbeat TEXT',
+    'ALTER TABLE leaderboard_entries ADD COLUMN name TEXT NOT NULL DEFAULT \'\'',
+    'ALTER TABLE leaderboard_entries ADD COLUMN period TEXT NOT NULL DEFAULT \'weekly\'',
+];
 export async function onRequest(context) {
     const { env } = context;
     const results = [];
+    // 1. 建表（CREATE TABLE IF NOT EXISTS）
     for (const stmt of SCHEMA.trim().split(';').map(s => s.trim()).filter(Boolean)) {
         try {
             await env.INDO_LEARN_DB.prepare(stmt).run();
@@ -74,7 +84,16 @@ export async function onRequest(context) {
             results.push({ ok: false, error: e.message, sql: stmt.slice(0, 60) });
         }
     }
-    return new Response(JSON.stringify({ success: true, tables: results.length, details: results }), {
+    // 2. 补全缺失列
+    for (const stmt of ALTERS) {
+        try {
+            await env.INDO_LEARN_DB.prepare(stmt).run();
+            results.push({ ok: true, alter: stmt.slice(0, 60) });
+        } catch (e) {
+            results.push({ ok: true, skipped: stmt.slice(0, 60), note: e.message });
+        }
+    }
+    return new Response(JSON.stringify({ success: true, operations: results.length, details: results }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
 }

@@ -10,9 +10,9 @@
     <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理后台 - 印尼语学习助手</title>
-    <link rel="stylesheet" href="style.css?v=20260424f">
+    <link rel="stylesheet" href="style.css?v=20260424g">
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="config.js?v=20260424f"></script>
+    <script src="config.js?v=20260424g"></script>
     <script>
     // ========== 后台管理本地 Fallback 模式 ==========
     // 当 API 不可用时，自动降级到 localStorage 管理
@@ -22,144 +22,26 @@
     let _apiChecked = false;
     let _apiAvailable = false;
 
-    async function checkApiAvailable() {
-        if (_apiChecked) return _apiAvailable;
-        _apiChecked = true;
-        const base = CONFIG.apiBase || location.origin;
-        if (!base) { _apiAvailable = false; return false; }
-        try {
-            const r = await fetch(base + '/api/admin/settings', {
-                method: 'GET', headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('fmi_token') || '') },
-                signal: AbortSignal.timeout(5000)
-            });
-            const data = await r.json();
-            _apiAvailable = !!(data && !data.error && typeof data === 'object');
-            if (_apiAvailable) { window._adminFallback = false; hideFallbackBanner(); }
-        } catch(e) { _apiAvailable = false; }
-        return _apiAvailable;
-    }
+
 
     async function adminFetch(path, opts = {}) {
-        // 每次都先尝试 API
+        const method = opts.method || 'GET';
+        const url = (CONFIG.apiBase || location.origin) + '/api/' + path;
+        const headers = {};
+        if (method !== 'GET') headers['Content-Type'] = 'application/json';
+        const token = localStorage.getItem('fmi_token');
+        if (token) headers['Authorization'] = 'Bearer ' + token;
         try {
-            const method = opts.method || 'GET';
-            const url = (CONFIG.apiBase || location.origin) + '/api/' + path;
-            const headers = {};
-            if (opts.method && opts.method !== 'GET') headers['Content-Type'] = 'application/json';
-            const token = localStorage.getItem('fmi_token');
-            if (token) headers['Authorization'] = 'Bearer ' + token;
             const res = await fetch(url, { method, headers, body: opts.body, signal: AbortSignal.timeout(8000) });
             const data = await res.json();
-            // API 返回了有效数据，清除 fallback 状态
-            if (!data.error) {
-                window._adminFallback = false;
-                _apiAvailable = true;
-                hideFallbackBanner();
-                return data;
-            }
-            // API 返回了错误（如 401），可能是 token 过期，走本地
-            console.warn('[Admin] API返回错误:', data.error);
+            return data;
         } catch(e) {
-            console.warn('[Admin] API请求失败，降级本地:', path, e.message);
+            console.warn('[Admin] API请求失败:', path, e.message);
+            return null;
         }
-        // 本地 Fallback 模式
-        if (!window._adminFallback) { window._adminFallback = true; showFallbackBanner(); }
-        return localHandler(path, opts);
     }
 
-    function localHandler(path, opts) {
-        const method = (opts.method || 'GET').toUpperCase();
-        const LS = (k, d) => JSON.parse(localStorage.getItem(k) || d);
-
-        // 设置
-        if (path === 'admin/settings') {
-            if (method === 'GET') return LS('fmi_admin_settings', '{"maxOnline":100,"maxRegistered":999,"allowRegister":true,"showOnlineMain":true,"showOnlineLogin":true,"allowMultiDevice":false,"allowVisitor":true,"visitorDuration":3,"adminPanelPassword":"admin123"}');
-            if (method === 'PUT') { localStorage.setItem('fmi_admin_settings', opts.body); return { success: true }; }
-        }
-        // 在线
-        if (path === 'admin/online') {
-            const onlineStr = localStorage.getItem('fmi_admin_online') || '[]';
-            return { users: JSON.parse(onlineStr), count: 0 };
-        }
-        // 用户
-        if (path === 'admin/users') {
-            if (method === 'GET') return LS('fmi_admin_users', '[{"username":"admin","name":"管理员","role":"admin","password":"admin123"}]');
-            if (method === 'PUT') {
-                const body = JSON.parse(opts.body || '{}');
-                let users = LS('fmi_admin_users', '[{"username":"admin","name":"管理员","role":"admin","password":"admin123"}]');
-                const act = body.action;
-                if (act === 'add' && body.user) {
-                    if (!users.some(u => u.username === body.user.username)) users.push(body.user);
-                } else if (act === 'delete') {
-                    users = users.filter(u => u.username !== body.username);
-                } else if (act === 'update') {
-                    users = users.map(u => u.username === body.username ? { ...u, ...body.data } : u);
-                } else if (act === 'kick' || act === 'ban') {
-                    return { success: true, message: '本地模式下' + (act === 'kick' ? '踢下线' : '封禁') + '仅模拟' };
-                } else if (act === 'batch_add' && body.users) {
-                    body.users.forEach(u => { if (!users.some(x => x.username === u.username)) users.push(u); });
-                }
-                localStorage.setItem('fmi_admin_users', JSON.stringify(users));
-                return { success: true };
-            }
-        }
-        // 在线
-        if (path === 'admin/online') return { count: 1, users: [{ username: 'admin', name: '管理员' }] };
-        // 学习统计
-        if (path === 'admin/study-stats') {
-            const stats = LS('fmi_study_stats', '{"todayWords":0,"studySeconds":0}');
-            return { stats: { users: [{ username: 'admin', name: '管理员', todayWords: stats.todayWords || 0, totalWords: 0, studySeconds: stats.studySeconds || 0 }] } };
-        }
-        if (path === 'admin/study-clear') return { success: true, message: '已清空（本地模式）' };
-        // 白名单
-        if (path === 'admin/whitelist') {
-            if (method === 'GET') return LS('fmi_admin_whitelist', '[]');
-            if (method === 'PUT') {
-                try {
-                    const body = JSON.parse(opts.body);
-                    if (body.action === 'add') {
-                        const list = LS('fmi_admin_whitelist', '[]');
-                        list.push(body.employee);
-                        localStorage.setItem('fmi_admin_whitelist', JSON.stringify(list));
-                        return { success: true };
-                    }
-                    if (body.action === 'delete') {
-                        let list = LS('fmi_admin_whitelist', '[]');
-                        list = list.filter(e => !(e.companyCode === body.companyCode && e.empNo === body.empNo));
-                        localStorage.setItem('fmi_admin_whitelist', JSON.stringify(list));
-                        return { success: true };
-                    }
-                    if (body.action === 'import') {
-                        localStorage.setItem('fmi_admin_whitelist', JSON.stringify(body.list || []));
-                        return { success: true };
-                    }
-                    if (body.employees !== undefined) {
-                        localStorage.setItem('fmi_admin_whitelist', JSON.stringify(body.employees));
-                        return { success: true };
-                    }
-                } catch(e) { console.warn('whitelist PUT error:', e); }
-                localStorage.setItem('fmi_admin_whitelist', opts.body);
-                return { success: true };
-            }
-        }
-        // 员工名单
-        if (path.startsWith('admin/whitelist')) {
-            if (method === 'GET') return { employees: LS('fmi_admin_whitelist', '[]') };
-            if (method === 'PUT') { localStorage.setItem('fmi_admin_whitelist', opts.body); return { success: true }; }
-            return { success: true };
-        }
-        // 排行榜配置
-        if (path === 'admin/leaderboard-config') {
-            if (method === 'GET') return LS('fmi_lb_config', '{"enabled":false,"title":"学习排行","period":"weekly"}');
-            if (method === 'PUT') { localStorage.setItem('fmi_lb_config', opts.body); return { success: true }; }
-        }
-        // 版本说明
-        if (path === 'changelog/list') return { versions: LS('fmi_changelog', '[]') };
-        if (path === 'changelog/save') { let v = LS('fmi_changelog', '[]'); v.push(JSON.parse(opts.body)); localStorage.setItem('fmi_changelog', JSON.stringify(v)); return { success: true }; }
-        if (path === 'changelog/delete') { let v = LS('fmi_changelog', '[]'); v.splice(JSON.parse(opts.body).idx, 1); localStorage.setItem('fmi_changelog', JSON.stringify(v)); return { success: true }; }
-
-        return { error: '功能暂不可用（本地模式）' };
-    }
+    
 
     if (!window.API) window.API = {};
     // 替换所有 API.adminXxx 调用
@@ -687,7 +569,7 @@
                     adminFetch('admin/online', { method: 'GET' })
                 ]);
             } catch(e) { console.error('loadOverview error:', e); return; }
-            if (window._adminFallback) showFallbackBanner(); else hideFallbackBanner();
+            
             if (!settings || settings.error) { console.warn('settings load failed'); return; }
             const totalUsers = settings.totalUsers || allUsers.length || 0;
             const currentOnline = settings.currentOnline || (online.users ? online.users.length : 0) || 0;
@@ -698,10 +580,7 @@
                 <div class="stat-card stat-orange"><div class="stat-icon"><i class="fas fa-user-clock"></i></div><div class="stat-value">${settings.maxOnline || 0}</div><div class="stat-label">在线人数上限</div></div>
                 <div class="stat-card stat-red"><div class="stat-icon"><i class="fas fa-user-lock"></i></div><div class="stat-value">${settings.maxRegistered || 0}</div><div class="stat-label">注册人数上限</div></div>
             `;
-            // In local mode, load users for accurate count
-            if (window._adminFallback && allUsers.length === 0) {
-                try { const usersData = await adminFetch('admin/users', { method: 'GET' }); if (Array.isArray(usersData)) { allUsers = usersData; row.querySelector('.stat-value').textContent = allUsers.length; } } catch(e) {}
-            }
+            
             // Online users list
             const tbody = document.getElementById('onlineList');
             if (online.users && online.users.length > 0) {
@@ -862,8 +741,9 @@
             showRegCount: document.getElementById('setShowRegCount').checked,
         };
         const result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
-        if (result.success) showAdminToast('设置保存成功', 'success');
-        else if (result.error) showAdminToast(result.error, 'error');
+        if (result && result.success) showAdminToast('设置已保存', 'success');
+        else if (result && result.error) showAdminToast(result.error, 'error');
+        else showAdminToast('保存失败，请检查网络', 'error');
     }
 
     // ========== 打榜配置 ==========
