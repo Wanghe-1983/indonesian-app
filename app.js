@@ -82,7 +82,7 @@ function checkLoginStatus() {
             `;
             // 访客/管理员模式隐藏注销按钮
             const isVisitor = localStorage.getItem('fmi_visitor_login');
-            const loginStatus = JSON.parse(localStorage.getItem('fmi_login_status') || '{}');
+            // loginStatus 已在函数开头声明
             const isAdmin = loginStatus.username === 'admin';
             if (isVisitor || isAdmin) {
                 const delItem = document.getElementById('delete-account-item');
@@ -1937,7 +1937,7 @@ async function checkLeaderboardAndShowButton(state, pct) {
 
 async function submitToLeaderboard() {
     // 爱好者前端拦截
-    const loginStatus = JSON.parse(localStorage.getItem('fmi_login_status') || '{}');
+    // loginStatus 已在函数开头声明
     if (loginStatus.user && loginStatus.user.userType === 'hobby') {
         alert('爱好者不能参与排行榜');
         return;
