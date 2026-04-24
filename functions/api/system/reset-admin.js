@@ -30,8 +30,8 @@ export async function onRequest(context) {
 
     try {
         await env.INDO_LEARN_DB.prepare(
-            `INSERT INTO users (username, password, role, user_type, emp_no, dept, banned, created_at)
-             VALUES ('admin', ?, 'admin', 'formal', '000000', '技术部', 0, datetime('now'))
+            `INSERT INTO users (username, password, name, role, user_type, company_code, emp_no, banned, created_at)
+             VALUES ('admin', ?, '系统管理员', 'admin', 'employee', 'SYS', '000000', 0, datetime('now'))
              ON CONFLICT(username) DO UPDATE SET password = excluded.password`
         ).bind(stored).run();
 
