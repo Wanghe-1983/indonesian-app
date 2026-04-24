@@ -896,7 +896,20 @@ function verifyAdminPrompt() {
     const pass = document.getElementById('admin-prompt-pass').value;
     if (pass === storedPass) {
         cancelAdminPrompt();
-        window.open('admin.html', '_blank');
+        // 通过 API 登录获取 token，确保 admin.html 有权限
+        fetch((CONFIG.apiBase || location.origin) + '/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'admin', password: pass })
+        }).then(r => r.json()).then(data => {
+            if (data.token) {
+                localStorage.setItem('fmi_token', data.token);
+                localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: { username: 'admin', name: '系统管理员', role: 'admin' } }));
+            }
+            window.open('admin.html', '_blank');
+        }).catch(() => {
+            window.open('admin.html', '_blank');
+        });
     } else {
         const errEl = document.getElementById('admin-prompt-error');
         errEl.style.display = 'block';
