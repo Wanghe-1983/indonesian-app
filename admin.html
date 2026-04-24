@@ -10,9 +10,9 @@
     <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理后台 - 印尼语学习助手</title>
-    <link rel="stylesheet" href="style.css?v=20260424e">
+    <link rel="stylesheet" href="style.css?v=20260424f">
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="config.js?v=20260424e"></script>
+    <script src="config.js?v=20260424f"></script>
     <script>
     // ========== 后台管理本地 Fallback 模式 ==========
     // 当 API 不可用时，自动降级到 localStorage 管理
@@ -40,26 +40,27 @@
     }
 
     async function adminFetch(path, opts = {}) {
-        const available = await checkApiAvailable();
-        if (available) {
-            try {
-                const method = opts.method || 'GET';
-                const url = (CONFIG.apiBase || location.origin) + '/api/' + path;
-                const headers = {};
-                if (opts.method && opts.method !== 'GET') headers['Content-Type'] = 'application/json';
-                const token = localStorage.getItem('fmi_token');
-                if (token) headers['Authorization'] = 'Bearer ' + token;
-                const res = await fetch(url, { method, headers, body: opts.body, signal: AbortSignal.timeout(8000) });
-                const data = await res.json();
-                // API 成功，清除 fallback 状态
-                if (!data.error) {
-                    window._adminFallback = false;
-                    hideFallbackBanner();
-                }
+        // 每次都先尝试 API
+        try {
+            const method = opts.method || 'GET';
+            const url = (CONFIG.apiBase || location.origin) + '/api/' + path;
+            const headers = {};
+            if (opts.method && opts.method !== 'GET') headers['Content-Type'] = 'application/json';
+            const token = localStorage.getItem('fmi_token');
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            const res = await fetch(url, { method, headers, body: opts.body, signal: AbortSignal.timeout(8000) });
+            const data = await res.json();
+            // API 返回了有效数据，清除 fallback 状态
+            if (!data.error) {
+                window._adminFallback = false;
+                _apiAvailable = true;
+                hideFallbackBanner();
                 return data;
-            } catch(e) {
-                console.warn('[Admin] API请求失败，降级本地:', path, e.message);
             }
+            // API 返回了错误（如 401），可能是 token 过期，走本地
+            console.warn('[Admin] API返回错误:', data.error);
+        } catch(e) {
+            console.warn('[Admin] API请求失败，降级本地:', path, e.message);
         }
         // 本地 Fallback 模式
         if (!window._adminFallback) { window._adminFallback = true; showFallbackBanner(); }
