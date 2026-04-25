@@ -74,6 +74,7 @@
         .admin-header { background: rgba(17,24,39,0.95); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); }
         .admin-header h1 { font-size: 1.3rem; color: #fff; display: flex; align-items: center; gap: 10px; }
         .admin-header h1 i { color: #a78bfa; }
+        .admin-float-actions { position:fixed;top:12px;right:20px;z-index:200;display:flex;gap:8px; }
         .header-actions { display: flex; gap: 10px; }
         .hdr-btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
         .hdr-btn.primary { background: #6366f1; color: #fff; }
@@ -238,7 +239,7 @@
 </head>
 <body>
     <!-- 版本标识 v20260422c -->
-    <div id="admin-version-tag" style="position:fixed;bottom:10px;left:10px;z-index:99999;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3);padding:3px 10px;border-radius:6px;font-size:0.7rem;cursor:pointer;" onclick="location.href=location.pathname+'?v='+Date.now()">v2.17 · 点击刷新</div>
+    <div id="admin-version-tag" style="position:fixed;bottom:10px;left:10px;z-index:99999;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3);padding:3px 10px;border-radius:6px;font-size:0.7rem;cursor:pointer;" onclick="location.href=location.pathname+'?v='+Date.now()">v2.18 · 点击刷新</div>
     <!-- Header -->
     <div class="admin-header">
         <h1><i class="fas fa-shield-halved"></i> 管理员后台</h1>
