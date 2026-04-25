@@ -258,6 +258,16 @@ function initUI() {
         </div>
     </div>
 
+    <div id="broadcast-bar" style="display:none;margin:10px 0;padding:12px 18px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(168,85,247,0.12));border:1px solid rgba(99,102,241,0.2);border-radius:12px;overflow:hidden;position:relative;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span style="color:#a78bfa;font-size:0.8rem;flex-shrink:0;"><i class="fas fa-bullhorn"></i></span>
+            <div style="flex:1;min-width:0;overflow:hidden;">
+                <div id="broadcast-text" style="font-size:0.88rem;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="broadcast-title" style="font-size:0.75rem;color:#64748b;margin-top:2px;"></div>
+            </div>
+            <button onclick="this.parentElement.parentElement.style.display='none'" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:0.8rem;flex-shrink:0;padding:4px;"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
     <div class="stats-bar" id="stats-bar">
         <div class="stat-item">📚 今日：<span id="stat-today">${studyStats.todayWords}</span> 词</div>
         <div class="stat-item">📈 总计：<span id="stat-total">${studyStats.totalWords}</span> 词</div>
@@ -2325,6 +2335,58 @@ function copyRosterJSON() {
 }
 
 // 页面加载完成后初始化
+
+// ========== 前台广播功能 ==========
+async function loadBroadcasts() {
+    try {
+        const res = await fetch((CONFIG.apiBase || location.origin) + '/api/broadcast/active');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.broadcasts || data.broadcasts.length === 0) return;
+
+        const broadcasts = data.broadcasts.filter(b => {
+            if (!b.isActive) return false;
+            const now = new Date().toISOString().slice(0, 10);
+            if (b.startDate && b.startDate > now) return false;
+            if (b.endDate && b.endDate < now) return false;
+            return true;
+        });
+
+        if (broadcasts.length === 0) return;
+
+        const bar = document.getElementById('broadcast-bar');
+        if (!bar) return;
+
+        // 显示第一条广播
+        const bc = broadcasts[0];
+        document.getElementById('broadcast-text').textContent = bc.content || '';
+        document.getElementById('broadcast-title').textContent = bc.title || '';
+        bar.style.display = '';
+
+        // 如果有多条，自动轮播
+        if (broadcasts.length > 1) {
+            // 加载配置获取间隔
+            try {
+                const cfgRes = await fetch((CONFIG.apiBase || location.origin) + '/api/broadcast/config');
+                if (cfgRes.ok) {
+                    const cfg = await cfgRes.json();
+                    const interval = (cfg.interval || 8) * 1000;
+                    let idx = 0;
+                    setInterval(() => {
+                        idx = (idx + 1) % broadcasts.length;
+                        const current = broadcasts[idx];
+                        const textEl = document.getElementById('broadcast-text');
+                        const titleEl = document.getElementById('broadcast-title');
+                        if (textEl && titleEl && bar.style.display !== 'none') {
+                            textEl.textContent = current.content || '';
+                            titleEl.textContent = current.title || '';
+                        }
+                    }, interval);
+                }
+            } catch(e) {}
+        }
+    } catch(e) {}
+}
 window.onload = async function() {
     // 自动初始化默认管理员（仅首次）
     try { await fetch(API_BASE + 'admin/init-users', { method: 'POST' }); } catch(e) {}

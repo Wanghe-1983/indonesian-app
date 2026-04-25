@@ -67,6 +67,19 @@ CREATE TABLE IF NOT EXISTS changelogs (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 广播消息
+CREATE TABLE IF NOT EXISTS broadcasts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    type TEXT NOT NULL DEFAULT 'notice',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    start_date TEXT NOT NULL DEFAULT '',
+    end_date TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- 初始化管理员账号（D1 不支持在 schema 里 INSERT，需用 API 或单独执行）
 -- 通过 API POST /api/admin/init-users 创建
 
@@ -79,3 +92,4 @@ CREATE INDEX IF NOT EXISTS idx_employees_code ON employees(company_code, emp_no)
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_leaderboard_period ON leaderboard_entries(period_key);
 CREATE INDEX IF NOT EXISTS idx_changelogs_id ON changelogs(id);
+CREATE INDEX IF NOT EXISTS idx_broadcasts_active ON broadcasts(is_active, display_order);
