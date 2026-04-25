@@ -771,7 +771,10 @@ async function handleBroadcastActive(context) {
 }
 
 async function handleBroadcastGetConfig(context) {
-    await requireAdmin(context);
+    // 公开读，管理员写（PUT 仍需认证）
+    if (context.request.method === 'PUT') {
+        await requireAdmin(context);
+    }
     const data = await context.env.INDO_LEARN_KV.get('broadcast_config');
     return json(data ? JSON.parse(data) : { enabled: true, interval: 8, loopCount: 0, position: 'top' });
 }

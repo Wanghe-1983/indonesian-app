@@ -137,7 +137,18 @@ function showDeleteAccountDialog() {
     dialog.querySelector('#del-confirm').onclick = async () => {
         dialog.querySelector('#del-confirm').textContent = '注销中...';
         dialog.querySelector('#del-confirm').disabled = true;
-        const currentUsername = localStorage.getItem('fmi_username') || '';
+        // 从登录状态获取用户名
+        let currentUsername = '';
+        try {
+            const loginStatus = JSON.parse(localStorage.getItem('fmi_login_status') || '{}');
+            currentUsername = loginStatus.user ? loginStatus.user.username : '';
+        } catch(e) {}
+        if (!currentUsername) {
+            alert('无法获取当前用户名，请重新登录后再试');
+            document.body.removeChild(dialog);
+            location.href = 'login.html';
+            return;
+        }
         const result = await API.request('user/delete', { method: 'POST', body: JSON.stringify({ targetUsername: currentUsername }) });
         if (result.success) {
             API.clearToken();
