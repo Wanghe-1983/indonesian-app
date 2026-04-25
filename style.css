@@ -574,7 +574,7 @@ input:checked + .slider:before {
 /* ========================================
    Modals
    ======================================== */
-.modal-overlay {
+.modal-overlay:not(.admin-modal) {
     display: none;
     position: fixed;
     inset: 0;
@@ -585,7 +585,7 @@ input:checked + .slider:before {
     backdrop-filter: blur(15px);
 }
 
-[data-theme="light"] .modal-overlay {
+[data-theme="light"] .modal-overlay:not(.admin-modal) {
     background: rgba(0, 0, 0, 0.5);
 }
 

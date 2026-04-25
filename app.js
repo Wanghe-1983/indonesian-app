@@ -2396,6 +2396,7 @@ window.onload = async function() {
     setTimeout(initSliders, 200); // 初始化滑块控件
     checkLoginStatus(); // 界面渲染完毕后，二次调用以安全写入用户名
     updateStats();
+    loadBroadcasts();
 
     // 【v2.0 KV 后端对接】启动心跳、学习同步、在线人数显示
     if (API.isLoggedIn()) {
