@@ -928,7 +928,8 @@ function verifyAdminPrompt() {
                 localStorage.setItem('fmi_token', data.token);
                 localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: { username: 'admin', name: '系统管理员', role: 'admin' } }));
             }
-            window.open('admin.html', '_blank');
+            // 用 URL 参数传递 token，确保 admin.html 能正确识别
+            window.open('admin.html' + (data.token ? '?admin_token=' + data.token : ''), '_blank');
         }).catch(() => {
             window.open('admin.html', '_blank');
         });
