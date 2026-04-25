@@ -270,12 +270,12 @@
             <div class="nav-item" onclick="switchTab('settings', this)"><i class="fas fa-sliders"></i> 系统设置</div>
             <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fas fa-trophy"></i> 打榜配置</div>
             <div class="nav-divider"></div>
-            <div class="nav-item" onclick="switchTab('employees', this)"><i class="fas fa-id-card-clip"></i> 注册信息管理</div>
-            <div class="nav-item" onclick="switchTab('whitelist', this)"><i class="fas fa-clipboard-list"></i> 白名单/导入</div>
+            <div class="nav-item" onclick="switchTab('employees', this)"><i class="fas fa-id-card-clip"></i> 员工与注册</div>
             <div class="nav-divider"></div>
             <div class="nav-item" onclick="switchTab('study', this)"><i class="fas fa-chart-bar"></i> 学习统计</div>
             <div class="nav-divider"></div>
             <div class="nav-item" onclick="switchTab('changelog', this)"><i class="fas fa-code-branch"></i> 版本说明</div>
+            <div class="nav-item" onclick="switchTab('broadcast', this)"><i class="fas fa-bullhorn"></i> 广播管理</div>
         </div>
 
         <!-- Content -->
@@ -466,33 +466,33 @@
                 </div>
             </div>
 
-            <!-- 白名单/导入 -->
-            <div class="tab-panel" id="tab-whitelist">
-                <div class="panel-title"><i class="fas fa-clipboard-list"></i> 白名单 / 名单导入</div>
-                <div class="upload-section">
-                    <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-file-import" style="color:#a78bfa;"></i> 名单解析工具</div>
-                    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:10px;">上传名单文件，自动解析并导入到用户库</p>
-                    <input type="file" id="file-input" accept=".json,.csv,.txt,.xls,.xlsx">
-                    <div style="display:flex;gap:8px;margin-top:8px;">
-                        <button class="hdr-btn primary" onclick="parseFile()"><i class="fas fa-search"></i> 解析文件</button>
-                        <button class="hdr-btn ghost" onclick="importParsedToKV()"><i class="fas fa-cloud-arrow-up"></i> 导入到云端</button>
-                    </div>
-                    <div class="hint"><strong>支持格式：</strong>JSON / CSV / TXT / Excel<br><strong>必需字段：</strong>公司、工号、姓名、初始密码<br><strong>映射：</strong>公司→username，姓名→name，密码→password</div>
-                    <div id="column-mapping-area" style="display:none;margin-top:12px;">
-                        <div style="color:#fff;font-size:0.85rem;margin-bottom:6px;">列映射：</div>
-                        <div class="column-mapping">
-                            <label>username列：</label><select id="map-username"></select>
-                            <label>name列：</label><select id="map-name"></select>
-                            <label>password列：</label><select id="map-password"></select>
-                            <button class="action-btn edit" onclick="reparseWithMapping()">重新解析</button>
+            
+
+            <!-- 名单解析工具（整合到员工面板） -->
+                    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08);">
+                        <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-file-import" style="color:#a78bfa;"></i> 名单解析工具</div>
+                        <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:10px;">上传名单文件，自动解析并导入到用户库</p>
+                        <input type="file" id="file-input" accept=".json,.csv,.txt,.xls,.xlsx" style="font-size:0.85rem;color:#94a3b8;">
+                        <div style="display:flex;gap:8px;margin-top:8px;">
+                            <button class="hdr-btn primary" onclick="parseFile()" style="font-size:0.85rem;padding:6px 14px;"><i class="fas fa-search"></i> 解析文件</button>
+                            <button class="hdr-btn ghost" onclick="importParsedToKV()" style="font-size:0.85rem;padding:6px 14px;"><i class="fas fa-cloud-arrow-up"></i> 导入到云端</button>
                         </div>
+                        <div id="column-mapping-area" style="display:none;margin-top:12px;">
+                            <div style="color:#fff;font-size:0.85rem;margin-bottom:6px;">列映射：</div>
+                            <div class="column-mapping">
+                                <label>username列：</label><select id="map-username"></select>
+                                <label>name列：</label><select id="map-name"></select>
+                                <label>password列：</label><select id="map-password"></select>
+                                <button class="action-btn edit" onclick="reparseWithMapping()">重新解析</button>
+                            </div>
+                        </div>
+                        <div class="parsed-header" id="parsed-header" style="display:none;">
+                            <span class="parsed-count" id="parsed-count">已解析 0 条</span>
+                            <button class="copy-all-btn" onclick="copyAllJSON()"><i class="fas fa-copy"></i> 一键复制 JSON</button>
+                        </div>
+                        <div class="parsed-list" id="parsed-list" style="display:none;"></div>
+                        <div class="json-output-box" id="json-output-box" style="display:none;"></div>
                     </div>
-                    <div class="parsed-header" id="parsed-header" style="display:none;">
-                        <span class="parsed-count" id="parsed-count">已解析 0 条</span>
-                        <button class="copy-all-btn" onclick="copyAllJSON()"><i class="fas fa-copy"></i> 一键复制 JSON</button>
-                    </div>
-                    <div class="parsed-list" id="parsed-list" style="display:none;"></div>
-                    <div class="json-output-box" id="json-output-box" style="display:none;"></div>
                 </div>
             </div>
 
@@ -521,6 +521,93 @@
                     暂无版本记录
                 </div>
             </div>
+<!-- 广播管理面板 -->
+            <div class="tab-panel" id="tab-broadcast">
+                <div class="panel-title"><i class="fas fa-bullhorn"></i> 广播管理</div>
+
+                <!-- 广播播放配置 -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-cog" style="color:#60a5fa;"></i> 播放配置</div>
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.85rem;color:#94a3b8;">启用广播</label>
+                            <input type="checkbox" id="bc-enabled" checked style="width:18px;height:18px;accent-color:#6366f1;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.85rem;color:#94a3b8;">轮播间隔（秒）</label>
+                            <input type="number" id="bc-interval" value="8" min="3" max="60" style="width:70px;padding:6px 10px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.85rem;color:#94a3b8;">播放次数（0=无限）</label>
+                            <input type="number" id="bc-loop-count" value="0" min="0" max="99" style="width:70px;padding:6px 10px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.85rem;color:#94a3b8;">展示位置</label>
+                            <select id="bc-position" style="padding:6px 10px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                                <option value="top">页面顶部</option>
+                                <option value="bottom">页面底部</option>
+                            </select>
+                        </div>
+                        <button class="hdr-btn primary" onclick="saveBroadcastConfig()" style="white-space:nowrap;"><i class="fas fa-save"></i> 保存配置</button>
+                    </div>
+                </div>
+
+                <!-- 添加广播 -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-title" id="bc-form-title"><i class="fas fa-plus-circle" style="color:#a78bfa;"></i> 新增广播</div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+                        <div style="flex:2;min-width:200px;">
+                            <label style="font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:4px;">标题</label>
+                            <input id="bc-title" placeholder="如：v2.1 版本更新" style="width:100%;padding:8px 12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;outline:none;">
+                        </div>
+                        <div style="flex:1;min-width:120px;">
+                            <label style="font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:4px;">类型</label>
+                            <select id="bc-type" style="width:100%;padding:8px 12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                                <option value="notice">公告通知</option>
+                                <option value="update">版本更新</option>
+                                <option value="event">活动消息</option>
+                                <option value="champion">打榜冠军</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;min-width:100px;">
+                            <label style="font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:4px;">排序</label>
+                            <input type="number" id="bc-order" value="0" min="0" style="width:100%;padding:8px 12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:4px;">内容</label>
+                        <textarea id="bc-content" rows="3" placeholder="如：修复了多个bug，新增广播功能..." style="width:100%;padding:10px 14px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;outline:none;resize:vertical;font-family:inherit;"></textarea>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+                        <div style="flex:1;min-width:140px;">
+                            <label style="font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:4px;">开始日期（留空=立即）</label>
+                            <input type="date" id="bc-start" style="width:100%;padding:8px 12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                        </div>
+                        <div style="flex:1;min-width:140px;">
+                            <label style="font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:4px;">结束日期（留空=永久）</label>
+                            <input type="date" id="bc-end" style="width:100%;padding:8px 12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                        </div>
+                        <div style="display:flex;align-items:flex-end;gap:8px;">
+                            <label style="font-size:0.8rem;color:#94a3b8;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="bc-active" checked style="accent-color:#6366f1;"> 启用</label>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="hdr-btn primary" id="bc-submit" onclick="saveBroadcast()"><i class="fas fa-save"></i> 保存广播</button>
+                        <button class="hdr-btn ghost" id="bc-cancel" onclick="cancelBroadcastEdit()" style="display:none;"><i class="fas fa-times"></i> 取消编辑</button>
+                    </div>
+                </div>
+
+                <!-- 广播列表 -->
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-list" style="color:#34d399;"></i> 广播列表</div>
+                    <div id="broadcast-list"></div>
+                    <div id="broadcast-empty" style="text-align:center;padding:40px 0;color:#64748b;">
+                        <i class="fas fa-bullhorn" style="font-size:2rem;margin-bottom:12px;display:block;"></i>
+                        暂无广播消息
+                    </div>
+                </div>
+            </div>
+
         </div><!-- /admin-content -->
     </div><!-- /admin-body -->
 
@@ -614,7 +701,7 @@ let allUsers = [];
             // Online users list
             const tbody = document.getElementById('onlineList');
             if (online.users && online.users.length > 0) {
-                tbody.innerHTML = online.users.map(u => `<tr><td>${esc(u)}</td><td>-</td><td>在线中</td><td><button class="action-btn kick" onclick="kickUser('${esc(u)}')"><i class="fas fa-right-from-bracket"></i> 踢下线</button></td></tr>`).join('');
+                tbody.innerHTML = online.users.map(u => `<tr><td style="font-weight:600;">${esc(u.username || u)}</td><td>${esc(u.name || '-')}</td><td style="color:#64748b;font-size:0.8rem;">${u.lastSeen ? new Date(u.lastSeen).toLocaleTimeString() : '在线中'}</td><td><button class="action-btn kick" onclick="kickUser('${esc(u.username || u)}')"><i class="fas fa-right-from-bracket"></i> 踢下线</button></td></tr>`).join('');
             } else {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#64748b;">当前无在线用户</td></tr>';
             }
@@ -722,14 +809,25 @@ let allUsers = [];
 
     async function kickUser(username) {
         if (!confirm('确定要将 ' + username + ' 踢下线吗？')) return;
-        await adminFetch('admin/users', { method: 'PUT', body: JSON.stringify({ action: 'kick', username }) });
+        const result = await adminFetch('admin/kick', { method: 'POST', body: JSON.stringify({ username }) });
+        if (result && result.success) {
+            showAdminToast(username + ' 已踢下线', 'success');
+        } else {
+            showAdminToast('踢下线失败', 'error');
+        }
         loadOverview();
         loadUsers();
     }
 
     async function toggleBan(username, ban) {
-        const result = await adminFetch('admin/users', { method: 'PUT', body: JSON.stringify({ action: 'ban', username, ban }) });
-        if (result.success) { loadUsers(); }
+        const result = await adminFetch('admin/ban', { method: 'POST', body: JSON.stringify({ username, ban }) });
+        if (result && result.success) {
+            showAdminToast(ban ? username + ' 已封禁' : username + ' 已解封', 'success');
+            loadUsers();
+            loadOverview();
+        } else {
+            showAdminToast('操作失败', 'error');
+        }
     }
 
     // ========== 系统设置 ==========
@@ -1110,13 +1208,17 @@ let allUsers = [];
                 const items = document.querySelectorAll('.version-item');
                 // 从已加载的DOM中获取数据（需重新获取）
                 adminFetch('changelog/list').then(res => {
-                    if (!res) return;
+                    if (!res || !res.versions) return;
                     const v = res.versions[idx];
-                    document.getElementById('version-number').value = v.version;
-                    document.getElementById('version-title').value = v.title || '';
-                    document.getElementById('version-content').value = v.content;
+                    if (v) {
+                        document.getElementById('version-number').value = v.version;
+                        document.getElementById('version-title').value = v.title || '';
+                        document.getElementById('version-content').value = v.content;
+                        document.getElementById('version-save-idx').value = v.id || '';
+                    }
                 });
             } else {
+                document.getElementById('version-save-idx').value = '';
                 document.getElementById('version-number').value = '';
                 document.getElementById('version-title').value = '';
                 document.getElementById('version-content').value = '';
@@ -1135,7 +1237,7 @@ let allUsers = [];
             if (!version) { alert('请输入版本号'); return; }
             if (!content) { alert('请输入更新内容'); return; }
 
-            const body = { version, title, content, idx: editingVersionIdx };
+            const body = { id: document.getElementById('version-save-idx').value || '', version, title, content };
             const res = await adminFetch('changelog/save', { method: 'POST', body: JSON.stringify(body) });
             if (res && res.success) {
                 closeVersionModal();
@@ -1151,7 +1253,11 @@ let allUsers = [];
 
         async function deleteVersion(idx) {
             if (!confirm('确定删除此版本记录？')) return;
-            const res = await adminFetch('changelog/delete', { method: 'POST', body: JSON.stringify({ idx }) });
+            // 从已渲染的 DOM 获取 id
+            const items = document.querySelectorAll('.version-item');
+            const itemId = items[idx] ? items[idx].dataset.id : '';
+            if (!itemId) { alert('无法获取版本ID'); return; }
+            const res = await adminFetch('changelog/delete', { method: 'POST', body: JSON.stringify({ id: parseInt(itemId) }) });
             if (res && res.success) {
                 loadChangelog();
             } else {
@@ -1195,7 +1301,7 @@ let allUsers = [];
     window.switchTab = function(tab, el) {
             origSwitchTab(tab, el);
             if (tab === 'changelog') loadChangelog();
-            if (tab === 'whitelist') { loadWhitelist(); }
+            if (tab === 'broadcast') { loadBroadcastList(); loadBroadcastConfig(); }
         };
     // ========== 学习统计管理 ==========
     async function loadStudyStats() {

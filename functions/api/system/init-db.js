@@ -53,6 +53,17 @@ CREATE TABLE IF NOT EXISTS changelogs (
     content TEXT DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS broadcasts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    type TEXT NOT NULL DEFAULT 'notice',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    start_date TEXT NOT NULL DEFAULT '',
+    end_date TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE INDEX IF NOT EXISTS idx_study_records_username ON study_records(username);
 CREATE INDEX IF NOT EXISTS idx_study_records_word ON study_records(username, word_id);
 CREATE INDEX IF NOT EXISTS idx_study_stats_username ON study_stats(username);
@@ -61,6 +72,7 @@ CREATE INDEX IF NOT EXISTS idx_employees_code ON employees(company_code, emp_no)
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_leaderboard_period ON leaderboard_entries(period_key);
 CREATE INDEX IF NOT EXISTS idx_changelogs_id ON changelogs(id);
+CREATE INDEX IF NOT EXISTS idx_broadcasts_active ON broadcasts(is_active, display_order);
 `;
 
 
@@ -71,6 +83,11 @@ const ALTERS = [
     'ALTER TABLE users ADD COLUMN last_heartbeat TEXT',
     'ALTER TABLE leaderboard_entries ADD COLUMN name TEXT',
     'ALTER TABLE leaderboard_entries ADD COLUMN period TEXT',
+    'ALTER TABLE broadcasts ADD COLUMN type TEXT DEFAULT \'notice\'',
+    'ALTER TABLE broadcasts ADD COLUMN is_active INTEGER DEFAULT 1',
+    'ALTER TABLE broadcasts ADD COLUMN display_order INTEGER DEFAULT 0',
+    'ALTER TABLE broadcasts ADD COLUMN start_date TEXT DEFAULT \'\'',
+    'ALTER TABLE broadcasts ADD COLUMN end_date TEXT DEFAULT \'\'',
 ];
 // 补全新增列的默认值
 const UPDATES = [

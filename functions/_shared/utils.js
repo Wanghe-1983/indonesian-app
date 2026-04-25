@@ -49,6 +49,13 @@ export async function onRequest(context) {
         'changelog/list':               { get: handleChangelogList },
         'changelog/save':               { post: handleChangelogSave },
         'changelog/delete':             { post: handleChangelogDelete },
+
+        // ========== 广播 ==========
+        'broadcast/list':               { get: handleBroadcastList },
+        'broadcast/save':               { post: handleBroadcastSave },
+        'broadcast/delete':             { post: handleBroadcastDelete },
+        'broadcast/active':             { get: handleBroadcastActive },
+        'broadcast/config':             { get: handleBroadcastGetConfig, put: handleBroadcastPutConfig },
     };
 
     const route = routes[path];
@@ -683,8 +690,14 @@ async function handleChangelogList(context) {
 
 async function handleChangelogSave(context) {
     await requireAdmin(context);
-    const { version, title, content } = await context.request.json();
-    await dbRun(context.env, 'INSERT INTO changelogs (version, title, content) VALUES (?, ?, ?)', [version, title, content || '']);
+    const { id, version, title, content } = await context.request.json();
+    if (id) {
+        // 编辑已有记录
+        await dbRun(context.env, 'UPDATE changelogs SET version = ?, title = ?, content = ? WHERE id = ?', [version, title, content || '', id]);
+    } else {
+        // 新增
+        await dbRun(context.env, 'INSERT INTO changelogs (version, title, content) VALUES (?, ?, ?)', [version, title, content || '']);
+    }
     return jsonOK();
 }
 
@@ -697,3 +710,50 @@ async function handleChangelogDelete(context) {
     return jsonOK();
 }
 
+
+// ========== 广播管理 ==========
+async function handleBroadcastList(context) {
+    await requireAdmin(context);
+    const broadcasts = await dbAll(context.env, 'SELECT id, title, content, type, is_active as isActive, display_order as displayOrder, start_date as startDate, end_date as endDate, created_at as createdAt FROM broadcasts ORDER BY display_order ASC, id DESC');
+    return json({ broadcasts });
+}
+
+async function handleBroadcastSave(context) {
+    await requireAdmin(context);
+    const { id, title, content, type, isActive, displayOrder, startDate, endDate } = await context.request.json();
+    if (id) {
+        await dbRun(context.env, 'UPDATE broadcasts SET title = ?, content = ?, type = ?, is_active = ?, display_order = ?, start_date = ?, end_date = ? WHERE id = ?',
+            [title, content, type || 'notice', isActive ? 1 : 0, displayOrder || 0, startDate || '', endDate || '', id]);
+    } else {
+        await dbRun(context.env, 'INSERT INTO broadcasts (title, content, type, is_active, display_order, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [title, content, type || 'notice', isActive !== false ? 1 : 0, displayOrder || 0, startDate || '', endDate || '']);
+    }
+    return jsonOK();
+}
+
+async function handleBroadcastDelete(context) {
+    await requireAdmin(context);
+    const { id } = await context.request.json();
+    if (id) await dbRun(context.env, 'DELETE FROM broadcasts WHERE id = ?', [id]);
+    return jsonOK();
+}
+
+async function handleBroadcastActive(context) {
+    // 公开接口，前端获取活跃广播
+    const broadcasts = await dbAll(context.env,
+        "SELECT id, title, content, type, display_order as displayOrder FROM broadcasts WHERE is_active = 1 AND (start_date = '' OR start_date <= datetime('now')) AND (end_date = '' OR end_date >= datetime('now')) ORDER BY display_order ASC, id DESC");
+    return json({ broadcasts });
+}
+
+async function handleBroadcastGetConfig(context) {
+    await requireAdmin(context);
+    const data = await context.env.INDO_LEARN_KV.get('broadcast_config');
+    return json(data ? JSON.parse(data) : { enabled: true, interval: 8, loopCount: 0, position: 'top' });
+}
+
+async function handleBroadcastPutConfig(context) {
+    await requireAdmin(context);
+    const config = await context.request.json();
+    await context.env.INDO_LEARN_KV.put('broadcast_config', JSON.stringify(config));
+    return jsonOK({ message: '广播配置已保存' });
+}
