@@ -334,6 +334,19 @@ async function handleDeleteUser(context) {
         // 管理员删除他人：需管理员权限
         await requireAdmin(context);
     }
+    // 清理在线状态
+    const onlineData = await env.INDO_LEARN_KV.get('online_users');
+    const onlineUsers = onlineData ? JSON.parse(onlineData) : [];
+    await env.INDO_LEARN_KV.put('online_users', JSON.stringify(onlineUsers.filter(u => u.username !== targetUsername)), { expirationTtl: 300 });
+    // 清理该用户的所有 token（KV scan by prefix）
+    const list = await env.INDO_LEARN_KV.list({ prefix: 'token_' });
+    for (const key of list.keys) {
+        const owner = await env.INDO_LEARN_KV.get(key.name);
+        if (owner === targetUsername) {
+            await env.INDO_LEARN_KV.delete(key.name);
+        }
+    }
+    // 删除用户
     await dbRun(env, 'DELETE FROM users WHERE username = ?', [targetUsername]);
     return jsonOK({ message: '已删除' });
 }
