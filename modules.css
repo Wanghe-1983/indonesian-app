@@ -8,6 +8,18 @@
     margin: 0 auto;
 }
 
+/* ========== 子Tab和内容区域统一 max-width ========== */
+.study-sub-tabs,
+.challenge-sub-tabs,
+#page-study,
+#page-study-practice,
+#page-study-stats,
+#page-challenge {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* ========== 子Tab ========== */
 .study-sub-tabs, .challenge-sub-tabs {
     display: flex;

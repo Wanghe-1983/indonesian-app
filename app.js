@@ -256,18 +256,24 @@ function initUI() {
 
 <main class="main-container">
     <div class="nav-tabs" id="nav-tabs">
-        <button class="nav-tab active" onclick="switchPage('learn')" data-tab="learn"><i class="fas fa-book-open"></i> 学习</button>
-        <button class="nav-tab" onclick="switchPage('course')" data-tab="course"><i class="fas fa-graduation-cap"></i> 课程</button>
-        <button class="nav-tab" onclick="switchPage('practice')" data-tab="practice"><i class="fas fa-pen-fancy"></i> 练习</button>
-        <button class="nav-tab" onclick="switchPage('dashboard')" data-tab="dashboard"><i class="fas fa-chart-line"></i> 统计</button>
+        <button class="nav-tab active" onclick="switchMainPage('study')" data-tab="study"><i class="fas fa-book-open"></i> 勤学苦练</button>
+        <button class="nav-tab" onclick="switchMainPage('challenge')" data-tab="challenge"><i class="fas fa-gamepad"></i> 闯天关</button>
     </div>
-    <div id="page-learn">
     <header style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <h1 class="main-title">印尼语学习助手</h1>
         <div class="user-status" id="user-status" style="font-size:0.9rem;">
             欢迎，管理员
         </div>
     </header>
+
+    <!-- 勤学苦练子Tab -->
+    <div class="study-sub-tabs" id="study-sub-tabs">
+        <button class="sub-tab active" data-stab="learn" onclick="switchStudySubTab('learn')"><i class="fas fa-book-open"></i> 学习</button>
+        <button class="sub-tab" data-stab="practice" onclick="switchStudySubTab('practice')"><i class="fas fa-pen-fancy"></i> 练习</button>
+        <button class="sub-tab" data-stab="stats" onclick="switchStudySubTab('stats')"><i class="fas fa-chart-line"></i> 统计</button>
+    </div>
+
+    <div id="page-study">
 
     <div class="top-info-bar">
         <div class="date-time" id="date-time">${new Date().toLocaleString()}</div>
@@ -386,21 +392,17 @@ function initUI() {
         </div>
     </div>
 
-    </div><!-- end page-learn -->
-    <div id="page-course" style="display:none;">
-        <div class="course-top-tabs">
-            <button class="course-tab active" data-ctab="study" onclick="switchCourseTab('study')">
-                <i class="fas fa-book-open"></i> 勤学苦练
-            </button>
-            <button class="course-tab" data-ctab="challenge" onclick="switchCourseTab('challenge')">
-                <i class="fas fa-gamepad"></i> 闯天关
-            </button>
+    </div><!-- end page-study -->
+    <div id="page-study-practice" style="display:none;"></div>
+    <div id="page-study-stats" style="display:none;"></div>
+    <div id="page-challenge" style="display:none;">
+        <div class="challenge-sub-tabs" id="challenge-sub-tabs">
+            <button class="sub-tab active" data-ctab="stages" onclick="switchChallengeSubTab('stages')"><i class="fas fa-gamepad"></i> 闯关</button>
+            <button class="sub-tab" data-ctab="rank" onclick="switchChallengeSubTab('rank')"><i class="fas fa-trophy"></i> 排行榜</button>
         </div>
-        <div id="course-tab-study"></div>
-        <div id="course-tab-challenge" style="display:none;"></div>
+        <div id="challenge-tab-stages"></div>
+        <div id="challenge-tab-rank" style="display:none;"></div>
     </div>
-    <div id="page-practice" style="display:none;"></div>
-    <div id="page-dashboard" style="display:none;"></div>
     <div class="control-panel" id="control-panel">
 
     <div class="copyright" id="copyright">
@@ -594,9 +596,10 @@ async function loadDB() {
 }
 
 // 构建左侧菜单 - 收藏夹部分重构 + 生词/短语展示所有单词
-function buildMenu() {
+async function buildMenu() {
     const menuBox = document.getElementById('menu-box');
-    // 错题集 & 收藏夹
+
+    // ===== 错题集 & 收藏夹（保持原有逻辑） =====
     const wrongFavs = favs.filter(f => f._wrongBook);
     const normalFavs = favs.filter(f => !f._wrongBook);
 
@@ -634,47 +637,103 @@ function buildMenu() {
     </div>
     `;
 
-        // 遍历词库分类 - 展开课程显示所有单词
-    for (const catId in db) {
-        const cat = db[catId];
-        const catName = catId === "1" ? "生词 (Vocabulary)" : catId === "2" ? "短语 (Phrases)" : cat.name;
-        
-        // 构建课程+单词列表
-        let lessonsHTML = '';
-        for (const lessonId in cat.lessons) {
-            const lesson = cat.lessons[lessonId];
-            // 课程标题
-            lessonsHTML += `
-            <div style="padding:8px 10px;font-size:14px;color:#a5b4fc;font-weight:600;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('active')">
-                课程 ${lessonId} (${lesson.words.length} 词)
-            </div>
-            `;
-            // 单词列表（默认展开）
-            lessonsHTML += `
-            <div class="sub-word-list" style="display:block;padding-left:15px;">
-                ${lesson.words.map((word, idx) => `
-                    <div style="padding:6px 10px;font-size:12px;color:#94a3b8;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" 
-                         onclick="loadLesson('${catId}', '${lessonId}', ${idx})"
-                         title="${word.indonesian} - ${word.chinese}">
-                        ${idx+1}. ${word.indonesian} - ${word.chinese}
-                    </div>
-                `).join('')}
-            </div>
-            `;
-        }
+    // ===== 课程导航（从 course-content.json 加载） =====
+    // 先显示占位，异步加载后更新
+    menuHTML += '<div id="course-menu-placeholder"><div style="padding:12px 10px;font-size:13px;color:#64748b;text-align:center;"><i class="fas fa-spinner fa-spin"></i> 加载课程...</div></div>';
+    menuBox.innerHTML = menuHTML;
 
-        menuHTML += `
+    // 异步加载课程数据
+    const courseData = await loadCourseMenuData();
+    if (!courseData) {
+        const ph = document.getElementById('course-menu-placeholder');
+        if (ph) ph.innerHTML = '<div style="padding:12px 10px;font-size:13px;color:#f87171;text-align:center;">课程数据加载失败</div>';
+        return;
+    }
+
+    const levels = courseData.levels || [];
+    let courseMenuHTML = '';
+
+    // 已存在的级别
+    for (const lv of levels) {
+        let unitsHTML = '';
+        for (const unit of lv.units) {
+            let typesHTML = '';
+            const typeMap = [
+                { key: 'words', label: '生词', icon: 'fa-spell-check' },
+                { key: 'sentences', label: '短句', icon: 'fa-comment-dots' },
+                { key: 'dialogues', label: '对话', icon: 'fa-comments' },
+            ];
+            for (const tm of typeMap) {
+                const items = unit[tm.key] || [];
+                if (items.length === 0) continue;
+                let itemsListHTML = items.map((item, idx) => {
+                    const escapedIndo = (item.indonesian || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const escapedZh = (item.chinese || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    let displayText = item.indonesian;
+                    if (item.title) displayText = item.title + (item.title_id ? ' (' + item.title_id + ')' : '');
+                    return '<div style="padding:5px 10px 5px 20px;font-size:12px;color:#94a3b8;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" ' +
+                        'onclick="loadCourseWord(\'' + lv.id + '\',\'' + unit.id + '\',\'' + tm.key + '\',' + idx + ')" ' +
+                        'title="' + escapedIndo + ' - ' + escapedZh + '">' +
+                        (idx + 1) + '. ' + displayText + '</div>';
+                }).join('');
+
+                typesHTML += `
+                <div style="padding:7px 10px 3px 10px;font-size:13px;color:#a5b4fc;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="this.nextElementSibling.classList.toggle('active')">
+                    <i class="fas ${tm.icon}" style="font-size:11px;opacity:0.7;"></i> ${tm.label} (${items.length})
+                    <i class="fas fa-chevron-right" style="font-size:9px;margin-left:auto;opacity:0.4;transition:transform 0.2s;"></i>
+                </div>
+                <div class="sub-word-list">${itemsListHTML}</div>`;
+            }
+            if (typesHTML) {
+                unitsHTML += `
+                <div style="padding:7px 10px;font-size:13px;color:#e2e8f0;font-weight:600;cursor:pointer;" onclick="this.nextElementSibling.classList.toggle('active')">
+                    ${unit.name} <i class="fas fa-chevron-right" style="font-size:9px;margin-left:4px;opacity:0.4;transition:transform 0.2s;"></i>
+                </div>
+                <div class="sub-menu" style="padding-left:8px;">${typesHTML}</div>`;
+            }
+        }
+        const lvIcon = lv.icon || 'fa-book';
+        const lvColor = lv.color || 'var(--accent)';
+        courseMenuHTML += `
         <div class="cat-item">
             <div class="cat-head" onclick="this.nextElementSibling.classList.toggle('active')">
-                <span>${catId}. ${catName}</span><i class="fas fa-chevron-down"></i>
+                <span><i class="fas ${lvIcon}" style="color:${lvColor};margin-right:4px;"></i> ${lv.id}级课程 - ${lv.name}</span>
+                <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="sub-menu">
-                ${lessonsHTML}
-            </div>
-        </div>
-        `;
+            <div class="sub-menu">${unitsHTML}</div>
+        </div>`;
     }
-    menuBox.innerHTML = menuHTML;
+
+    // 未建设的级别 (2~7)
+    for (let n = levels.length; n <= 7; n++) {
+        courseMenuHTML += `
+        <div class="cat-item">
+            <div class="cat-head" style="opacity:0.4;cursor:default;">
+                <span><i class="fas fa-lock" style="margin-right:4px;"></i> ${n}级课程</span>
+                <span style="font-size:11px;color:#64748b;">建设中</span>
+            </div>
+        </div>`;
+    }
+
+    // 替换占位
+    const ph = document.getElementById('course-menu-placeholder');
+    if (ph) {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = courseMenuHTML;
+        ph.replaceWith(...wrapper.children);
+    }
+}
+
+// 从侧边栏点击具体单词/短句/对话 → 加载到学习卡片
+function loadCourseWord(levelId, unitId, type, index) {
+    if (!courseMenuData) return;
+    const level = courseMenuData.levels.find(l => String(l.id) === String(levelId));
+    if (!level) return;
+    const unit = level.units.find(u => u.id === unitId);
+    if (!unit) return;
+    const items = unit[type] || [];
+    if (items.length === 0) return;
+    loadCourseItemsToCard(items, index);
 }
 
 // 显示单词（适配 indonesian/chinese 字段）
@@ -1411,6 +1470,12 @@ async function loadStudyFromKV() {
 
 // 切换单词
 function navWord(dir) {
+    // 课程浏览模式
+    if (courseBrowseItems.length > 0) {
+        navCourseWord(dir);
+        return;
+    }
+    // 旧词库模式（保留）
     const maxIdx = db[curCat].lessons[curLesson].words.length - 1;
     let newIdx = curIdx + dir;
     if (newIdx < 0) newIdx = maxIdx;
@@ -1708,34 +1773,67 @@ function escHtml(str) {
 // ============================================================
 // 【v1.2 页面导航切换】
 // ============================================================
-function switchPage(page) {
+function switchMainPage(page) {
     currentPage = page;
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.tab === page);
     });
-    document.getElementById('page-learn').style.display = page === 'learn' ? 'block' : 'none';
-    document.getElementById('page-course').style.display = page === 'course' ? 'block' : 'none';
-    document.getElementById('page-practice').style.display = page === 'practice' ? 'block' : 'none';
-    document.getElementById('page-dashboard').style.display = page === 'dashboard' ? 'block' : 'none';
-    // 统计页隐藏侧边栏和版权
-    const sidebar = document.getElementById('sidebar');
-    const copyRight = document.getElementById('copyright');
-    if (page === 'dashboard') {
-        sidebar.style.display = 'none';
-        if (copyRight) copyRight.style.display = 'none';
-    } else {
-        sidebar.style.display = '';
+    // 勤学苦练区域
+    const studyArea = document.getElementById('study-sub-tabs');
+    const pageStudy = document.getElementById('page-study');
+    const pagePractice = document.getElementById('page-study-practice');
+    const pageStats = document.getElementById('page-study-stats');
+    // 闯天关区域
+    const pageChallenge = document.getElementById('page-challenge');
+    const challengeArea = document.getElementById('challenge-sub-tabs');
+
+    if (page === 'study') {
+        if (studyArea) studyArea.style.display = '';
+        if (pageStudy) pageStudy.style.display = '';
+        // 显示当前子Tab对应的内容
+        const activeSub = document.querySelector('#study-sub-tabs .sub-tab.active');
+        const subTab = activeSub ? activeSub.dataset.stab : 'learn';
+        if (pagePractice) pagePractice.style.display = subTab === 'practice' ? '' : 'none';
+        if (pageStats) pageStats.style.display = subTab === 'stats' ? '' : 'none';
+        if (challengeArea) challengeArea.style.display = 'none';
+        if (pageChallenge) pageChallenge.style.display = 'none';
+        // 功能控件在学习页可见
+        const ctrl = document.getElementById('learn-inline-controls');
+        if (ctrl) ctrl.style.display = 'flex';
+        // 侧边栏和版权可见
+        const sidebar = document.getElementById('sidebar');
+        const copyRight = document.getElementById('copyright');
+        if (sidebar) sidebar.style.display = '';
+        if (copyRight) copyRight.style.display = '';
+    } else if (page === 'challenge') {
+        if (studyArea) studyArea.style.display = 'none';
+        if (pageStudy) pageStudy.style.display = 'none';
+        if (pagePractice) pagePractice.style.display = 'none';
+        if (pageStats) pageStats.style.display = 'none';
+        if (challengeArea) challengeArea.style.display = '';
+        if (pageChallenge) pageChallenge.style.display = '';
+        // 功能控件隐藏
+        const ctrl = document.getElementById('learn-inline-controls');
+        if (ctrl) ctrl.style.display = 'none';
+        // 侧边栏和版权可见
+        const sidebar = document.getElementById('sidebar');
+        const copyRight = document.getElementById('copyright');
+        if (sidebar) sidebar.style.display = '';
         if (copyRight) copyRight.style.display = '';
     }
-    // 功能区只在学习和练习页可见
-    const learnCtrls = document.getElementById('learn-inline-controls');
-    if (learnCtrls) learnCtrls.style.display = (page === 'dashboard') ? 'none' : 'flex';
-    const inlineCtrl = document.getElementById('learn-inline-controls');
-    if (inlineCtrl) inlineCtrl.style.display = (page === 'dashboard') ? 'none' : 'flex';
-    if (page === 'course') initCoursePage();
-    else if (page === 'practice') initPracticePage();
-    else if (page === 'dashboard') initDashboardPage();
+    // 延迟初始化模块
+    if (page === 'study') {
+        const activeSub = document.querySelector('#study-sub-tabs .sub-tab.active');
+        const subTab = activeSub ? activeSub.dataset.stab : 'learn';
+        if (subTab === 'practice') initPracticePage();
+        else if (subTab === 'stats') initDashboardPage();
+    } else if (page === 'challenge') {
+        initChallengePage();
+    }
 }
+
+// 兼容旧代码中可能调用的 switchPage
+function switchPage(page) { switchMainPage(page); }
 
 // ============================================================
 // 【v1.2 练习模式】
@@ -1769,7 +1867,7 @@ function shuffleArray(arr) {
     return a;
 }
 function initPracticePage() {
-    const c = document.getElementById('page-practice');
+    const c = document.getElementById('page-study-practice');
     if (c.dataset.init) return;
     c.dataset.init = '1';
     let catOpts = '';
@@ -2113,7 +2211,7 @@ function resetPractice() {
 // 【v1.2 学习统计仪表盘】
 // ============================================================
 function initDashboardPage() {
-    const c = document.getElementById('page-dashboard');
+    const c = document.getElementById('page-study-stats');
     if (c.dataset.init) { c.dataset.init = '2'; } // always refresh
     else { c.dataset.init = '2'; }
     const allW = getAllWords();
@@ -2593,28 +2691,113 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-// ========== 课程页面：勤学苦练 + 闯天关 ==========
-let courseInitDone = { study: false, challenge: false };
-
-function switchCourseTab(tab) {
-    document.querySelectorAll('.course-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.ctab === tab);
+// ========== 勤学苦练 子Tab切换 ==========
+function switchStudySubTab(tab) {
+    document.querySelectorAll('#study-sub-tabs .sub-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.stab === tab);
     });
-    document.getElementById('course-tab-study').style.display = tab === 'study' ? '' : 'none';
-    document.getElementById('course-tab-challenge').style.display = tab === 'challenge' ? '' : 'none';
-    if (tab === 'study' && !courseInitDone.study) {
-        StudyModule.init(document.getElementById('course-tab-study'));
-        courseInitDone.study = true;
-    }
-    if (tab === 'challenge' && !courseInitDone.challenge) {
-        ChallengeModule.init(document.getElementById('course-tab-challenge'));
-        courseInitDone.challenge = true;
+    const pageStudy = document.getElementById('page-study');
+    const pagePractice = document.getElementById('page-study-practice');
+    const pageStats = document.getElementById('page-study-stats');
+    const ctrl = document.getElementById('learn-inline-controls');
+
+    if (tab === 'learn') {
+        if (pageStudy) pageStudy.style.display = '';
+        if (pagePractice) pagePractice.style.display = 'none';
+        if (pageStats) pageStats.style.display = 'none';
+        if (ctrl) ctrl.style.display = 'flex';
+    } else if (tab === 'practice') {
+        if (pageStudy) pageStudy.style.display = 'none';
+        if (pagePractice) pagePractice.style.display = '';
+        if (pageStats) pageStats.style.display = 'none';
+        if (ctrl) ctrl.style.display = 'none';
+        initPracticePage();
+    } else if (tab === 'stats') {
+        if (pageStudy) pageStudy.style.display = 'none';
+        if (pagePractice) pagePractice.style.display = 'none';
+        if (pageStats) pageStats.style.display = '';
+        if (ctrl) ctrl.style.display = 'none';
+        initDashboardPage();
     }
 }
 
-function initCoursePage() {
-    if (!courseInitDone.study) {
-        StudyModule.init(document.getElementById('course-tab-study'));
-        courseInitDone.study = true;
+// ========== 闯天关 子Tab切换 ==========
+let challengeInitialized = false;
+
+function switchChallengeSubTab(tab) {
+    document.querySelectorAll('#challenge-sub-tabs .sub-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.ctab === tab);
+    });
+    const stagesEl = document.getElementById('challenge-tab-stages');
+    const rankEl = document.getElementById('challenge-tab-rank');
+    if (stagesEl) stagesEl.style.display = tab === 'stages' ? '' : 'none';
+    if (rankEl) rankEl.style.display = tab === 'rank' ? '' : 'none';
+}
+
+function initChallengePage() {
+    if (!challengeInitialized) {
+        ChallengeModule.init(document.getElementById('challenge-tab-stages'));
+        challengeInitialized = true;
     }
+}
+
+// ========== 侧边栏课程数据加载 ==========
+let courseMenuData = null;
+
+async function loadCourseMenuData() {
+    if (courseMenuData) return courseMenuData;
+    try {
+        const res = await fetch('./public/course-content.json?t=' + Date.now());
+        if (res.ok) {
+            courseMenuData = await res.json();
+            return courseMenuData;
+        }
+    } catch (e) {
+        console.error('加载课程数据失败:', e);
+    }
+    return null;
+}
+
+// ========== 从侧边栏加载课程内容到学习卡片 ==========
+// courseItems: 当前可浏览的课程条目列表
+let courseBrowseItems = [];
+let courseBrowseIndex = 0;
+
+function loadCourseItemsToCard(items, startIndex) {
+    courseBrowseItems = items || [];
+    courseBrowseIndex = startIndex || 0;
+    if (courseBrowseItems.length === 0) return;
+    // 确保在勤学苦练-学习Tab
+    switchMainPage('study');
+    switchStudySubTab('learn');
+    displayCourseItem(courseBrowseItems[courseBrowseIndex]);
+}
+
+function displayCourseItem(item) {
+    if (!item) return;
+    const idxEl = document.getElementById('word-idx');
+    const indoEl = document.getElementById('disp-indo');
+    const zhEl = document.getElementById('disp-zh');
+    if (idxEl) idxEl.textContent = String(courseBrowseIndex + 1).padStart(2, '0');
+    if (indoEl) indoEl.textContent = item.indonesian;
+    if (zhEl) zhEl.textContent = item.chinese;
+    // 停止当前播放
+    if (typeof stopSpeech === 'function') stopSpeech();
+    // 更新收藏按钮状态
+    updateFavBtnForCourse();
+}
+
+function navCourseWord(dir) {
+    if (courseBrowseItems.length === 0) return;
+    const wasSpeaking = typeof isSpeaking === 'function' && isSpeaking();
+    if (wasSpeaking && typeof stopSpeech === 'function') stopSpeech();
+    courseBrowseIndex += dir;
+    if (courseBrowseIndex < 0) courseBrowseIndex = courseBrowseItems.length - 1;
+    if (courseBrowseIndex >= courseBrowseItems.length) courseBrowseIndex = 0;
+    displayCourseItem(courseBrowseItems[courseBrowseIndex]);
+}
+
+function updateFavBtnForCourse() {
+    // 收藏功能保持原有逻辑
+    if (typeof updateFavBtn === 'function') updateFavBtn();
 }
