@@ -1791,10 +1791,9 @@ function escHtml(str) {
 // ============================================================
 function switchMainPage(page) {
     currentPage = page;
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.tab === page);
-    });
 
+    const mainContainer = document.querySelector('.main-container');
+    const navTabs = document.getElementById('nav-tabs');
     const sidebar = document.getElementById('sidebar');
     const copyRight = document.getElementById('copyright');
     const studyArea = document.getElementById('study-sub-tabs');
@@ -1805,6 +1804,7 @@ function switchMainPage(page) {
     const pageChallenge = document.getElementById('page-challenge');
     const ctrl = document.getElementById('learn-inline-controls');
     const toggleTab = document.querySelector('.toggle-tab');
+    const mainHeader = document.querySelector('.main-container > header');
 
     // 先全部隐藏
     if (pageHome) pageHome.style.display = 'none';
@@ -1816,17 +1816,21 @@ function switchMainPage(page) {
     if (ctrl) ctrl.style.display = 'none';
 
     if (page === 'home') {
-        // 主页：隐藏侧边栏和header
+        // 主页：隐藏侧边栏、导航栏、header，铺满全屏
         if (pageHome) pageHome.style.display = '';
+        if (mainContainer) mainContainer.classList.add('full-width');
+        if (navTabs) navTabs.style.display = 'none';
         if (sidebar) sidebar.style.display = 'none';
         if (toggleTab) toggleTab.style.display = 'none';
-        if (copyRight) copyRight.style.display = '';
-        // 隐藏学习页面的header（主页有自己的标题区）
-        const mainHeader = document.querySelector('.main-container > header');
         if (mainHeader) mainHeader.style.display = 'none';
+        if (copyRight) copyRight.style.display = '';
     } else if (page === 'study') {
-        // 勤学苦练：显示侧边栏
-        const mainHeader = document.querySelector('.main-container > header');
+        // 勤学苦练：显示侧边栏，导航栏改为返回+标题
+        if (mainContainer) mainContainer.classList.remove('full-width');
+        if (navTabs) {
+            navTabs.style.display = '';
+            navTabs.innerHTML = `<button class="nav-tab back-home-btn" onclick="switchMainPage('home')" style="flex:0;padding:10px 16px;gap:6px;"><i class="fas fa-chevron-left"></i> 主页</button><div class="nav-tab" style="flex:1;cursor:default;background:var(--accent);color:white;box-shadow:0 4px 12px var(--accent-glow);"><i class="fas fa-book-open"></i> 勤学苦练</div>`;
+        }
         if (mainHeader) mainHeader.style.display = '';
         if (studyArea) studyArea.style.display = '';
         if (pageStudy) pageStudy.style.display = '';
@@ -1842,8 +1846,12 @@ function switchMainPage(page) {
         if (subTab === 'practice') initPracticePage();
         else if (subTab === 'stats') initDashboardPage();
     } else if (page === 'challenge') {
-        // 闯天关：隐藏侧边栏
-        const mainHeader = document.querySelector('.main-container > header');
+        // 闯天关：隐藏侧边栏，导航栏改为返回+标题
+        if (mainContainer) mainContainer.classList.add('full-width');
+        if (navTabs) {
+            navTabs.style.display = '';
+            navTabs.innerHTML = `<button class="nav-tab back-home-btn" onclick="switchMainPage('home')" style="flex:0;padding:10px 16px;gap:6px;"><i class="fas fa-chevron-left"></i> 主页</button><div class="nav-tab" style="flex:1;cursor:default;background:var(--accent);color:white;box-shadow:0 4px 12px var(--accent-glow);"><i class="fas fa-gamepad"></i> 闯天关</div>`;
+        }
         if (mainHeader) mainHeader.style.display = '';
         if (pageChallenge) pageChallenge.style.display = '';
         if (sidebar) sidebar.style.display = 'none';
