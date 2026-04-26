@@ -257,6 +257,7 @@ function initUI() {
 <main class="main-container">
     <div class="nav-tabs" id="nav-tabs">
         <button class="nav-tab active" onclick="switchPage('learn')" data-tab="learn"><i class="fas fa-book-open"></i> 学习</button>
+        <button class="nav-tab" onclick="switchPage('course')" data-tab="course"><i class="fas fa-graduation-cap"></i> 课程</button>
         <button class="nav-tab" onclick="switchPage('practice')" data-tab="practice"><i class="fas fa-pen-fancy"></i> 练习</button>
         <button class="nav-tab" onclick="switchPage('dashboard')" data-tab="dashboard"><i class="fas fa-chart-line"></i> 统计</button>
     </div>
@@ -386,6 +387,7 @@ function initUI() {
     </div>
 
     </div><!-- end page-learn -->
+    <div id="page-course" style="display:none;"></div>
     <div id="page-practice" style="display:none;"></div>
     <div id="page-dashboard" style="display:none;"></div>
     <div class="control-panel" id="control-panel">

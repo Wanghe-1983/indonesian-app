@@ -1,0 +1,350 @@
+{
+  "levels": [
+    {
+      "id": 0,
+      "name": "通用印尼语学习手册",
+      "bipa": "BIPA 0",
+      "description": "零基础入门，掌握发音、问候、日常交流等基础能力",
+      "color": "#10b981",
+      "icon": "fa-seedling",
+      "chapters": [
+        {
+          "id": "0-1",
+          "name": "基础发音篇",
+          "units": [
+            "Unit 1 印尼语字母与发音",
+            "Unit 2 元音与辅音",
+            "Unit 3 常见发音规则",
+            "Unit 4 语调与重音"
+          ]
+        },
+        {
+          "id": "0-2",
+          "name": "基本问候与称呼篇",
+          "units": [
+            "Unit 1 日常问候语",
+            "Unit 2 自我介绍",
+            "Unit 3 称呼用语",
+            "Unit 4 感谢与道歉",
+            "Unit 5 请求与邀请",
+            "Unit 6 数字",
+            "Unit 7 时间表达"
+          ]
+        },
+        {
+          "id": "0-3",
+          "name": "日常寒暄篇",
+          "units": [
+            "Unit 1 早晨与白天寒暄",
+            "Unit 2 午后寒暄",
+            "Unit 3 晚间问候",
+            "Unit 4 谈论天气",
+            "Unit 5 询问近况",
+            "Unit 6 闲聊话题",
+            "Unit 7 礼貌告别",
+            "Unit 8 电话用语"
+          ]
+        },
+        {
+          "id": "0-4",
+          "name": "食堂餐厅篇",
+          "units": [
+            "Unit 1 食堂点餐",
+            "Unit 2 餐厅用语",
+            "Unit 3 食物与饮料",
+            "Unit 4 结账与评价"
+          ]
+        },
+        {
+          "id": "0-5",
+          "name": "超市购物篇",
+          "units": [
+            "Unit 1 超市购物用语",
+            "Unit 2 价格与付款",
+            "Unit 3 退换货"
+          ]
+        },
+        {
+          "id": "0-6",
+          "name": "交通与方向篇",
+          "units": [
+            "Unit 1 问路与指路",
+            "Unit 2 交通工具",
+            "Unit 3 出行表达"
+          ]
+        },
+        {
+          "id": "0-7",
+          "name": "同事交流与时间篇",
+          "units": [
+            "Unit 1 办公室问候",
+            "Unit 2 工作相关交流",
+            "Unit 3 约定时间",
+            "Unit 4 会议用语",
+            "Unit 5 休息与假期",
+            "Unit 6 社交活动邀请"
+          ]
+        },
+        {
+          "id": "0-8",
+          "name": "天气形状与形容词篇",
+          "units": [
+            "Unit 1 天气描述",
+            "Unit 2 颜色与形状",
+            "Unit 3 常用形容词",
+            "Unit 4 比较与对比",
+            "Unit 5 情感表达"
+          ]
+        },
+        {
+          "id": "0-9",
+          "name": "医院与安全篇",
+          "units": [
+            "Unit 1 就医问诊",
+            "Unit 2 药房用语",
+            "Unit 3 安全与紧急情况"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "BIPA 1 - Dasar",
+      "bipa": "BIPA 1",
+      "description": "掌握日常生活交流基础用语，对标TSZ15012测评1级（津贴1000元/月）",
+      "color": "#6366f1",
+      "icon": "fa-star",
+      "exam": "1级",
+      "examAllowance": 1000,
+      "examRequirements": "口语表达(60%) + 口语互译(40%)，总分100分，>=80分及格，考试时长45分钟",
+      "units": [
+        "Unit 1 Salam",
+        "Unit 2 Teman Baru",
+        "Unit 3 Keluarga",
+        "Unit 4 Keseharian",
+        "Unit 5 Lingkungan",
+        "Unit 6 Kegiatan Sehari-hari",
+        "Unit 7 Hari Libur",
+        "Unit 8 Tempat Umum",
+        "Unit 9 Makanan",
+        "Unit 10 Transportasi"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "BIPA 2 - Lanjutan",
+      "bipa": "BIPA 2",
+      "description": "职场和生活场景中进行较为完整的交流，对标TSZ15012测评2级（津贴2000元/月）",
+      "color": "#8b5cf6",
+      "icon": "fa-award",
+      "exam": "2级",
+      "examAllowance": 2000,
+      "examRequirements": "口语表达(60%) + 笔试互译(40%)，总分100分，>=80分及格，考试时长60分钟",
+      "units": [
+        "Unit 1 Toko Elektronik",
+        "Unit 2 Kesehatan",
+        "Unit 3 Pendidikan",
+        "Unit 4 Perumahan",
+        "Unit 5 Kesenian",
+        "Unit 6 Lingkungan Hidup",
+        "Unit 7 Perbankan",
+        "Unit 8 Pariwisata",
+        "Unit 9 Telekomunikasi",
+        "Unit 10 Perikanan"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "BIPA 3 - Mahir",
+      "bipa": "BIPA 3",
+      "description": "较复杂场景下的听说读写能力，对标TSZ15012测评3级（津贴3000元/月）",
+      "color": "#ec4899",
+      "icon": "fa-trophy",
+      "exam": "3级",
+      "examAllowance": 3000,
+      "examRequirements": "阅读理解(30%) + 情景互译(30%) + 作文写作(40%)，总分100分，>=80分及格，考试时长90分钟",
+      "units": [
+        "Unit 1 Berita",
+        "Unit 2 Pendidikan",
+        "Unit 3 Teknologi",
+        "Unit 4 Olahraga",
+        "Unit 5 Budaya",
+        "Unit 6 Ekonomi",
+        "Unit 7 Sosial",
+        "Unit 8 Lingkungan Hidup",
+        "Unit 9 Sejarah",
+        "Unit 10 Sastra"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "BIPA 4",
+      "bipa": "BIPA 4",
+      "description": "高级印尼语综合运用能力，涵盖社会、文化、经济等深度主题",
+      "color": "#f59e0b",
+      "icon": "fa-gem",
+      "units": [
+        "Unit 1 Kebudayaan Bangsa",
+        "Unit 2 Keanekaragaman Hayati",
+        "Unit 3 Lembaga Pemerintahan",
+        "Unit 4 Pemberdayaan Masyarakat",
+        "Unit 5 Cinta Tanah Air",
+        "Unit 6 Perdagangan Internasional",
+        "Unit 7 Teknologi Informasi",
+        "Unit 8 Bencana Alam",
+        "Unit 9 Keterampilan Kewirausahaan",
+        "Unit 10 Hubungan Internasional"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "BIPA 5",
+      "bipa": "BIPA 5",
+      "description": "专业级印尼语应用，侧重商务、法律、学术等高级领域",
+      "color": "#ef4444",
+      "icon": "fa-fire",
+      "units": [
+        "Unit 1 Kependudukan",
+        "Unit 2 Pemerintahan",
+        "Unit 3 Perencanaan Pembangunan",
+        "Unit 4 Investasi",
+        "Unit 5 Pariwisata",
+        "Unit 6 Pemberdayaan Perempuan",
+        "Unit 7 Kesehatan",
+        "Unit 8 Korupsi",
+        "Unit 9 Pers",
+        "Unit 10 Politik"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "BIPA 6",
+      "bipa": "BIPA 6",
+      "description": "精通级印尼语，具备独立处理复杂事务和专业文件的能力",
+      "color": "#14b8a6",
+      "icon": "fa-crown",
+      "units": [
+        "Unit 1 Isu Lingkungan Hidup",
+        "Unit 2 Isu Sosial",
+        "Unit 3 Suku dan Budaya",
+        "Unit 4 Ekonomi Kreatif",
+        "Unit 5 Kebijakan Publik",
+        "Unit 6 Mitigasi Bencana",
+        "Unit 7 Perdagangan Bebas",
+        "Unit 8 Ketenagakerjaan",
+        "Unit 9 Reformasi Birokrasi",
+        "Unit 10 Pendidikan Karakter"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "BIPA 7 - Tinggi",
+      "bipa": "BIPA 7",
+      "description": "最高等级，谈判、演讲、求职、学术论文写作等专业场景",
+      "color": "#f97316",
+      "icon": "fa-dragon",
+      "units": [
+        "Negosiasi",
+        "Presentasi Menarik Audiens",
+        "Melamar Pekerjaan",
+        "Proposal",
+        "Laporan",
+        "Berita Terkini",
+        "Novel",
+        "Lagu Favorit",
+        "Editorial",
+        "Karya Ilmiah"
+      ]
+    }
+  ],
+  "examInfo": {
+    "title": "TSZ15012 印尼语测评等级",
+    "levels": 3,
+    "standard": "BIPA 1-3",
+    "passScore": 80,
+    "note": "需逐级考试，通过对应等级后才可申请下一级",
+    "detail": [
+      {
+        "level": 1,
+        "standard": "BIPA 1",
+        "allowance": "1000元/月",
+        "sections": [
+          {
+            "name": "口语表达",
+            "weight": "60%",
+            "items": [
+              "自我介绍 10分",
+              "阅读 10分",
+              "阅读翻译 30分",
+              "口语对答 50分"
+            ]
+          },
+          {
+            "name": "口语互译",
+            "weight": "40%",
+            "items": [
+              "中译印 50分",
+              "印译中 50分"
+            ]
+          }
+        ],
+        "duration": "45分钟"
+      },
+      {
+        "level": 2,
+        "standard": "BIPA 2",
+        "allowance": "2000元/月",
+        "sections": [
+          {
+            "name": "口语表达",
+            "weight": "60%",
+            "items": [
+              "听力理解 20分",
+              "阅读 10分",
+              "阅读翻译 20分",
+              "口语对答 50分"
+            ]
+          },
+          {
+            "name": "笔试互译",
+            "weight": "40%",
+            "items": [
+              "中译印 50分",
+              "印译中 50分"
+            ]
+          }
+        ],
+        "duration": "60分钟"
+      },
+      {
+        "level": 3,
+        "standard": "BIPA 3",
+        "allowance": "3000元/月",
+        "sections": [
+          {
+            "name": "情景互译",
+            "weight": "30%",
+            "items": [
+              "中译印+印译中 各5句，每句15-20字"
+            ]
+          },
+          {
+            "name": "阅读理解",
+            "weight": "30%",
+            "items": [
+              "500-600词文章，10道选择+5道简答"
+            ]
+          },
+          {
+            "name": "作文写作",
+            "weight": "40%",
+            "items": [
+              "不少于300词，职场/社会/文化主题"
+            ]
+          }
+        ],
+        "duration": "90分钟"
+      }
+    ]
+  }
+}
