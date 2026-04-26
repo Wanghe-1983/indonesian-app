@@ -395,14 +395,7 @@ function initUI() {
     </div><!-- end page-study -->
     <div id="page-study-practice" style="display:none;"></div>
     <div id="page-study-stats" style="display:none;"></div>
-    <div id="page-challenge" style="display:none;">
-        <div class="challenge-sub-tabs" id="challenge-sub-tabs">
-            <button class="sub-tab active" data-ctab="stages" onclick="switchChallengeSubTab('stages')"><i class="fas fa-gamepad"></i> 闯关</button>
-            <button class="sub-tab" data-ctab="rank" onclick="switchChallengeSubTab('rank')"><i class="fas fa-trophy"></i> 排行榜</button>
-        </div>
-        <div id="challenge-tab-stages"></div>
-        <div id="challenge-tab-rank" style="display:none;"></div>
-    </div>
+    <div id="page-challenge" style="display:none;"></div>
     <div class="control-panel" id="control-panel">
 
     <div class="copyright" id="copyright">
@@ -1785,7 +1778,6 @@ function switchMainPage(page) {
     const pageStats = document.getElementById('page-study-stats');
     // 闯天关区域
     const pageChallenge = document.getElementById('page-challenge');
-    const challengeArea = document.getElementById('challenge-sub-tabs');
 
     if (page === 'study') {
         if (studyArea) studyArea.style.display = '';
@@ -1795,7 +1787,6 @@ function switchMainPage(page) {
         const subTab = activeSub ? activeSub.dataset.stab : 'learn';
         if (pagePractice) pagePractice.style.display = subTab === 'practice' ? '' : 'none';
         if (pageStats) pageStats.style.display = subTab === 'stats' ? '' : 'none';
-        if (challengeArea) challengeArea.style.display = 'none';
         if (pageChallenge) pageChallenge.style.display = 'none';
         // 功能控件在学习页可见
         const ctrl = document.getElementById('learn-inline-controls');
@@ -1810,7 +1801,6 @@ function switchMainPage(page) {
         if (pageStudy) pageStudy.style.display = 'none';
         if (pagePractice) pagePractice.style.display = 'none';
         if (pageStats) pageStats.style.display = 'none';
-        if (challengeArea) challengeArea.style.display = '';
         if (pageChallenge) pageChallenge.style.display = '';
         // 功能控件隐藏
         const ctrl = document.getElementById('learn-inline-controls');
@@ -2725,18 +2715,15 @@ function switchStudySubTab(tab) {
 let challengeInitialized = false;
 
 function switchChallengeSubTab(tab) {
-    document.querySelectorAll('#challenge-sub-tabs .sub-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.ctab === tab);
-    });
-    const stagesEl = document.getElementById('challenge-tab-stages');
-    const rankEl = document.getElementById('challenge-tab-rank');
-    if (stagesEl) stagesEl.style.display = tab === 'stages' ? '' : 'none';
-    if (rankEl) rankEl.style.display = tab === 'rank' ? '' : 'none';
+    // 子Tab切换由 ChallengeModule 内部管理
+    if (typeof ChallengeModule !== 'undefined' && ChallengeModule.switchSubTab) {
+        ChallengeModule.switchSubTab(tab);
+    }
 }
 
 function initChallengePage() {
     if (!challengeInitialized) {
-        ChallengeModule.init(document.getElementById('challenge-tab-stages'));
+        ChallengeModule.init(document.getElementById('page-challenge'));
         challengeInitialized = true;
     }
 }

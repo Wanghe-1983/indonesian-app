@@ -4,20 +4,7 @@
 
 /* ========== 通用模块容器 ========== */
 .study-module, .challenge-module {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-/* ========== 子Tab和内容区域统一 max-width ========== */
-.study-sub-tabs,
-.challenge-sub-tabs,
-#page-study,
-#page-study-practice,
-#page-study-stats,
-#page-challenge {
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    /* 宽度跟随父容器，不额外限制 */
 }
 
 /* ========== 子Tab ========== */
