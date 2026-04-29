@@ -117,6 +117,7 @@ function defaultSettings() {
         adminPanelPassword: 'admin123',
         showOnlineCount: true,
         showRegCount: true,
+        allowVisitorChallenge: false,
     };
 }
 

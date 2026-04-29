@@ -1178,12 +1178,12 @@ function verifyAdminPrompt() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ panelPassword: pass })
         }).then(r => r.json()).then(data => {
+            // admin.html 使用独立的 admin_fmi_token，不影响当前页面的访客登录状态
             if (data.token) {
-                localStorage.setItem('fmi_token', data.token);
-                localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: { username: 'admin', name: '系统管理员', role: 'admin' } }));
+                window.open('admin.html?admin_token=' + data.token, '_blank');
+            } else {
+                window.open('admin.html', '_blank');
             }
-            // 用 URL 参数传递 token，确保 admin.html 能正确识别
-            window.open('admin.html' + (data.token ? '?admin_token=' + data.token : ''), '_blank');
         }).catch(() => {
             window.open('admin.html', '_blank');
         });
@@ -2049,15 +2049,15 @@ function renderHomeUserBar() {
     if (typeof loginStatus !== 'undefined' && loginStatus && loginStatus.user) {
         const isVisitor = localStorage.getItem('fmi_visitor_login');
         const isAdmin = loginStatus.user && loginStatus.user.username === 'admin';
-        // 访客隐藏注销和注销账号按钮
-        const logoutHTML = (!isVisitor) ? `
+        // 访客只隐藏注销账号，保留退出登录
+        const logoutHTML = `
                         <div onclick="logout();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(248,113,113,0.1)'" onmouseout="this.style.background='transparent'">
                             <i class="fas fa-sign-out-alt" style="color:#f87171;width:16px;text-align:center;"></i> 退出登录
-                        </div>
+                        </div>${!isVisitor ? `
                         <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 0;"></div>
                         <div id="home-delete-account-item" onclick="showDeleteAccountDialog();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#ef4444;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">
                             <i class="fas fa-user-slash" style="width:16px;text-align:center;"></i> 注销账号
-                        </div>` : '';
+                        </div>` : ''}`;
         // 管理员也隐藏注销账号
         const finalLogoutHTML = isAdmin ? logoutHTML.replace(/<div id="home-delete-account-item"[^>]*>[\s\S]*?<\/div>\s*$/, '') : logoutHTML;
         bar.innerHTML = `

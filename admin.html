@@ -29,7 +29,7 @@
         const url = (CONFIG.apiBase || location.origin) + '/api/' + path;
         const headers = {};
         if (method !== 'GET') headers['Content-Type'] = 'application/json';
-        const token = localStorage.getItem('fmi_token');
+        const token = localStorage.getItem('admin_fmi_token') || localStorage.getItem('fmi_token');
         if (token) headers['Authorization'] = 'Bearer ' + token;
         try {
             const res = await fetch(url, { method, headers, body: opts.body, signal: AbortSignal.timeout(8000) });
@@ -334,6 +334,10 @@
                     </div>
                     <div class="setting-row" id="visitor-duration-row" style="display:none;">
                         <div class="setting-info"><div class="setting-label">访客体验时长</div><div class="setting-desc">访客登录后可使用的最长时间（分钟），到期自动退出</div></div>
+                    <div class="setting-row">
+                        <div class="setting-info"><div class="setting-label">允许访客闯天关</div><div class="setting-desc">允许访客使用"闯天关"功能，关闭后访客无法进入闯天关模式</div></div>
+                        <div class="setting-control"><label class="toggle"><input type="checkbox" id="setAllowVisitorChallenge" onchange="document.getElementById('visitor-challenge-hint').textContent=this.checked?'已开启':'已关闭'"><span class="slider"></span></label></div>
+                    </div>
                         <div class="setting-control"><input type="number" class="setting-input" id="setVisitorDuration" min="5" max="480" value="3" style="width:100px;"><span style="color:#64748b;font-size:0.8rem;">分钟</span></div>
                     </div>
                     <div class="setting-row" style="border-top:1px solid rgba(245,158,11,0.15);padding-top:14px;margin-top:6px;">
@@ -603,24 +607,24 @@ let allUsers = [];
         const urlParams = new URLSearchParams(location.search);
         const adminToken = urlParams.get('admin_token');
         if (adminToken) {
-            localStorage.setItem('fmi_token', adminToken);
-            localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: { username: 'admin', name: '系统管理员', role: 'admin' } }));
+            localStorage.setItem('admin_fmi_token', adminToken);
+            localStorage.setItem('admin_login_status', JSON.stringify({ isLogin: true, user: { username: 'admin', name: '系统管理员', role: 'admin' } }));
             // 清除 URL 参数，避免刷新时重复处理
             history.replaceState(null, '', location.pathname);
         }
 
-        const status = JSON.parse(localStorage.getItem('fmi_login_status') || '{}');
+        const status = JSON.parse(localStorage.getItem('admin_login_status') || localStorage.getItem('fmi_login_status') || '{}');
         const user = status.user || status;
         if (user.role !== 'admin') {
             // 检查是否有 token，有 token 但无 login_status 说明直接访问，尝试恢复
-            const token = localStorage.getItem('fmi_token');
+            const token = localStorage.getItem('admin_fmi_token') || localStorage.getItem('fmi_token');
             if (token) {
                 // 尝试用 token 获取用户信息
                 try {
                     const r = await fetch((CONFIG.apiBase || location.origin) + '/api/user/me', { headers: { 'Authorization': 'Bearer ' + token } });
                     const d = await r.json();
                     if (d.user && d.user.username) {
-                        localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: d.user }));
+                        localStorage.setItem('admin_login_status', JSON.stringify({ isLogin: true, user: d.user }));
                         if (d.user.role === 'admin') {
                             loadOverview();
                             return;
@@ -840,6 +844,7 @@ let allUsers = [];
             whitelistEnabled: document.getElementById('setWhitelistEnabled').checked,
             allowVisitor: document.getElementById('setAllowVisitor').checked,
             visitorDuration: parseInt(document.getElementById('setVisitorDuration').value) || 3,
+            allowVisitorChallenge: document.getElementById('setAllowVisitorChallenge').checked,
             adminPanelPassword: document.getElementById('setAdminPassword').value || 'admin123',
             showOnlineCount: document.getElementById('setShowOnlineCount').checked,
             showRegCount: document.getElementById('setShowRegCount').checked,
@@ -1132,6 +1137,8 @@ let allUsers = [];
 
     function logout() {
         if (confirm('确定退出登录吗？')) {
+            localStorage.removeItem('admin_fmi_token');
+            localStorage.removeItem('admin_login_status');
             localStorage.removeItem('fmi_token');
             localStorage.removeItem('fmi_login_status');
             location.href = 'login.html';
