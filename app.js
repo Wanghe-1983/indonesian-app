@@ -975,24 +975,80 @@ function clearAllFavs(e) {
 // 谷歌翻译发音（优先）
 function googleSpeech(word, rate) {
     return new Promise((resolve, reject) => {
-        // 通过自建 Cloudflare Function 代理，绕过浏览器 CORS 限制
         const proxyUrl = `/api/tts/google?q=${encodeURIComponent(word)}&tl=id`;
         fetch(proxyUrl)
             .then(resp => {
                 if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                return resp.blob();
+                return resp.arrayBuffer();
             })
-            .then(blob => {
-                const blobUrl = URL.createObjectURL(blob);
-                const audio = new Audio(blobUrl);
-                if (rate && rate > 0) audio.playbackRate = rate;
-                audio.onended = () => { URL.revokeObjectURL(blobUrl); resolve(true); };
-                audio.onerror = () => { URL.revokeObjectURL(blobUrl); reject('谷歌发音失败'); };
-                audio.play().catch(() => { URL.revokeObjectURL(blobUrl); reject('谷歌发音失败'); });
+            .then(buffer => {
+                if (!rate || rate === 1) {
+                    // 原速直接播放
+                    const blob = new Blob([buffer], { type: 'audio/mpeg' });
+                    const url = URL.createObjectURL(blob);
+                    const audio = new Audio(url);
+                    audio.onended = () => { URL.revokeObjectURL(url); resolve(true); };
+                    audio.onerror = () => { URL.revokeObjectURL(url); reject('播放失败'); };
+                    audio.play().catch(() => { URL.revokeObjectURL(url); reject('播放失败'); });
+                } else {
+                    // 变速播放：用 Web Audio API 重编码，避免低语速破音
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    audioCtx.decodeAudioData(buffer).then(audioBuffer => {
+                        const newLen = Math.ceil(audioBuffer.length * (1 / rate));
+                        const offCtx = new OfflineAudioContext(audioBuffer.numberOfChannels, newLen, audioBuffer.sampleRate);
+                        const src = offCtx.createBufferSource();
+                        src.buffer = audioBuffer;
+                        src.playbackRate.value = rate;
+                        src.connect(offCtx.destination);
+                        src.start(0);
+                        offCtx.startRendering().then(rendered => {
+                            const wav = audioBufferToWav(rendered);
+                            const url = URL.createObjectURL(wav);
+                            const audio = new Audio(url);
+                            audio.onended = () => { URL.revokeObjectURL(url); audioCtx.close(); resolve(true); };
+                            audio.onerror = () => { URL.revokeObjectURL(url); audioCtx.close(); reject('播放失败'); };
+                            audio.play().catch(() => { URL.revokeObjectURL(url); audioCtx.close(); reject('播放失败'); });
+                        }).catch(() => { audioCtx.close(); reject('渲染失败'); });
+                    }).catch(() => { audioCtx.close(); reject('解码失败'); });
+                }
             })
             .catch(err => reject(err));
     });
 }
+
+// AudioBuffer → WAV Blob（Web Audio API 重编码后输出）
+function audioBufferToWav(buffer) {
+    const numCh = buffer.numberOfChannels;
+    const sr = buffer.sampleRate;
+    const len = buffer.length;
+    const out = new DataView(new ArrayBuffer(44 + len * numCh * 2));
+    const ch = [];
+    for (let i = 0; i < numCh; i++) ch.push(buffer.getChannelData(i));
+    // WAV header
+    writeStr(out, 0, 'RIFF');
+    out.setUint32(4, 36 + len * numCh * 2, true);
+    writeStr(out, 8, 'WAVE');
+    writeStr(out, 12, 'fmt ');
+    out.setUint32(16, 16, true);
+    out.setUint16(20, 1, true);
+    out.setUint16(22, numCh, true);
+    out.setUint32(24, sr, true);
+    out.setUint32(28, sr * numCh * 2, true);
+    out.setUint16(32, numCh * 2, true);
+    out.setUint16(34, 16, true);
+    writeStr(out, 36, 'data');
+    out.setUint32(40, len * numCh * 2, true);
+    let off = 44;
+    for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+            let s = Math.max(-1, Math.min(1, ch[c][i]));
+            out.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            off += 2;
+        }
+    }
+    return new Blob([out], { type: 'audio/wav' });
+}
+function writeStr(view, offset, str) { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); }
 
 // 语音播放 - 优先谷歌TTS，兜底浏览器speechSynthesis
 function toggleSpeech() {
