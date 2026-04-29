@@ -795,7 +795,8 @@ async function buildMenu() {
         ];
 
         // 生成单元HTML的通用函数
-        function buildUnitHTML(lvId, unit) {
+        function buildUnitHTML(lvId, unit, unitIndex) {
+            const showIndex = String(lvId) === '0';
             let typesHTML = '';
             const typeMap = [
                 { key: 'words', label: '生词', icon: 'fa-spell-check' },
@@ -826,7 +827,7 @@ async function buildMenu() {
             if (!typesHTML) return '';
             return `
                 <div style="padding:7px 10px;font-size:13px;color:#e2e8f0;font-weight:600;cursor:pointer;" onclick="this.nextElementSibling.classList.toggle('active')">
-                    ${unit.name} <i class="fas fa-chevron-right" style="font-size:9px;margin-left:4px;opacity:0.4;transition:transform 0.2s;"></i>
+                    ${showIndex ? (unitIndex + 1) + '. ' : ''}${unit.name} <i class="fas fa-chevron-right" style="font-size:9px;margin-left:4px;opacity:0.4;transition:transform 0.2s;"></i>
                 </div>
                 <div class="sub-menu" style="padding-left:8px;">${typesHTML}</div>`;
         }
@@ -837,7 +838,7 @@ async function buildMenu() {
                 let chUnitsHTML = '';
                 for (const uIdx of ch.unitIndices) {
                     if (uIdx < lv.units.length) {
-                        chUnitsHTML += buildUnitHTML(lv.id, lv.units[uIdx]);
+                        chUnitsHTML += buildUnitHTML(lv.id, lv.units[uIdx], uIdx);
                     }
                 }
                 if (chUnitsHTML) {
@@ -852,7 +853,7 @@ async function buildMenu() {
         } else {
             // 其他级别：直接列出单元（无篇章分组）
             for (const unit of lv.units) {
-                unitsHTML += buildUnitHTML(lv.id, unit);
+                unitsHTML += buildUnitHTML(lv.id, unit, lv.units.indexOf(unit));
             }
         }
         const lvIcon = lv.icon || 'fa-book';
@@ -1007,14 +1008,26 @@ function toggleSpeech() {
     }
 
     const currentRate = parseFloat(_rate) || 0.8;
+    const loopTimes = parseInt(_loop) || 1;
+    let loopCount = 1;
     // 优先使用谷歌翻译发音
     googleSpeech(word, currentRate).then(() => {
-        // 谷歌发音成功结束
-        if (playIco) playIco.className = 'fas fa-play';
+        // 谷歌发音成功，如需循环则继续
+        if (loopCount < loopTimes) {
+            loopCount++;
+            googleSpeech(word, currentRate).then(function retryLoop() {
+                if (loopCount < loopTimes) {
+                    loopCount++;
+                    googleSpeech(word, currentRate).then(retryLoop).catch(() => {});
+                } else {
+                    if (playIco) playIco.className = 'fas fa-play';
+                }
+            }).catch(() => {});
+        } else {
+            if (playIco) playIco.className = 'fas fa-play';
+        }
     }).catch(() => {
         // 谷歌发音失败，兜底浏览器本地合成
-        const loopTimes = parseInt(_loop) || 1;
-        let loopCount = 1;
         
         function getIdVoice() {
             const voices = speechSynthesis.getVoices();
