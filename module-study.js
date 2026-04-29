@@ -175,7 +175,19 @@ const StudyModule = {
             }
         }
 
-        if (this.studyIndex >= this.studyItems.length) this.studyIndex = 0;
+        // 支持从侧边栏点击跳转到指定type和index
+        if (this._pendingType) {
+            const targetIdx = this.studyItems.findIndex(it => it.type === this._pendingType);
+            if (targetIdx >= 0) {
+                this.studyIndex = targetIdx + (this._pendingIndex || 0);
+                if (this.studyIndex >= this.studyItems.length) this.studyIndex = this.studyItems.length - 1;
+            }
+            this._pendingType = null;
+            this._pendingIndex = 0;
+        } else {
+            if (this.studyIndex >= this.studyItems.length) this.studyIndex = 0;
+        }
+
         if (this.studyItems.length === 0) {
             container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">所有内容已掌握，试试练习或闯天关吧！</div>';
             return;

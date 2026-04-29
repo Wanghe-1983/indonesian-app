@@ -1084,6 +1084,77 @@ input:checked + .slider:before {
 .practice-result-detail.total .detail-value { color: #a5b4fc; }
 
 
+
+/* ========================================
+   Subpage Navigation Bar (子页面导航栏)
+   用于study/challenge等子页面顶部导航
+   ======================================== */
+.subpage-nav {
+    display: flex;
+    align-items: stretch;
+    height: 48px;
+    background: rgba(10, 14, 28, 0.92);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: 12px;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    margin-bottom: 20px;
+}
+.subpage-nav-side {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    background: rgba(30, 41, 59, 0.5);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+    border: none;
+    color: #94a3b8;
+    font-size: 0;
+}
+.subpage-nav-side:first-child {
+    border-radius: 11px 0 0 11px;
+}
+.subpage-nav-side:last-child {
+    border-radius: 0 11px 11px 0;
+}
+.subpage-nav-side:hover {
+    background: rgba(51, 65, 85, 0.6);
+    color: #e2e8f0;
+}
+.subpage-nav-side i {
+    font-size: 0.85rem;
+}
+.side-label {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #cbd5e1;
+    line-height: 1;
+}
+.subpage-nav-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--accent);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 0 20px;
+    cursor: default;
+    user-select: none;
+}
+.subpage-nav-center i {
+    font-size: 1rem;
+}
+
 /* ========================================
    Navigation Tabs
    ======================================== */
@@ -1329,42 +1400,6 @@ input:checked + .slider:before {
     font-size: 0.8rem;
 }
 
-
-/* ========================================
-   v1.2 Navigation Tabs
-   ======================================== */
-.nav-tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 20px;
-    background: var(--glass);
-    padding: 5px;
-    border-radius: 14px;
-    border: 1px solid var(--border-subtle);
-    backdrop-filter: blur(15px);
-}
-.nav-tab {
-    flex: 1;
-    padding: 10px 16px;
-    border: none;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition-smooth);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-.nav-tab:hover { color: var(--text-main); background: var(--accent-subtle); }
-.nav-tab.active {
-    background: var(--accent);
-    color: white;
-    box-shadow: 0 4px 12px var(--accent-glow);
-}
 
 /* ========================================
    v1.2 Theme Toggle Button

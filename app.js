@@ -321,9 +321,6 @@ async function initUI() {
     </div>
 
     <div id="page-study" style="display:none;">
-
-    
-
     <div id="broadcast-bar" style="display:none;margin:10px 0;padding:12px 18px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(168,85,247,0.12));border:1px solid rgba(99,102,241,0.2);border-radius:12px;overflow:hidden;position:relative;">
         <div style="display:flex;align-items:center;gap:10px;">
             <span style="color:#a78bfa;font-size:0.8rem;flex-shrink:0;"><i class="fas fa-bullhorn"></i></span>
@@ -331,100 +328,47 @@ async function initUI() {
                 <div id="broadcast-text" style="font-size:0.88rem;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                 <div id="broadcast-title" style="font-size:0.75rem;color:#64748b;margin-top:2px;"></div>
             </div>
-
         </div>
     </div>
     <div class="tip-box" id="study-tip">
         <div class="tip-title">每日学习小贴士</div>
         <div id="tip-content">每天学习一点，进步一大步！</div>
     </div>
-
-    <div class="learn-cards-row">
+    <div class="learn-cards-row" id="study-info-row">
         <div style="flex:1;min-width:200px;background:var(--glass);padding:15px;border-radius:15px;border:1px solid rgba(255,255,255,0.05);">
             <div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">今日学习进度</div>
             <div style="height:8px;background:rgba(30,41,59,0.5);border-radius:4px;overflow:hidden;margin-bottom:8px;">
-                <div id="progress-bar" style="height:100%;width:${studyStats.todayWords > 0 ? Math.min(100, (studyStats.todayWords/dailyGoal)*100) : 0}%;background:linear-gradient(90deg,var(--accent),#a78bfa);border-radius:4px;transition:width 0.6s ease;"></div>
+                <div id="progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#a78bfa);border-radius:4px;transition:width 0.6s ease;"></div>
             </div>
-            <div style="font-size:12px;color:#94a3b8;cursor:pointer;" onclick="showGoalSetting()" title="点击设置学习目标">${studyStats.todayWords}/${dailyGoal} 目标单词 <i class="fas fa-edit" style="font-size:10px;margin-left:3px;"></i></div>
+            <div id="progress-text" style="font-size:12px;color:#94a3b8;cursor:pointer;" onclick="showGoalSetting()" title="点击设置学习目标">0/${typeof dailyGoal!=='undefined'?dailyGoal:20} 目标单词 <i class="fas fa-edit" style="font-size:10px;margin-left:3px;"></i></div>
         </div>
         <div style="flex:1;min-width:200px;background:var(--glass);padding:15px;border-radius:15px;border:1px solid rgba(255,255,255,0.05);">
             <div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">随机推荐单词</div>
             <div id="random-word" style="font-size:18px;color:#a5b4fc;font-weight:600;">加载中...</div>
         </div>
     </div>
-
-    <section class="study-card" id="main-card">
-        <div class="top-meta">
-            <div class="word-badge" id="word-idx">01</div>
-            <div class="star-btn" id="fav-trigger" onclick="handleFav()"><i class="fas fa-star"></i></div>
-        </div>
-        <div class="indo-box" id="disp-indo">加载中...</div>
-        <div class="zh-box" id="disp-zh">请稍候</div>
-<div class="nav-row">
-            <button class="circle-btn" onclick="navWord(-1)"><i class="fas fa-chevron-left"></i></button>
-            <button id="main-play" class="circle-btn play-btn" onclick="toggleSpeech()"><i class="fas fa-play" id="play-ico"></i></button>
-            <button class="circle-btn" onclick="navWord(1)"><i class="fas fa-chevron-right"></i></button>
-            <button class="circle-btn" onclick="openShareModal()" style="font-size:1.2rem;">
-                <i class="fas fa-share-alt"></i>
-                <span style="font-size:0.8rem;display:block;margin-top:5px;">打卡</span>
-            </button>
-        </div>
-        <div style="margin:24px 0;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;" id="learn-inline-controls">
-            <div class="sliders-col" style="flex:1;min-width:0;">
-                <div class="vslider-box">
-                    <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
-                    <div class="vslider-track-wrap">
-                        <input type="range" class="vslider vslider-rate" id="rate-slider" min="1" max="15" value="10" step="1"
-                            oninput="setRateFromSlider(this.value)" title="拖动调整语速">
-                        <div class="vslider-fill" id="rate-fill"></div>
-                        <div class="vslider-thumb" id="rate-thumb"><span id="val-rate">1.0x</span></div>
-                    </div>
-                    <div class="vslider-range"><span>0.1x</span><span>1.5x</span></div>
-                </div>
-                <div class="vslider-box">
-                    <div class="vslider-label"><i class="fas fa-repeat"></i> 循环</div>
-                    <div class="vslider-track-wrap">
-                        <input type="range" class="vslider vslider-loop" id="loop-slider" min="0" max="14" value="0" step="1"
-                            oninput="setLoopFromSlider(this.value)" title="拖动调整循环次数">
-                        <div class="vslider-fill" id="loop-fill"></div>
-                        <div class="vslider-thumb" id="loop-thumb"><span id="val-loop">1次</span></div>
-                    </div>
-                    <div class="vslider-range"><span>1次</span><span>无限</span></div>
-                </div>
-                <div class="vslider-box">
-                    <div class="vslider-label"><i class="fas fa-eye-slash"></i> 答案</div>
-                    <div class="vslider-track-wrap" style="flex:0;">
-                        <button class="hide-toggle-btn" id="hide-btn" onclick="toggleHide()" title="点击切换显示/隐藏中文翻译" style="width:44px;height:44px;font-size:1.2rem;border:none;background:none;cursor:pointer;">
-                            <span id="hide-icon" class="hide-icon-show"><i class="fas fa-eye"></i></span>
-                        </button>
-                        
-                    </div>
-                    <div class="vslider-range"><span></span><span></span></div>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    <div id="study-module-container"></div>
+    <!-- 旧版study-card兼容容器（隐藏，供旧版函数引用） -->
+    <div id="legacy-study-card" style="display:none;">
+        <div id="word-idx">01</div>
+        <div id="fav-trigger" class="star-btn"></div>
+        <div id="disp-indo"></div>
+        <div id="disp-zh"></div>
+        <div id="main-play"></div>
+        <div id="play-ico"></div>
+        <div id="learn-inline-controls"></div>
+    </div>
     <div class="study-record-box">
         <div class="record-title">
             <span>今日学习记录</span>
             <button class="clear-record-btn" onclick="clearTodayRecord()">清空记录</button>
         </div>
-        <div class="record-list" id="record-list">
-            ${todayRecord.length > 0 ? todayRecord.map(item => `
-                <div class="record-item">
-                    <div class="record-indo">${item.indonesian}</div>
-                    <div class="record-zh">${item.chinese}</div>
-                </div>
-            `).join('') : '<div style="grid-column: 1 / 3; text-align: center; color: var(--text-muted);">暂无学习记录</div>'}
-        </div>
+        <div class="record-list" id="record-list"></div>
     </div>
-
     </div><!-- end page-study -->
     <div id="page-study-practice" style="display:none;"></div>
     <div id="page-study-stats" style="display:none;"></div>
     <div id="page-challenge" style="display:none;"></div>
-    <div class="control-panel" id="control-panel">
 
     <div class="copyright" id="copyright">
         仅供学习・禁止商用 © 2026｜联系：
@@ -563,28 +507,55 @@ function loadRandomWord() {
     }
 }
 
-// 加载天气信息
+// 加载天气信息（带降级机制）
 function loadWeather() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            fetch(`https://wttr.in/${lat},${lon}?format=j1`)
-                .then(res => res.json())
-                .then(data => {
-                    const temp = data.current_condition[0].temp_C;
-                    const weather = data.current_condition[0].weatherDesc[0].value;
-                    document.getElementById('weather-location').innerHTML = `<i class="fas fa-cloud"></i><span> ${temp}℃ ${weather}</span>`;
-                })
-                .catch(() => {
-                    document.getElementById('weather-location').innerHTML = `<i class="fas fa-cloud"></i><span> 无法获取天气</span>`;
-                });
-        }, () => {
-            document.getElementById('weather-location').innerHTML = `<i class="fas fa-cloud"></i><span> 定位失败</span>`;
+    const el = document.getElementById('weather-location');
+    if (!el) return;
+    // 优先使用IP定位获取天气
+    fetch('https://wttr.in/?format=j1')
+        .then(res => {
+            if (!res.ok) throw new Error('wttr.in request failed');
+            return res.json();
+        })
+        .then(data => {
+            const temp = data.current_condition[0].temp_C;
+            const weather = data.current_condition[0].weatherDesc[0].value;
+            const area = data.nearest_area[0]?.areaName[0]?.value || '';
+            el.innerHTML = `<i class="fas fa-cloud"></i><span> ${area ? area + ' ' : ''}${temp}℃ ${weather}</span>`;
+        })
+        .catch(() => {
+            // wttr.in失败，尝试高德天气API（如果配置了key）
+            if (CONFIG.amapKey) {
+                tryAmapWeather(el);
+            } else {
+                // 显示默认天气（不影响使用）
+                el.innerHTML = `<i class="fas fa-cloud"></i><span> 天气加载失败</span>`;
+            }
         });
-    } else {
-        document.getElementById('weather-location').innerHTML = `<i class="fas fa-cloud"></i><span> 不支持定位</span>`;
-    }
+}
+
+function tryAmapWeather(el) {
+    // 通过IP获取位置再查天气
+    fetch('https://restapi.amap.com/v3/ip?key=' + CONFIG.amapKey)
+        .then(r => r.json())
+        .then(data => {
+            if (data.adcode) {
+                return fetch('https://restapi.amap.com/v3/weather/weatherInfo?key=' + CONFIG.amapKey + '&city=' + data.adcode + '&extensions=base');
+            }
+            throw new Error('no adcode');
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.lives && data.lives[0]) {
+                const w = data.lives[0];
+                el.innerHTML = `<i class="fas fa-cloud"></i><span> ${w.city} ${w.temperature}℃ ${w.weather}</span>`;
+            } else {
+                el.innerHTML = `<i class="fas fa-cloud"></i><span> 天气加载失败</span>`;
+            }
+        })
+        .catch(() => {
+            el.innerHTML = `<i class="fas fa-cloud"></i><span> 天气加载失败</span>`;
+        });
 }
 
 // 加载词库（适配你的JSON格式）
@@ -677,7 +648,22 @@ async function buildMenu() {
     // 已存在的级别
     for (const lv of levels) {
         let unitsHTML = '';
-        for (const unit of lv.units) {
+
+        // 0级课程：按篇章(chapter)分组展示
+        const level0Chapters = [
+            { name: '基础发音篇', icon: 'fa-microphone', color: '#f472b6', unitIndices: [0,1,2,3] },
+            { name: '问候语与祝福篇', icon: 'fa-handshake', color: '#34d399', unitIndices: [4,5,6,7,8,9] },
+            { name: '个人信息与交流篇', icon: 'fa-user-circle', color: '#60a5fa', unitIndices: [10,11,12,13] },
+            { name: '同事交流与文化篇', icon: 'fa-building', color: '#fbbf24', unitIndices: [14,15] },
+            { name: '饮食与日常用语篇', icon: 'fa-utensils', color: '#fb923c', unitIndices: [16,17,18,19] },
+            { name: '购物与交通篇', icon: 'fa-shopping-cart', color: '#a78bfa', unitIndices: [20,21,22,23] },
+            { name: '同事交流与时间篇', icon: 'fa-clock', color: '#2dd4bf', unitIndices: [24,25,26,27] },
+            { name: '天气形状与形容词篇', icon: 'fa-cloud-sun', color: '#38bdf8', unitIndices: [28,29,30,31,32] },
+            { name: '医院与安全篇', icon: 'fa-hospital', color: '#f87171', unitIndices: [33,34,35] },
+        ];
+
+        // 生成单元HTML的通用函数
+        function buildUnitHTML(lvId, unit) {
             let typesHTML = '';
             const typeMap = [
                 { key: 'words', label: '生词', icon: 'fa-spell-check' },
@@ -693,7 +679,7 @@ async function buildMenu() {
                     let displayText = item.indonesian;
                     if (item.title) displayText = item.title + (item.title_id ? ' (' + item.title_id + ')' : '');
                     return '<div style="padding:5px 10px 5px 20px;font-size:12px;color:#94a3b8;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" ' +
-                        'onclick="loadCourseWord(\'' + lv.id + '\',\'' + unit.id + '\',\'' + tm.key + '\',' + idx + ')" ' +
+                        'onclick="loadCourseWord(\'' + lvId + '\',\'' + unit.id + '\',\'' + tm.key + '\',' + idx + ')" ' +
                         'title="' + escapedIndo + ' - ' + escapedZh + '">' +
                         (idx + 1) + '. ' + displayText + '</div>';
                 }).join('');
@@ -705,12 +691,36 @@ async function buildMenu() {
                 </div>
                 <div class="sub-word-list">${itemsListHTML}</div>`;
             }
-            if (typesHTML) {
-                unitsHTML += `
+            if (!typesHTML) return '';
+            return `
                 <div style="padding:7px 10px;font-size:13px;color:#e2e8f0;font-weight:600;cursor:pointer;" onclick="this.nextElementSibling.classList.toggle('active')">
                     ${unit.name} <i class="fas fa-chevron-right" style="font-size:9px;margin-left:4px;opacity:0.4;transition:transform 0.2s;"></i>
                 </div>
                 <div class="sub-menu" style="padding-left:8px;">${typesHTML}</div>`;
+        }
+
+        if (lv.id === 0) {
+            // 0级：按篇章分组
+            for (const ch of level0Chapters) {
+                let chUnitsHTML = '';
+                for (const uIdx of ch.unitIndices) {
+                    if (uIdx < lv.units.length) {
+                        chUnitsHTML += buildUnitHTML(lv.id, lv.units[uIdx]);
+                    }
+                }
+                if (chUnitsHTML) {
+                    unitsHTML += `
+                    <div style="padding:8px 10px;font-size:13px;color:${ch.color};font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="this.nextElementSibling.classList.toggle('active')">
+                        <i class="fas ${ch.icon}" style="font-size:12px;opacity:0.8;"></i> ${ch.name}
+                        <i class="fas fa-chevron-right" style="font-size:9px;margin-left:auto;opacity:0.4;transition:transform 0.2s;"></i>
+                    </div>
+                    <div class="sub-menu" style="padding-left:6px;">${chUnitsHTML}</div>`;
+                }
+            }
+        } else {
+            // 其他级别：直接列出单元（无篇章分组）
+            for (const unit of lv.units) {
+                unitsHTML += buildUnitHTML(lv.id, unit);
             }
         }
         const lvIcon = lv.icon || 'fa-book';
@@ -745,16 +755,18 @@ async function buildMenu() {
     }
 }
 
-// 从侧边栏点击具体单词/短句/对话 → 加载到学习卡片
+// 从侧边栏点击具体单词/短句/对话 → 通过StudyModule加载学习
 function loadCourseWord(levelId, unitId, type, index) {
     if (!courseMenuData) return;
-    const level = courseMenuData.levels.find(l => String(l.id) === String(levelId));
-    if (!level) return;
-    const unit = level.units.find(u => u.id === unitId);
-    if (!unit) return;
-    const items = unit[type] || [];
-    if (items.length === 0) return;
-    loadCourseItemsToCard(items, index);
+    // 切换到学习页面
+    switchMainPage('study');
+    // 设置StudyModule的目标单元并跳转到学习Tab
+    StudyModule.selectedLevelId = String(levelId);
+    StudyModule.selectedUnitId = unitId;
+    StudyModule.currentSubTab = 'learn';
+    StudyModule._pendingType = type;
+    StudyModule._pendingIndex = parseInt(index) || 0;
+    StudyModule.render();
 }
 
 // 显示单词（适配 indonesian/chinese 字段）
@@ -1846,7 +1858,7 @@ function switchMainPage(page) {
         }
         if (navTabs) {
             navTabs.style.display = '';
-            navTabs.innerHTML = `<button class="nav-tab back-home-btn" onclick="switchMainPage('home')" style="flex:0;padding:10px 16px;gap:6px;"><i class="fas fa-chevron-left"></i> 主页</button><div class="nav-tab" style="flex:1;cursor:default;background:var(--accent);color:white;box-shadow:0 4px 12px var(--accent-glow);"><i class="fas fa-book-open"></i> 勤学苦练</div>`;
+            navTabs.innerHTML = `<div class="subpage-nav"><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i><span class="side-label">主页</span></button><div class="subpage-nav-center"><i class="fas fa-book-open"></i> 勤学苦练</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i></button></div>`;
         }
         if (mainHeader) mainHeader.style.display = '';
         if (studyArea) studyArea.style.display = '';
@@ -1862,12 +1874,18 @@ function switchMainPage(page) {
         // 延迟初始化子模块
         if (subTab === 'practice') initPracticePage();
         else if (subTab === 'stats') initDashboardPage();
+        // 初始化新版学习模块
+        const smc = document.getElementById('study-module-container');
+        if (smc && !smc.dataset.init) {
+            smc.dataset.init = '1';
+            StudyModule.init(smc);
+        }
     } else if (page === 'challenge') {
         // 闯天关：隐藏侧边栏，导航栏改为返回+标题
         if (mainContainer) mainContainer.classList.add('full-width');
         if (navTabs) {
             navTabs.style.display = '';
-            navTabs.innerHTML = `<button class="nav-tab back-home-btn" onclick="switchMainPage('home')" style="flex:0;padding:10px 16px;gap:6px;"><i class="fas fa-chevron-left"></i> 主页</button><div class="nav-tab" style="flex:1;cursor:default;background:var(--accent);color:white;box-shadow:0 4px 12px var(--accent-glow);"><i class="fas fa-gamepad"></i> 闯天关</div>`;
+            navTabs.innerHTML = `<div class="subpage-nav"><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i><span class="side-label">主页</span></button><div class="subpage-nav-center"><i class="fas fa-gamepad"></i> 闯天关</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i></button></div>`;
         }
         if (mainHeader) mainHeader.style.display = '';
         if (pageChallenge) pageChallenge.style.display = '';
