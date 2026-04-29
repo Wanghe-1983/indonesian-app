@@ -375,7 +375,7 @@ async function initUI() {
                 <div class="vslider-box">
                     <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
                     <div class="vslider-track-wrap">
-                        <input type="range" class="vslider vslider-rate" id="rate-slider" min="1" max="15" value="10" step="1"
+                        <input type="range" class="vslider vslider-rate" id="rate-slider" min="5" max="15" value="10" step="1"
                             oninput="setRateFromSlider(this.value)" title="拖动调整语速">
                         <div class="vslider-fill" id="rate-fill"></div>
                         <div class="vslider-thumb" id="rate-thumb"><span id="val-rate">1.0x</span></div>
@@ -1051,48 +1051,54 @@ function audioBufferToWav(buffer) {
 function writeStr(view, offset, str) { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); }
 
 // 语音播放 - 优先谷歌TTS，兜底浏览器speechSynthesis
+let _isSpeechPlaying = false; // 当前是否正在播放语音
+
+function stopSpeech() {
+    _isSpeechPlaying = false;
+    window.speechSynthesis.cancel();
+    const playIco = document.getElementById('play-ico');
+    if (playIco) playIco.className = 'fas fa-play';
+}
+
 function toggleSpeech() {
-    const word = document.getElementById('disp-indo').innerText;
     const synth = window.speechSynthesis;
     const playIco = document.getElementById('play-ico');
-    
-    // 停止当前播放
-    if (synth.speaking) {
-        synth.cancel();
-        if (playIco) playIco.className = 'fas fa-play';
+
+    // 正在播放 → 停止
+    if (_isSpeechPlaying) {
+        stopSpeech();
         return;
     }
 
-    const currentRate = parseFloat(_rate) || 0.8;
+    const word = document.getElementById('disp-indo').innerText;
+    _isSpeechPlaying = true;
+
     const loopTimes = parseInt(_loop) || 1;
     let loopCount = 1;
-    // 优先使用谷歌翻译发音
-    googleSpeech(word, currentRate).then(() => {
-        // 谷歌发音成功，如需循环则继续
-        if (loopCount < loopTimes) {
-            loopCount++;
-            googleSpeech(word, currentRate).then(function retryLoop() {
-                if (loopCount < loopTimes) {
-                    loopCount++;
-                    googleSpeech(word, currentRate).then(retryLoop).catch(() => {});
-                } else {
-                    if (playIco) playIco.className = 'fas fa-play';
-                }
-            }).catch(() => {});
-        } else {
-            if (playIco) playIco.className = 'fas fa-play';
-        }
-    }).catch(() => {
-        // 谷歌发音失败，兜底浏览器本地合成
-        
-        function getIdVoice() {
-            const voices = speechSynthesis.getVoices();
-            let v = voices.find(x => x.lang && x.lang.startsWith('id'));
-            if (v) return v;
-            v = voices.find(x => x.lang && (x.lang.startsWith('ms') || x.lang.startsWith('msa')));
-            return v || null;
-        }
-        function speakOnce() {
+
+    function doSpeak() {
+        if (!_isSpeechPlaying) return;
+        // 每次播放前取最新语速
+        const currentRate = parseFloat(_rate) || 0.8;
+        googleSpeech(word, currentRate).then(() => {
+            if (!_isSpeechPlaying) { if (playIco) playIco.className = 'fas fa-play'; return; }
+            if (loopCount < loopTimes) {
+                loopCount++;
+                doSpeak();
+            } else {
+                _isSpeechPlaying = false;
+                if (playIco) playIco.className = 'fas fa-play';
+            }
+        }).catch(() => {
+            if (!_isSpeechPlaying) { if (playIco) playIco.className = 'fas fa-play'; return; }
+            // 兜底浏览器本地合成
+            function getIdVoice() {
+                const voices = speechSynthesis.getVoices();
+                let v = voices.find(x => x.lang && x.lang.startsWith('id'));
+                if (v) return v;
+                v = voices.find(x => x.lang && (x.lang.startsWith('ms') || x.lang.startsWith('msa')));
+                return v || null;
+            }
             const utterThis = new SpeechSynthesisUtterance(word);
             utterThis.lang = 'id-ID';
             const idVoice = getIdVoice();
@@ -1101,20 +1107,22 @@ function toggleSpeech() {
             utterThis.onend = function() {
                 if (loopCount < loopTimes) {
                     loopCount++;
-                    speakOnce();
+                    doSpeak();
                 } else {
+                    _isSpeechPlaying = false;
                     if (playIco) playIco.className = 'fas fa-play';
                 }
             };
             utterThis.onerror = function() {
+                _isSpeechPlaying = false;
                 if (playIco) playIco.className = 'fas fa-play';
             };
             synth.speak(utterThis);
-        }
-        speakOnce();
-    });
+        });
+    }
 
     if (playIco) playIco.className = 'fas fa-pause';
+    doSpeak();
 }
 
 // 隐藏答案
@@ -1131,14 +1139,14 @@ function updateSetting(k, v) {
 
 // 圆环控件：语速 1-20 对应 0.1-2.0
 // 语速级别：0.5, 0.8, 1.0, 1.2, 1.5, 2.0
-const RATE_LEVELS = [0.1, 0.3, 0.5, 0.8, 1.0, 1.2, 1.5];
-let _rateIdx = 4; // 默认 1.0
+const RATE_LEVELS = [0.5, 0.6, 0.8, 1.0, 1.2, 1.5];
+let _rateIdx = 2; // 默认 0.8 (在 RATE_LEVELS 中索引2)
 const LOOP_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0]; // 0 = 无限循环
 let _loopIdx = 0; // 默认 1次
 
 // 竖向滑块：语速（1-15 对应 0.1x-1.5x，步进0.1）
 function setRateFromSlider(val) {
-    const rate = parseInt(val) / 10; // 1->0.1, 10->1.0, 15->1.5
+    const rate = parseInt(val) / 10; // 5->0.5, 10->1.0, 15->1.5
     _rate = rate;
     _rateIdx = parseInt(val) - 1;
     localStorage.setItem('fmi_rate', rate);
@@ -1146,8 +1154,8 @@ function setRateFromSlider(val) {
     const el = document.getElementById('val-rate'); if (el) el.innerText = display;
     const pEl = document.getElementById('p-val-rate'); if (pEl) pEl.innerText = display;
     // 更新滑块填充
-    updateSliderFill('rate', (parseInt(val) - 1) / 14);
-    updateSliderFill('p-rate', (parseInt(val) - 1) / 14);
+    updateSliderFill('rate', (parseInt(val) - 5) / 10);
+    updateSliderFill('p-rate', (parseInt(val) - 5) / 10);
     // 同步练习页
     const pSlider = document.getElementById('p-rate-slider');
     if (pSlider) pSlider.value = val;
@@ -2250,7 +2258,7 @@ function initPracticePage() {
                 <div class="vslider-box">
                     <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
                     <div class="vslider-track-wrap">
-                        <input type="range" class="vslider vslider-rate" id="p-rate-slider" min="1" max="15" value="10" step="1" oninput="setRateFromSlider(this.value)">
+                        <input type="range" class="vslider vslider-rate" id="p-rate-slider" min="5" max="15" value="10" step="1" oninput="setRateFromSlider(this.value)">
                         <div class="vslider-fill" id="p-rate-fill"></div>
                         <div class="vslider-thumb" id="p-rate-thumb"><span id="p-val-rate">1.0x</span></div>
                     </div>
