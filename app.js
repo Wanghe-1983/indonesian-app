@@ -1433,10 +1433,14 @@ function updateStats() {
     localStorage.setItem('fmi_study_stats', JSON.stringify(studyStats));
     
     // 更新页面显示
-    document.getElementById('stat-today').innerText = studyStats.todayWords;
-    document.getElementById('stat-total').innerText = studyStats.totalWords;
-    document.getElementById('stat-time').innerText = `${Math.floor(studyStats.studySeconds/60)}分${studyStats.studySeconds%60}秒`;
-    document.getElementById('stat-rate').innerText = studyStats.totalWords > 0 ? Math.floor((studyStats.todayWords/studyStats.totalWords)*100) + '%' : '0%';
+    const elStatToday = document.getElementById('stat-today');
+    if (elStatToday) elStatToday.innerText = studyStats.todayWords;
+    const elStatTotal = document.getElementById('stat-total');
+    if (elStatTotal) elStatTotal.innerText = studyStats.totalWords;
+    const elStatTime = document.getElementById('stat-time');
+    if (elStatTime) elStatTime.innerText = `${Math.floor(studyStats.studySeconds/60)}分${studyStats.studySeconds%60}秒`;
+    const elStatRate = document.getElementById('stat-rate');
+    if (elStatRate) elStatRate.innerText = studyStats.totalWords > 0 ? Math.floor((studyStats.todayWords/studyStats.totalWords)*100) + '%' : '0%';
     
     // 新增：更新进度条
     const progressPercent = studyStats.todayWords > 0 ? Math.min(100, (studyStats.todayWords/dailyGoal)*100) : 0;
@@ -2412,10 +2416,14 @@ function clearStudyData() {
         initDashboardPage();
         renderTodayRecord();
         updateStats();
-        document.getElementById('stat-today').innerText = '0';
-        document.getElementById('stat-total').innerText = '0';
-        document.getElementById('stat-time').innerText = '0分0秒';
-        document.getElementById('stat-rate').innerText = '0%';
+        const rst = document.getElementById('stat-today');
+        if (rst) rst.innerText = '0';
+        const rsto = document.getElementById('stat-total');
+        if (rsto) rsto.innerText = '0';
+        const rsti = document.getElementById('stat-time');
+        if (rsti) rsti.innerText = '0分0秒';
+        const rstr = document.getElementById('stat-rate');
+        if (rstr) rstr.innerText = '0%';
         document.getElementById('progress-bar').style.width = '0%';
     };
 }
