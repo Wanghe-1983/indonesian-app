@@ -164,6 +164,14 @@ const ChallengeModule = {
             totalQuestions: stage.totalQuestions,
         };
 
+        this._inChallenge = true;
+        this._beforeUnloadHandler = function(e) {
+            e.preventDefault();
+            e.returnValue = '闯关进行中，确定要离开吗？成绩将不会保存。';
+            return e.returnValue;
+        };
+        window.addEventListener('beforeunload', this._beforeUnloadHandler);
+
         this.render();
     },
 
@@ -216,11 +224,14 @@ const ChallengeModule = {
         container.innerHTML = `
             <div class="challenge-play-page">
                 <div class="challenge-play-header">
-                    <button class="back-btn" onclick="ChallengeModule.exitStage()">
+                    <button class="back-btn" onclick="ChallengeModule.confirmExit()">
                         <i class="fas fa-arrow-left"></i>
                     </button>
                     <div class="challenge-play-title">第${this.allStages.findIndex(s => s.id === state.stageId) + 1}关</div>
                     <div class="challenge-timer"><i class="fas fa-clock"></i> ${mm}:${ss}</div>
+                    <button style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:6px;" onclick="ChallengeModule.confirmFinish()">
+                        <i class="fas fa-flag-checkered"></i> 结束闯关
+                    </button>
                 </div>
 
                 <div class="challenge-progress-bar">
@@ -388,10 +399,51 @@ const ChallengeModule = {
         }
     },
 
+    confirmExit() {
+        const state = this.challengeState;
+        if (state && state.answers && state.answers.some(a => a)) {
+            if (confirm('当前闯关已答题，退出将不会保存成绩。确定退出吗？')) {
+                this.exitStage();
+            }
+        } else {
+            this.exitStage();
+        }
+    },
+
+    confirmFinish() {
+        const state = this.challengeState;
+        if (!state) return;
+        const answered = state.answers ? state.answers.filter(a => a).length : 0;
+        if (answered === 0) {
+            alert('您还没有答题，请先答题后再结束。');
+            return;
+        }
+        if (confirm('确定结束闯关并提交成绩吗？（已答 ' + answered + ' 题）')) {
+            // 将未答的题目视为错误
+            for (let i = 0; i < state.totalQuestions; i++) {
+                if (!state.answers[i]) {
+                    const q = state.questions[i];
+                    const correct = q.chinese || q.title_id || '';
+                    state.answers[i] = { selected: '', correct: correct, isCorrect: false };
+                }
+            }
+            state.currentIndex = state.totalQuestions;
+            if (this._timerInterval) clearInterval(this._timerInterval);
+            const subContent = document.getElementById('challenge-sub-content');
+            if (subContent) this._renderStageResult(subContent);
+            this._inChallenge = false;
+        }
+    },
+
     exitStage() {
         if (this._timerInterval) clearInterval(this._timerInterval);
+        if (this._beforeUnloadHandler) {
+            window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+            this._beforeUnloadHandler = null;
+        }
         this.currentStageId = null;
         this.challengeState = null;
+        this._inChallenge = false;
         this.render();
     },
 

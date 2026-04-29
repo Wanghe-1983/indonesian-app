@@ -429,7 +429,7 @@ async function initUI() {
     <div class="copyright" id="copyright">
         仅供学习・禁止商用 © 2026｜联系：
         <span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> 
-        Ver 1.1 <span class="clickable" onclick="showVersionChangelog()" style="font-size:0.75rem;margin-left:5px;" title="查看更新日志">[更新日志]</span>
+        Ver 2.1 <span class="clickable" onclick="showVersionChangelog()" style="font-size:0.75rem;margin-left:5px;" title="查看更新日志">[更新日志]</span>
         <span class="clickable" onclick="openAdminModal()" style="font-size:0.72rem;margin-left:8px;cursor:pointer;opacity:0.5;" title="管理员入口"><i class="fas fa-cog" style="font-size:0.8rem;"></i></span>
     </div>
 </main>
@@ -831,7 +831,7 @@ async function buildMenu() {
                 <div class="sub-menu" style="padding-left:8px;">${typesHTML}</div>`;
         }
 
-        if (lv.id === 0) {
+        if (String(lv.id) === '0') {
             // 0级：按篇章分组
             for (const ch of level0Chapters) {
                 let chUnitsHTML = '';
@@ -1977,7 +1977,7 @@ function switchMainPage(page) {
         // 主页：隐藏侧边栏、导航栏、header，铺满全屏
         if (pageHome) pageHome.style.display = '';
         if (mainContainer) mainContainer.classList.add('full-width');
-        if (navTabs) navTabs.style.display = 'none';
+        if (navTabs) { navTabs.style.display = 'none'; navTabs.style.justifyContent = ''; }
         if (sidebar) sidebar.style.display = 'none';
         if (toggleTab) toggleTab.style.display = 'none';
         if (mainHeader) mainHeader.style.display = 'none';
@@ -1995,6 +1995,7 @@ function switchMainPage(page) {
         }
         if (navTabs) {
             navTabs.style.display = '';
+            navTabs.style.justifyContent = 'flex-end';
             navTabs.innerHTML = `<div class="subpage-nav"><div class="subpage-nav-center"><i class="fas fa-book-open"></i> 勤学苦练</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i> <span style="font-size:0.82rem;">返回主页</span></button></div>`;
         }
         if (mainHeader) mainHeader.style.display = '';
@@ -2013,10 +2014,22 @@ function switchMainPage(page) {
         else if (subTab === 'stats') initDashboardPage();
 
     } else if (page === 'challenge') {
+        // 闯天关：访客检查
+        const isVisitor = localStorage.getItem('fmi_visitor_login');
+        const sysInfo = window._systemInfo || {};
+        if (isVisitor && sysInfo.allowVisitorChallenge === false) {
+            if (window._showCustomConfirm) {
+                window._showCustomConfirm('访客无法使用闯天关功能', '请注册账号后体验完整功能', '我知道了', null, function() {});
+            } else {
+                alert('访客无法使用闯天关功能，请注册账号后体验。');
+            }
+            return;
+        }
         // 闯天关：隐藏侧边栏，导航栏改为返回+标题
         if (mainContainer) mainContainer.classList.add('full-width');
         if (navTabs) {
             navTabs.style.display = '';
+            navTabs.style.justifyContent = 'flex-end';
             navTabs.innerHTML = `<div class="subpage-nav"><div class="subpage-nav-center"><i class="fas fa-gamepad"></i> 闯天关</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i> <span style="font-size:0.82rem;">返回主页</span></button></div>`;
         }
         if (mainHeader) mainHeader.style.display = '';
@@ -2034,8 +2047,25 @@ function renderHomeUserBar() {
     const bar = document.getElementById('home-user-bar');
     if (!bar) return;
     if (typeof loginStatus !== 'undefined' && loginStatus && loginStatus.user) {
+        const isVisitor = localStorage.getItem('fmi_visitor_login');
+        const isAdmin = loginStatus.user && loginStatus.user.username === 'admin';
+        // 访客隐藏注销和注销账号按钮
+        const logoutHTML = (!isVisitor) ? `
+                        <div onclick="logout();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(248,113,113,0.1)'" onmouseout="this.style.background='transparent'">
+                            <i class="fas fa-sign-out-alt" style="color:#f87171;width:16px;text-align:center;"></i> 退出登录
+                        </div>
+                        <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 0;"></div>
+                        <div id="home-delete-account-item" onclick="showDeleteAccountDialog();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#ef4444;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">
+                            <i class="fas fa-user-slash" style="width:16px;text-align:center;"></i> 注销账号
+                        </div>` : '';
+        // 管理员也隐藏注销账号
+        const finalLogoutHTML = isAdmin ? logoutHTML.replace(/<div id="home-delete-account-item"[^>]*>[\s\S]*?<\/div>\s*$/, '') : logoutHTML;
         bar.innerHTML = `
-            <div style="display:flex;align-items:center;gap:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 4px;">
+                <div style="display:flex;align-items:center;gap:14px;color:#94a3b8;font-size:0.82rem;flex-wrap:wrap;">
+                    <span id="home-date-time">${new Date().toLocaleString()}</span>
+                    <span id="home-weather-location"><i class="fas fa-cloud"></i> <span id="home-weather-text">加载中...</span></span>
+                </div>
                 <div style="position:relative;">
                     <span onclick="toggleUserMenu()" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
                         <i class="fas fa-user-circle" style="color:#a5b4fc;font-size:1.1rem;"></i>
@@ -2043,18 +2073,33 @@ function renderHomeUserBar() {
                         <i class="fas fa-chevron-down" style="font-size:0.65rem;color:#64748b;"></i>
                     </span>
                     <div id="user-dropdown-home" style="display:none;position:absolute;top:100%;right:0;margin-top:8px;background:rgba(30,41,59,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;min-width:150px;z-index:9999;backdrop-filter:blur(20px);box-shadow:0 10px 40px rgba(0,0,0,0.6);">
-                        <div onclick="logout();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(248,113,113,0.1)'" onmouseout="this.style.background='transparent'">
-                            <i class="fas fa-sign-out-alt" style="color:#f87171;width:16px;text-align:center;"></i> 退出登录
-                        </div>
-                        <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 0;"></div>
-                        <div onclick="showDeleteAccountDialog();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#ef4444;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">
-                            <i class="fas fa-user-slash" style="width:16px;text-align:center;"></i> 注销账号
-                        </div>
+                        ${finalLogoutHTML}
                     </div>
                 </div>
             </div>`;
+        // 同步天气信息到主页
+        syncHomeWeather();
     } else {
         bar.innerHTML = `<span style="color:#94a3b8;font-size:0.9rem;">加载中...</span>`;
+    }
+}
+
+// 同步天气信息到主页user-bar
+function syncHomeWeather() {
+    const weatherEl = document.getElementById('weather-location');
+    const homeWeatherText = document.getElementById('home-weather-text');
+    if (weatherEl && homeWeatherText) {
+        // 监听weather-location变化
+        const observer = new MutationObserver(() => {
+            const span = weatherEl.querySelector('span');
+            if (span && homeWeatherText) {
+                homeWeatherText.textContent = span.textContent;
+            }
+        });
+        observer.observe(weatherEl, { childList: true, subtree: true });
+        // 立即同步一次
+        const span = weatherEl.querySelector('span');
+        if (span) homeWeatherText.textContent = span.textContent;
     }
 }
 
@@ -2462,7 +2507,7 @@ function initDashboardPage() {
         histHTML = hist.slice(-10).reverse().map(h => {
             const tn = h.type === 'choice' ? '选择题' : h.type === 'fill' ? '填空题' : '听力题';
             const clr = h.percent >= 70 ? 'var(--success)' : 'var(--danger)';
-            return '<div class="dash-history-item"><div class="dash-history-date">' + h.date + '</div><div class="dash-history-type">' + tn + '</div><div class="dash-history-score" style="color:' + clr + ';">' + h.score + '/' + h.total + ' (' + h.percent + '%)</div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 1.1 <span class="clickable" onclick="openAdminModal()" style="font-size:0.72rem;margin-left:8px;cursor:pointer;opacity:0.5;" title="管理员入口"><i class="fas fa-cog" style="font-size:0.8rem;"></i></span></div></div>';
+            return '<div class="dash-history-item"><div class="dash-history-date">' + h.date + '</div><div class="dash-history-type">' + tn + '</div><div class="dash-history-score" style="color:' + clr + ';">' + h.score + '/' + h.total + ' (' + h.percent + '%)</div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 2.1 <span class="clickable" onclick="openAdminModal()" style="font-size:0.72rem;margin-left:8px;cursor:pointer;opacity:0.5;" title="管理员入口"><i class="fas fa-cog" style="font-size:0.8rem;"></i></span></div></div>';
         }).join('');
     } else {
         histHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px;">暂无练习记录</div>';
@@ -2473,7 +2518,7 @@ function initDashboardPage() {
     } else {
         wordsHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px;">今天还没有学习记录</div>';
     }
-    c.innerHTML = '<div style="margin:0 auto;max-width:100%;"><header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:10px;"><h1 class="main-title">印尼语学习助手</h1></header><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.8rem;font-weight:800;color:var(--text-main);display:inline-block;"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:10px;"></i>学习统计</h2><button onclick="clearStudyData()" style="margin-left:15px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;vertical-align:middle;"><i class="fas fa-trash-alt" style="margin-right:5px;"></i>清空统计</button><p style="color:var(--text-muted);font-size:0.95rem;margin-top:5px;">' + today + ' · 数据总览</p></div><div class="dash-stats-grid"><div class="dash-card" style="border-top:3px solid var(--accent);"><div style="font-size:1.8rem;color:var(--accent);margin-bottom:10px;"><i class="fas fa-book"></i></div><div class="dash-card-value">' + studyStats.todayWords + '</div><div class="dash-card-label">今日学习</div><div class="dash-card-sub">目标 ' + dailyGoal + ' 词 <span style="font-size:0.7rem;color:#64748b;margin-left:4px;cursor:pointer;border-bottom:1px dashed #64748b;" onclick="showGoalSetting()">修改</span></div></div><div class="dash-card" style="border-top:3px solid #f59e0b;"><div style="font-size:1.8rem;color:#f59e0b;margin-bottom:10px;"><i class="fas fa-clock"></i></div><div class="dash-card-value">' + mins + '<span style="font-size:0.7em;color:var(--text-muted);">分' + secs + '秒</span></div><div class="dash-card-label">在线时长</div><div class="dash-card-sub">今日累计</div></div><div class="dash-card" style="border-top:3px solid #10b981;"><div style="font-size:1.8rem;color:#10b981;margin-bottom:10px;"><i class="fas fa-layer-group"></i></div><div class="dash-card-value">' + learnedN + '<span style="font-size:0.7em;color:var(--text-muted);">/' + totalLib + '</span></div><div class="dash-card-label">累计掌握</div><div class="dash-card-sub">总词汇量</div></div><div class="dash-card" style="border-top:3px solid #a78bfa;"><div style="font-size:1.8rem;color:#a78bfa;margin-bottom:10px;"><i class="fas fa-bullseye"></i></div><div class="dash-card-value">' + learnedPct + '%</div><div class="dash-card-label">掌握率</div><div class="dash-card-sub">' + learnedN + '/' + totalLib + ' 词</div></div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-tasks" style="color:var(--accent);margin-right:8px;"></i>词汇掌握进度</div><div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + learnedPct + '%;"></div></div><div class="dash-progress-labels"><span>已掌握 ' + learnedN + ' 词</span><span>总词汇量 ' + totalLib + ' 词</span></div><div style="margin-top:20px;">' + catBreakdown + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px;"></i>练习历史</div><div class="dash-mini-grid"><div class="dash-mini-card"><div class="dash-mini-value">' + totalP + '</div><div class="dash-mini-label">练习次数</div></div><div class="dash-mini-card"><div class="dash-mini-value">' + avgS + '%</div><div class="dash-mini-label">平均正确率</div></div></div><div class="dash-history-list">' + histHTML + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>今日已学单词</div><div class="dash-words-grid">' + wordsHTML + '</div></div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 1.1 <span class="clickable" onclick="openAdminModal()" style="font-size:0.72rem;margin-left:8px;cursor:pointer;opacity:0.5;" title="管理员入口"><i class="fas fa-cog" style="font-size:0.8rem;"></i></span></div></div>';
+    c.innerHTML = '<div style="margin:0 auto;max-width:100%;"><header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:10px;"><h1 class="main-title">印尼语学习助手</h1></header><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.8rem;font-weight:800;color:var(--text-main);display:inline-block;"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:10px;"></i>学习统计</h2><button onclick="clearStudyData()" style="margin-left:15px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;vertical-align:middle;"><i class="fas fa-trash-alt" style="margin-right:5px;"></i>清空统计</button><p style="color:var(--text-muted);font-size:0.95rem;margin-top:5px;">' + today + ' · 数据总览</p></div><div class="dash-stats-grid"><div class="dash-card" style="border-top:3px solid var(--accent);"><div style="font-size:1.8rem;color:var(--accent);margin-bottom:10px;"><i class="fas fa-book"></i></div><div class="dash-card-value">' + studyStats.todayWords + '</div><div class="dash-card-label">今日学习</div><div class="dash-card-sub">目标 ' + dailyGoal + ' 词 <span style="font-size:0.7rem;color:#64748b;margin-left:4px;cursor:pointer;border-bottom:1px dashed #64748b;" onclick="showGoalSetting()">修改</span></div></div><div class="dash-card" style="border-top:3px solid #f59e0b;"><div style="font-size:1.8rem;color:#f59e0b;margin-bottom:10px;"><i class="fas fa-clock"></i></div><div class="dash-card-value">' + mins + '<span style="font-size:0.7em;color:var(--text-muted);">分' + secs + '秒</span></div><div class="dash-card-label">在线时长</div><div class="dash-card-sub">今日累计</div></div><div class="dash-card" style="border-top:3px solid #10b981;"><div style="font-size:1.8rem;color:#10b981;margin-bottom:10px;"><i class="fas fa-layer-group"></i></div><div class="dash-card-value">' + learnedN + '<span style="font-size:0.7em;color:var(--text-muted);">/' + totalLib + '</span></div><div class="dash-card-label">累计掌握</div><div class="dash-card-sub">总词汇量</div></div><div class="dash-card" style="border-top:3px solid #a78bfa;"><div style="font-size:1.8rem;color:#a78bfa;margin-bottom:10px;"><i class="fas fa-bullseye"></i></div><div class="dash-card-value">' + learnedPct + '%</div><div class="dash-card-label">掌握率</div><div class="dash-card-sub">' + learnedN + '/' + totalLib + ' 词</div></div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-tasks" style="color:var(--accent);margin-right:8px;"></i>词汇掌握进度</div><div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + learnedPct + '%;"></div></div><div class="dash-progress-labels"><span>已掌握 ' + learnedN + ' 词</span><span>总词汇量 ' + totalLib + ' 词</span></div><div style="margin-top:20px;">' + catBreakdown + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px;"></i>练习历史</div><div class="dash-mini-grid"><div class="dash-mini-card"><div class="dash-mini-value">' + totalP + '</div><div class="dash-mini-label">练习次数</div></div><div class="dash-mini-card"><div class="dash-mini-value">' + avgS + '%</div><div class="dash-mini-label">平均正确率</div></div></div><div class="dash-history-list">' + histHTML + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>今日已学单词</div><div class="dash-words-grid">' + wordsHTML + '</div></div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 2.1 <span class="clickable" onclick="openAdminModal()" style="font-size:0.72rem;margin-left:8px;cursor:pointer;opacity:0.5;" title="管理员入口"><i class="fas fa-cog" style="font-size:0.8rem;"></i></span></div></div>';
 }
 
 // 设置每日学习目标（弹窗形式）
@@ -2809,72 +2854,7 @@ window.onload = async function() {
 };
 
 // 【功能⑤】点击版本号展示更新日志
-function showVersionChangelog() {
-    const dialog = document.createElement('div');
-    dialog.id = 'version-changelog-dialog';
-    dialog.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;backdrop-filter:blur(15px);';
-    dialog.innerHTML = `
-        <div style="background:#111827;padding:35px 40px;border-radius:25px;border:1px solid rgba(99,102,241,0.4);max-width:520px;width:90%;max-height:80vh;overflow-y:auto;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h3 style="color:#fff;font-size:1.2rem;">📋 更新日志</h3>
-                <button onclick="document.body.removeChild(document.getElementById('version-changelog-dialog'))" style="background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;padding:0 5px;">&times;</button>
-            </div>
-            <div style="border-left:3px solid var(--accent);padding:15px 20px;margin-bottom:15px;border-radius:0 10px 10px 0;">
-                <div style="color:#a5b4fc;font-weight:700;margin-bottom:8px;">Ver 2.0 (2026-04-22)</div>
-                <ul style="color:#cbd5e1;font-size:0.9rem;line-height:1.8;padding-left:18px;">
-                    <li>新增：Cloudflare KV 在线存储，数据跨设备同步</li>
-                    <li>新增：注册页面，支持自助注册</li>
-                    <li>新增：排行榜功能（每日打榜，准确率+用时排名）</li>
-                    <li>新增：在线人数显示（主界面+登录界面）</li>
-                    <li>新增：后台用户管理（增删改查、踢人、封禁）</li>
-                    <li>新增：后台系统设置（人数限制、注册开关等）</li>
-                    <li>新增：后台打榜配置（题目数量、分类、类型）</li>
-                    <li>新增：白名单一键导入云端用户库</li>
-                    <li>优化：目录栏折叠联动全屏</li>
-                    <li>优化：所有页面宽度统一撑满</li>
-                </ul>
-            </div>
-            <div style="border-left:3px solid #475569;padding:15px 20px;margin-bottom:15px;border-radius:0 10px 10px 0;">
-                <div style="color:#94a3b8;font-weight:700;margin-bottom:8px;">Ver 1.2 (2026-04-20)</div>
-                <ul style="color:#94a3b8;font-size:0.85rem;line-height:1.8;padding-left:18px;">
-                    <li>优化：目录栏折叠联动全屏</li>
-                    <li>优化：练习/统计页面宽度统一</li>
-                    <li>新增：练习模式"仅练习已掌握内容"筛选</li>
-                </ul>
-            </div>
-            <div style="border-left:3px solid #475569;padding:15px 20px;margin-bottom:15px;border-radius:0 10px 10px 0;">
-                <div style="color:#94a3b8;font-weight:700;margin-bottom:8px;">Ver 1.1 (2026-04-20)</div>
-                <ul style="color:#cbd5e1;font-size:0.9rem;line-height:1.8;padding-left:18px;">
-                    <li>新增：收藏夹支持逐个删除收藏项</li>
-                    <li>新增：登出时弹窗确认是否清空学习记录</li>
-                    <li>新增：关闭页面时关联登出逻辑，次日自动清空记录</li>
-                    <li>新增：后台名单解析功能（支持 CSV/TXT/Excel 上传）</li>
-                    <li>新增：点击版本号查看更新日志</li>
-                </ul>
-            </div>
-            <div style="border-left:3px solid #475569;padding:15px 20px;">
-                <div style="color:#94a3b8;font-weight:700;margin-bottom:8px;">Ver 1.2 <span class="clickable" onclick="showVersionChangelog()" style="font-size:0.75rem;margin-left:5px;" title="查看更新日志">[更新日志]</span></div>
-                <ul style="color:#64748b;font-size:0.85rem;line-height:1.8;padding-left:18px;">
-                    <li>初始版本发布</li>
-                    <li>基础学习功能（生词、短语）</li>
-                    <li>谷歌翻译发音 + 本地语音合成</li>
-                    <li>收藏夹功能</li>
-                    <li>学习打卡分享</li>
-                    <li>管理员后台</li>
-                </ul>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(dialog);
-    // 点击遮罩层关闭
-    dialog.addEventListener('click', function(e) {
-        if (e.target === dialog) {
-            document.body.removeChild(dialog);
-        }
-    });
-}
 
-// 【版本更新日志】
 function showVersionChangelog() {
     const dialog = document.createElement('div');
     dialog.id = 'version-changelog-dialog';
@@ -2884,6 +2864,22 @@ function showVersionChangelog() {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h3 style="color:#fff;font-size:1.2rem;">📋 更新日志</h3>
                 <button onclick="document.body.removeChild(document.getElementById('version-changelog-dialog'))" style="background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;padding:0 5px;">&times;</button>
+            </div>
+            <div style="border-left:3px solid #f59e0b;padding:15px 20px;margin-bottom:15px;border-radius:0 10px 10px 0;">
+                <div style="color:#fbbf24;font-weight:700;margin-bottom:8px;">Ver 2.1 (2026-04-29)</div>
+                <ul style="color:#cbd5e1;font-size:0.9rem;line-height:1.8;padding-left:18px;">
+                    <li>修复：0级课程36个单元按篇章分组展示</li>
+                    <li>修复：侧边栏课程导航点击直达内容</li>
+                    <li>修复：主页"加载中"改为显示登录信息</li>
+                    <li>修复：天气定位改为GPS优先，IP定位兜底</li>
+                    <li>修复：访客倒计时与后台配置同步</li>
+                    <li>新增：主页header一左一右布局（时间/登录信息）</li>
+                    <li>新增：闯天关"结束闯关"按钮+成绩提交确认</li>
+                    <li>新增：闯天关浏览器关闭前成绩保存提示</li>
+                    <li>新增：闯天关语速/循环播放控制</li>
+                    <li>优化：访客模式下隐藏注销按钮</li>
+                    <li>优化：导航栏返回按钮贴右边框</li>
+                </ul>
             </div>
             <div style="border-left:3px solid #10b981;padding:15px 20px;margin-bottom:15px;border-radius:0 10px 10px 0;">
                 <div style="color:#34d399;font-weight:700;margin-bottom:8px;">Ver 1.2 (2026-04-20)</div>
@@ -3034,11 +3030,35 @@ function updateFavBtnForCourse() {
 // ========== 全局语音播放（闯天关和课程模块使用） ==========
 window.speak = function(encodedText) {
     const text = decodeURIComponent(encodedText);
-    if ('speechSynthesis' in window) {
-        speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'id-ID';
-        utterance.rate = parseFloat(localStorage.getItem('fmi_rate') || '1.0');
-        speechSynthesis.speak(utterance);
-    }
+    if (!text) return;
+    const rate = parseFloat(localStorage.getItem('fmi_rate') || '0.8');
+    const loopCount = parseInt(localStorage.getItem('fmi_loop') || '1');
+    speechSynthesis.cancel();
+    // 优先谷歌TTS
+    googleSpeech(text).then(() => {
+        // 谷歌成功，如需循环则继续
+        if (loopCount > 1) {
+            let count = 1;
+            function speakLoop() {
+                if (count >= loopCount) return;
+                count++;
+                googleSpeech(text).then(speakLoop).catch(() => {});
+            }
+            speakLoop();
+        }
+    }).catch(() => {
+        // 兜底浏览器speechSynthesis
+        let count = 0;
+        function synthOnce() {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = rate;
+            utterance.onend = function() {
+                count++;
+                if (count < loopCount) synthOnce();
+            };
+            speechSynthesis.speak(utterance);
+        }
+        synthOnce();
+    });
 };

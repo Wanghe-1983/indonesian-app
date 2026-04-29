@@ -382,13 +382,13 @@
             } catch(e) {
                 // 网络错误时使用本地访客模式 fallback
                 console.warn('API visitor login failed, using local fallback');
-                var guestUser = { username: 'visitor', name: '访客', role: 'guest', visitDuration: 3 };
+                var guestUser = { username: 'visitor', name: '访客', role: 'guest', visitDuration: 10 };
                 localStorage.setItem('fmi_token', 'guest_local_' + Date.now());
                 localStorage.setItem('fmi_user', JSON.stringify(guestUser));
                 localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: guestUser, backend: false }));
                 localStorage.setItem('fmi_visitor_login', '1');
-                localStorage.setItem('fmi_visitor_expire', String(Date.now() + 3 * 60 * 1000));
-                startVisitorTimer(3 * 60 * 1000);
+                localStorage.setItem('fmi_visitor_expire', String(Date.now() + 10 * 60 * 1000));
+                startVisitorTimer(10 * 60 * 1000);
                 showTip('login-tip', '访客模式已启动（离线）', 'success');
                 setTimeout(function() { location.href = 'index.html'; }, 600);
             }
@@ -460,7 +460,7 @@
                 if (info.allowVisitor) {
                     visitorArea.style.display = '';
                     visitorClosed.style.display = 'none';
-                    var dur = info.visitorDuration || 3;
+                    var dur = info.visitorDuration || 10;
                     document.getElementById('visitor-info').innerHTML = '访客可体验 ' + dur + ' 分钟，到期自动退出';
                 } else {
                     visitorArea.style.display = 'none';
