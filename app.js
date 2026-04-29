@@ -9,6 +9,7 @@ let dailyGoal = parseInt(localStorage.getItem('fmi_daily_goal') || '20');
 let _rate = parseFloat(localStorage.getItem('fmi_rate') || '0.8');
 let _loop = parseInt(localStorage.getItem('fmi_loop') || '1');
 let _hideChinese = false;
+let loginStatus; // 全局登录状态
 const today = new Date().toLocaleDateString();
 // 全局白名单变量
 let whitelist = [];
@@ -41,7 +42,7 @@ async function loadWhitelist() {
 
 // 登录状态验证 - 优化登出按钮显示（修复节点为空的报错）
 function checkLoginStatus() {
-    const loginStatus = JSON.parse(localStorage.getItem('fmi_login_status') || '{"isLogin":false}');
+    loginStatus = JSON.parse(localStorage.getItem('fmi_login_status') || '{"isLogin":false}');
     if (!loginStatus.isLogin) {
         location.href = "login.html"; 
     } else {
@@ -321,6 +322,9 @@ async function initUI() {
     </div>
 
     <div id="page-study" style="display:none;">
+
+    
+
     <div id="broadcast-bar" style="display:none;margin:10px 0;padding:12px 18px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(168,85,247,0.12));border:1px solid rgba(99,102,241,0.2);border-radius:12px;overflow:hidden;position:relative;">
         <div style="display:flex;align-items:center;gap:10px;">
             <span style="color:#a78bfa;font-size:0.8rem;flex-shrink:0;"><i class="fas fa-bullhorn"></i></span>
@@ -328,43 +332,95 @@ async function initUI() {
                 <div id="broadcast-text" style="font-size:0.88rem;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                 <div id="broadcast-title" style="font-size:0.75rem;color:#64748b;margin-top:2px;"></div>
             </div>
+
         </div>
     </div>
     <div class="tip-box" id="study-tip">
         <div class="tip-title">每日学习小贴士</div>
         <div id="tip-content">每天学习一点，进步一大步！</div>
     </div>
-    <div class="learn-cards-row" id="study-info-row">
+
+    <div class="learn-cards-row">
         <div style="flex:1;min-width:200px;background:var(--glass);padding:15px;border-radius:15px;border:1px solid rgba(255,255,255,0.05);">
             <div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">今日学习进度</div>
             <div style="height:8px;background:rgba(30,41,59,0.5);border-radius:4px;overflow:hidden;margin-bottom:8px;">
-                <div id="progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#a78bfa);border-radius:4px;transition:width 0.6s ease;"></div>
+                <div id="progress-bar" style="height:100%;width:${studyStats.todayWords > 0 ? Math.min(100, (studyStats.todayWords/dailyGoal)*100) : 0}%;background:linear-gradient(90deg,var(--accent),#a78bfa);border-radius:4px;transition:width 0.6s ease;"></div>
             </div>
-            <div id="progress-text" style="font-size:12px;color:#94a3b8;cursor:pointer;" onclick="showGoalSetting()" title="点击设置学习目标">0/${typeof dailyGoal!=='undefined'?dailyGoal:20} 目标单词 <i class="fas fa-edit" style="font-size:10px;margin-left:3px;"></i></div>
+            <div style="font-size:12px;color:#94a3b8;cursor:pointer;" onclick="showGoalSetting()" title="点击设置学习目标">${studyStats.todayWords}/${dailyGoal} 目标单词 <i class="fas fa-edit" style="font-size:10px;margin-left:3px;"></i></div>
         </div>
         <div style="flex:1;min-width:200px;background:var(--glass);padding:15px;border-radius:15px;border:1px solid rgba(255,255,255,0.05);">
             <div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">随机推荐单词</div>
             <div id="random-word" style="font-size:18px;color:#a5b4fc;font-weight:600;">加载中...</div>
         </div>
     </div>
-    <div id="study-module-container"></div>
-    <!-- 旧版study-card兼容容器（隐藏，供旧版函数引用） -->
-    <div id="legacy-study-card" style="display:none;">
-        <div id="word-idx">01</div>
-        <div id="fav-trigger" class="star-btn"></div>
-        <div id="disp-indo"></div>
-        <div id="disp-zh"></div>
-        <div id="main-play"></div>
-        <div id="play-ico"></div>
-        <div id="learn-inline-controls"></div>
-    </div>
+
+    <section class="study-card" id="main-card">
+        <div class="top-meta">
+            <div class="word-badge" id="word-idx">01</div>
+            <div class="star-btn" id="fav-trigger" onclick="handleFav()"><i class="fas fa-star"></i></div>
+        </div>
+        <div class="indo-box" id="disp-indo">加载中...</div>
+        <div class="zh-box" id="disp-zh">请稍候</div>
+<div class="nav-row">
+            <button class="circle-btn" onclick="navWord(-1)"><i class="fas fa-chevron-left"></i></button>
+            <button id="main-play" class="circle-btn play-btn" onclick="toggleSpeech()"><i class="fas fa-play" id="play-ico"></i></button>
+            <button class="circle-btn" onclick="navWord(1)"><i class="fas fa-chevron-right"></i></button>
+            <button class="circle-btn" onclick="openShareModal()" style="font-size:1.2rem;">
+                <i class="fas fa-share-alt"></i>
+                <span style="font-size:0.8rem;display:block;margin-top:5px;">打卡</span>
+            </button>
+        </div>
+        <div style="margin:24px 0;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;" id="learn-inline-controls">
+            <div class="sliders-col" style="flex:1;min-width:0;">
+                <div class="vslider-box">
+                    <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
+                    <div class="vslider-track-wrap">
+                        <input type="range" class="vslider vslider-rate" id="rate-slider" min="1" max="15" value="10" step="1"
+                            oninput="setRateFromSlider(this.value)" title="拖动调整语速">
+                        <div class="vslider-fill" id="rate-fill"></div>
+                        <div class="vslider-thumb" id="rate-thumb"><span id="val-rate">1.0x</span></div>
+                    </div>
+                    <div class="vslider-range"><span>0.1x</span><span>1.5x</span></div>
+                </div>
+                <div class="vslider-box">
+                    <div class="vslider-label"><i class="fas fa-repeat"></i> 循环</div>
+                    <div class="vslider-track-wrap">
+                        <input type="range" class="vslider vslider-loop" id="loop-slider" min="0" max="14" value="0" step="1"
+                            oninput="setLoopFromSlider(this.value)" title="拖动调整循环次数">
+                        <div class="vslider-fill" id="loop-fill"></div>
+                        <div class="vslider-thumb" id="loop-thumb"><span id="val-loop">1次</span></div>
+                    </div>
+                    <div class="vslider-range"><span>1次</span><span>无限</span></div>
+                </div>
+                <div class="vslider-box">
+                    <div class="vslider-label"><i class="fas fa-eye-slash"></i> 答案</div>
+                    <div class="vslider-track-wrap" style="flex:0;">
+                        <button class="hide-toggle-btn" id="hide-btn" onclick="toggleHide()" title="点击切换显示/隐藏中文翻译" style="width:44px;height:44px;font-size:1.2rem;border:none;background:none;cursor:pointer;">
+                            <span id="hide-icon" class="hide-icon-show"><i class="fas fa-eye"></i></span>
+                        </button>
+                        
+                    </div>
+                    <div class="vslider-range"><span></span><span></span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <div class="study-record-box">
         <div class="record-title">
             <span>今日学习记录</span>
             <button class="clear-record-btn" onclick="clearTodayRecord()">清空记录</button>
         </div>
-        <div class="record-list" id="record-list"></div>
+        <div class="record-list" id="record-list">
+            ${todayRecord.length > 0 ? todayRecord.map(item => `
+                <div class="record-item">
+                    <div class="record-indo">${item.indonesian}</div>
+                    <div class="record-zh">${item.chinese}</div>
+                </div>
+            `).join('') : '<div style="grid-column: 1 / 3; text-align: center; color: var(--text-muted);">暂无学习记录</div>'}
+        </div>
     </div>
+
     </div><!-- end page-study -->
     <div id="page-study-practice" style="display:none;"></div>
     <div id="page-study-stats" style="display:none;"></div>
@@ -522,6 +578,9 @@ function loadWeather() {
             const weather = data.current_condition[0].weatherDesc[0].value;
             const area = data.nearest_area[0]?.areaName[0]?.value || '';
             el.innerHTML = `<i class="fas fa-cloud"></i><span> ${area ? area + ' ' : ''}${temp}℃ ${weather}</span>`;
+            // 同步更新location-name
+            const locName = document.getElementById('location-name');
+            if (locName && area) locName.textContent = area;
         })
         .catch(() => {
             // wttr.in失败，尝试高德天气API（如果配置了key）
@@ -530,6 +589,8 @@ function loadWeather() {
             } else {
                 // 显示默认天气（不影响使用）
                 el.innerHTML = `<i class="fas fa-cloud"></i><span> 天气加载失败</span>`;
+                const locFail = document.getElementById('location-name');
+                if (locFail) locFail.textContent = '未知';
             }
         });
 }
@@ -549,12 +610,17 @@ function tryAmapWeather(el) {
             if (data.lives && data.lives[0]) {
                 const w = data.lives[0];
                 el.innerHTML = `<i class="fas fa-cloud"></i><span> ${w.city} ${w.temperature}℃ ${w.weather}</span>`;
+                // 同步更新location-name
+                const locNameAmap = document.getElementById('location-name');
+                if (locNameAmap && w.city) locNameAmap.textContent = w.city;
             } else {
                 el.innerHTML = `<i class="fas fa-cloud"></i><span> 天气加载失败</span>`;
             }
         })
         .catch(() => {
             el.innerHTML = `<i class="fas fa-cloud"></i><span> 天气加载失败</span>`;
+            const locFailCatch = document.getElementById('location-name');
+            if (locFailCatch) locFailCatch.textContent = '未知';
         });
 }
 
@@ -1858,7 +1924,7 @@ function switchMainPage(page) {
         }
         if (navTabs) {
             navTabs.style.display = '';
-            navTabs.innerHTML = `<div class="subpage-nav"><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i><span class="side-label">主页</span></button><div class="subpage-nav-center"><i class="fas fa-book-open"></i> 勤学苦练</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i></button></div>`;
+            navTabs.innerHTML = `<div class="subpage-nav"><div class="subpage-nav-center"><i class="fas fa-book-open"></i> 勤学苦练</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i> <span style="font-size:0.82rem;">返回主页</span></button></div>`;
         }
         if (mainHeader) mainHeader.style.display = '';
         if (studyArea) studyArea.style.display = '';
@@ -1874,18 +1940,13 @@ function switchMainPage(page) {
         // 延迟初始化子模块
         if (subTab === 'practice') initPracticePage();
         else if (subTab === 'stats') initDashboardPage();
-        // 初始化新版学习模块
-        const smc = document.getElementById('study-module-container');
-        if (smc && !smc.dataset.init) {
-            smc.dataset.init = '1';
-            StudyModule.init(smc);
-        }
+
     } else if (page === 'challenge') {
         // 闯天关：隐藏侧边栏，导航栏改为返回+标题
         if (mainContainer) mainContainer.classList.add('full-width');
         if (navTabs) {
             navTabs.style.display = '';
-            navTabs.innerHTML = `<div class="subpage-nav"><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i><span class="side-label">主页</span></button><div class="subpage-nav-center"><i class="fas fa-gamepad"></i> 闯天关</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i></button></div>`;
+            navTabs.innerHTML = `<div class="subpage-nav"><div class="subpage-nav-center"><i class="fas fa-gamepad"></i> 闯天关</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i> <span style="font-size:0.82rem;">返回主页</span></button></div>`;
         }
         if (mainHeader) mainHeader.style.display = '';
         if (pageChallenge) pageChallenge.style.display = '';
