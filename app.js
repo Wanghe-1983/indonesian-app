@@ -1006,13 +1006,13 @@ function toggleSpeech() {
         return;
     }
 
+    const currentRate = parseFloat(_rate) || 0.8;
     // 优先使用谷歌翻译发音
     googleSpeech(word, currentRate).then(() => {
         // 谷歌发音成功结束
         if (playIco) playIco.className = 'fas fa-play';
     }).catch(() => {
         // 谷歌发音失败，兜底浏览器本地合成
-        const currentRate = parseFloat(_rate) || 0.8;
         const loopTimes = parseInt(_loop) || 1;
         let loopCount = 1;
         
