@@ -3020,19 +3020,16 @@ function showVersionChangelog() {
                 <button onclick="document.body.removeChild(document.getElementById('version-changelog-dialog'))" style="background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;padding:0 5px;">&times;</button>
             </div>
             <div style="border-left:3px solid #f59e0b;padding:15px 20px;margin-bottom:15px;border-radius:0 10px 10px 0;">
-                <div style="color:#fbbf24;font-weight:700;margin-bottom:8px;">Ver 2.2 (2026-04-29)</div>
+                <div style="color:#fbbf24;font-weight:700;margin-bottom:8px;">Ver 2.2 (2026-04-30)</div>
                 <ul style="color:#cbd5e1;font-size:0.9rem;line-height:1.8;padding-left:18px;">
-                    <li>修复：0级课程36个单元按篇章分组展示</li>
-                    <li>修复：侧边栏课程导航点击直达内容</li>
-                    <li>修复：主页"加载中"改为显示登录信息</li>
-                    <li>修复：天气定位改为GPS优先，IP定位兜底</li>
-                    <li>修复：访客倒计时与后台配置同步</li>
-                    <li>新增：主页header一左一右布局（时间/登录信息）</li>
-                    <li>新增：闯天关"结束闯关"按钮+成绩提交确认</li>
-                    <li>新增：闯天关浏览器关闭前成绩保存提示</li>
-                    <li>新增：闯天关语速/循环播放控制</li>
-                    <li>优化：访客模式下隐藏注销按钮</li>
-                    <li>优化：导航栏返回按钮贴右边框</li>
+                    <li>新增：WSOLA 时间拉伸算法，变速不变调（服务端处理）</li>
+                    <li>新增：TTS 音频 KV 缓存，减少重复请求</li>
+                    <li>修复：主页/勤学苦练页重复的登录者信息和倒计时</li>
+                    <li>修复：3~7级课程目录样式统一（彩色圆形+中文篇名分组）</li>
+                    <li>修复：2~7级课程点击无法加载内容</li>
+                    <li>修复：header 布局（天气/日期在左，登录信息在右）</li>
+                    <li>修复：统计页底部重复版权栏</li>
+                    <li>优化：禁用 app-v2.js 自动启动，统一由 app.js 管理</li>
                 </ul>
             </div>
             <div style="border-left:3px solid #10b981;padding:15px 20px;margin-bottom:15px;border-radius:0 10px 10px 0;">
