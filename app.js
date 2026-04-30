@@ -283,10 +283,7 @@ async function initUI() {
         <button class="nav-tab" onclick="switchMainPage('study')" data-tab="study"><i class="fas fa-book-open"></i> 勤学苦练</button>
         <button class="nav-tab" onclick="switchMainPage('challenge')" data-tab="challenge"><i class="fas fa-gamepad"></i> 闯天关</button>
     </div>
-    <header class="app-header" style="display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:12px;">
-        <div class="user-status" id="user-status" style="font-size:0.9rem;">
-            欢迎，管理员
-        </div>
+     <header class="app-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
             <div class="weather-location" id="weather-location">
                 <i class="fas fa-cloud"></i>
@@ -297,6 +294,9 @@ async function initUI() {
                 <span id="location-name">定位中...</span>
             </div>
             <div class="date-time" id="date-time-header" style="color:#94a3b8;font-size:0.82rem;">${new Date().toLocaleString()}</div>
+        </div>
+        <div class="user-status" id="user-status" style="font-size:0.9rem;">
+            欢迎，管理员
         </div>
     </header>
 
