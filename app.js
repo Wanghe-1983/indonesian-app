@@ -1227,23 +1227,24 @@ function updateSetting(k, v) {
 
 // 圆环控件：语速 1-20 对应 0.1-2.0
 // 语速级别：0.5, 0.8, 1.0, 1.2, 1.5, 2.0
-const RATE_LEVELS = [0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5];
+const RATE_LEVELS = [0.1,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.6,0.7,0.8,0.9,1.0,1.2,1.5];
 let _rateIdx = 2; // 默认 0.8 (在 RATE_LEVELS 中索引2)
 const LOOP_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0]; // 0 = 无限循环
 let _loopIdx = 0; // 默认 1次
 
-// 竖向滑块：语速（1-15 对应 0.1x-1.5x，步进0.1）
+// 竖向滑块：语速（1-15 对应 RATE_LEVELS 数组值）
 function setRateFromSlider(val) {
-    const rate = parseInt(val) / 10; // 5->0.5, 10->1.0, 15->1.5
+    const idx = Math.max(0, Math.min(RATE_LEVELS.length - 1, parseInt(val) - 1));
+    const rate = RATE_LEVELS[idx];
     _rate = rate;
-    _rateIdx = parseInt(val) - 1;
+    _rateIdx = idx;
     localStorage.setItem('fmi_rate', rate);
-    const display = rate.toFixed(1) + 'x';
+    const display = rate.toFixed(rate < 1 ? 2 : 1) + 'x';
     const el = document.getElementById('val-rate'); if (el) el.innerText = display;
     const pEl = document.getElementById('p-val-rate'); if (pEl) pEl.innerText = display;
     // 更新滑块填充
-    updateSliderFill('rate', (parseInt(val) - 5) / 10);
-    updateSliderFill('p-rate', (parseInt(val) - 5) / 10);
+    updateSliderFill('rate', idx / (RATE_LEVELS.length - 1));
+    updateSliderFill('p-rate', idx / (RATE_LEVELS.length - 1));
     // 同步练习页
     const pSlider = document.getElementById('p-rate-slider');
     if (pSlider) pSlider.value = val;
@@ -1290,7 +1291,7 @@ function updateRing(id, ratio) {
 // 兼容旧函数（练习页仍用 click）
 function cycleRate() {
     const slider = document.getElementById('rate-slider');
-    if (slider) { slider.value = (_rateIdx + 2) > 15 ? 1 : _rateIdx + 2; setRateFromSlider(slider.value); }
+    if (slider) { slider.value = (_rateIdx + 2) > RATE_LEVELS.length ? 1 : _rateIdx + 2; setRateFromSlider(slider.value); }
 }
 function cycleLoop() {
     const slider = document.getElementById('loop-slider');
@@ -1317,9 +1318,11 @@ function toggleHide() {
 
 // 初始化滑块位置
 function initSliders() {
-    const savedRate = parseFloat(localStorage.getItem('fmi_rate')) || 1.0;
+    const savedRate = parseFloat(localStorage.getItem('fmi_rate')) || 0.8;
     const savedLoop = parseInt(localStorage.getItem('fmi_loop')) || 1;
-    const rateVal = Math.round(savedRate * 10);
+    // Find nearest index in RATE_LEVELS
+    let rateIdx = RATE_LEVELS.reduce((best, v, i) => Math.abs(v - savedRate) < Math.abs(RATE_LEVELS[best] - savedRate) ? i : best, 0);
+    const rateVal = rateIdx + 1;
     const loopIdx = LOOP_LEVELS.indexOf(savedLoop);
     const loopVal = loopIdx >= 0 ? loopIdx : (LOOP_LEVELS.indexOf(savedLoop) >= 0 ? LOOP_LEVELS.indexOf(savedLoop) : 0);
     const rateSlider = document.getElementById('rate-slider');
@@ -2151,6 +2154,8 @@ function switchMainPage(page) {
     // 先全部隐藏
     if (pageHome) pageHome.style.display = 'none';
     if (studyArea) studyArea.style.display = 'none';
+    const homeBar = document.getElementById('home-user-bar');
+    if (homeBar) homeBar.style.display = 'none';
     if (pageStudy) pageStudy.style.display = 'none';
     if (pagePractice) pagePractice.style.display = 'none';
     if (pageStats) pageStats.style.display = 'none';
@@ -2166,7 +2171,9 @@ function switchMainPage(page) {
         if (toggleTab) toggleTab.style.display = 'none';
         if (mainHeader) mainHeader.style.display = 'none';
         if (copyRight) copyRight.style.display = '';
-        // 渲染主页用户状态栏
+        // 显示主页用户状态栏并渲染
+        const homeBar = document.getElementById('home-user-bar');
+        if (homeBar) homeBar.style.display = '';
         renderHomeUserBar();
     } else if (page === 'study') {
         // 勤学苦练：显示侧边栏，导航栏改为返回+标题
@@ -2306,7 +2313,7 @@ function initPracticePage() {
         const n = catId === "1" ? "生词 Vocabulary" : catId === "2" ? "短语 Phrases" : catId;
         catOpts += '<option value="' + catId + '">' + catId + '. ' + n + '</option>';
     }
-    c.innerHTML = `<div style="margin-bottom:10px;padding:8px 14px;background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.05));border-radius:10px;display:flex;align-items:center;gap:8px;color:#a5b4fc;font-size:0.85rem;"><i class="fas fa-broadcast-tower"></i> <span id="practice-broadcast">暂无公告</span></div><div class="practice-container" style="max-width:100%;"><div id="practice-setup"><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.5rem;font-weight:800;color:var(--text-main);"><i class="fas fa-pen-fancy" style="color:var(--accent);margin-right:8px;"></i>练习模式</h2></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择词库分类</div><select id="practice-cat-select" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.95rem;outline:none;"><option value="all">全部词库</option>' + catOpts + '</select></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择练习类型</div><div class="practice-type-selector"><button class="practice-type-btn active" onclick="selectPracticeType('choice',this)"><i class="fas fa-th-large"></i> 选择题</button><button class="practice-type-btn" onclick="selectPracticeType('fill',this)"><i class="fas fa-keyboard"></i> 填空题</button><button class="practice-type-btn" onclick="selectPracticeType('listen',this)"><i class="fas fa-headphones"></i> 听力题</button></div></div><div style="margin-bottom:20px;padding:14px 18px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;">
+    c.innerHTML = `<div id="practice-broadcast-bar" style="margin:10px 0;padding:12px 18px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(168,85,247,0.12));border:1px solid rgba(99,102,241,0.2);border-radius:12px;overflow:hidden;position:relative;"><div style="display:flex;align-items:center;gap:10px;"><span style="color:#a78bfa;font-size:0.8rem;flex-shrink:0;"><i class="fas fa-bullhorn"></i></span><div style="flex:1;min-width:0;overflow:hidden;"><div id="practice-broadcast-text" style="font-size:0.88rem;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div></div></div></div><div class="practice-container" style="max-width:100%;"><div id="practice-setup"><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.5rem;font-weight:800;color:var(--text-main);"><i class="fas fa-pen-fancy" style="color:var(--accent);margin-right:8px;"></i>练习模式</h2></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择词库分类</div><select id="practice-cat-select" style="width:100%;padding:12px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.95rem;outline:none;"><option value="all">全部词库</option>' + catOpts + '</select></div><div style="margin-bottom:20px;"><div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:10px;">选择练习类型</div><div class="practice-type-selector"><button class="practice-type-btn active" onclick="selectPracticeType('choice',this)"><i class="fas fa-th-large"></i> 选择题</button><button class="practice-type-btn" onclick="selectPracticeType('fill',this)"><i class="fas fa-keyboard"></i> 填空题</button><button class="practice-type-btn" onclick="selectPracticeType('listen',this)"><i class="fas fa-headphones"></i> 听力题</button></div></div><div style="margin-bottom:20px;padding:14px 18px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;">
             <label style="display:flex;align-items:center;gap:12px;cursor:pointer;color:var(--text-main);font-size:1rem;font-weight:600;">
                 <input type="checkbox" id="practice-learned-only" style="width:22px;height:22px;accent-color:var(--accent);cursor:pointer;">
                 <i class="fas fa-check-double" style="color:var(--accent);"></i>
@@ -2678,7 +2685,7 @@ function initDashboardPage() {
     } else {
         wordsHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px;">今天还没有学习记录</div>';
     }
-    c.innerHTML = '<div style="margin:0 auto;max-width:100%;"><div style="margin-bottom:10px;padding:8px 14px;background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.05));border-radius:10px;display:flex;align-items:center;gap:8px;color:#a5b4fc;font-size:0.85rem;"><i class="fas fa-broadcast-tower"></i> <span id="stats-broadcast"></span></div><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.8rem;font-weight:800;color:var(--text-main);display:inline-block;"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:10px;"></i>学习统计</h2><button onclick="clearStudyData()" style="margin-left:15px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;vertical-align:middle;"><i class="fas fa-trash-alt" style="margin-right:5px;"></i>清空统计</button><p style="color:var(--text-muted);font-size:0.95rem;margin-top:5px;">' + today + ' · 数据总览</p></div><div class="dash-stats-grid"><div class="dash-card" style="border-top:3px solid var(--accent);"><div style="font-size:1.8rem;color:var(--accent);margin-bottom:10px;"><i class="fas fa-book"></i></div><div class="dash-card-value">' + studyStats.todayWords + '</div><div class="dash-card-label">今日学习</div><div class="dash-card-sub">目标 ' + dailyGoal + ' 词 <span style="font-size:0.7rem;color:#64748b;margin-left:4px;cursor:pointer;border-bottom:1px dashed #64748b;" onclick="showGoalSetting()">修改</span></div></div><div class="dash-card" style="border-top:3px solid #f59e0b;"><div style="font-size:1.8rem;color:#f59e0b;margin-bottom:10px;"><i class="fas fa-clock"></i></div><div class="dash-card-value">' + mins + '<span style="font-size:0.7em;color:var(--text-muted);">分' + secs + '秒</span></div><div class="dash-card-label">在线时长</div><div class="dash-card-sub">今日累计</div></div><div class="dash-card" style="border-top:3px solid #10b981;"><div style="font-size:1.8rem;color:#10b981;margin-bottom:10px;"><i class="fas fa-layer-group"></i></div><div class="dash-card-value">' + learnedN + '<span style="font-size:0.7em;color:var(--text-muted);">/' + totalLib + '</span></div><div class="dash-card-label">累计掌握</div><div class="dash-card-sub">总词汇量</div></div><div class="dash-card" style="border-top:3px solid #a78bfa;"><div style="font-size:1.8rem;color:#a78bfa;margin-bottom:10px;"><i class="fas fa-bullseye"></i></div><div class="dash-card-value">' + learnedPct + '%</div><div class="dash-card-label">掌握率</div><div class="dash-card-sub">' + learnedN + '/' + totalLib + ' 词</div></div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-tasks" style="color:var(--accent);margin-right:8px;"></i>词汇掌握进度</div><div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + learnedPct + '%;"></div></div><div class="dash-progress-labels"><span>已掌握 ' + learnedN + ' 词</span><span>总词汇量 ' + totalLib + ' 词</span></div><div style="margin-top:20px;">' + catBreakdown + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px;"></i>练习历史</div><div class="dash-mini-grid"><div class="dash-mini-card"><div class="dash-mini-value">' + totalP + '</div><div class="dash-mini-label">练习次数</div></div><div class="dash-mini-card"><div class="dash-mini-value">' + avgS + '%</div><div class="dash-mini-label">平均正确率</div></div></div><div class="dash-history-list">' + histHTML + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>今日已学单词</div><div class="dash-words-grid">' + wordsHTML + '</div></div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 2.2 <span class="clickable" onclick="openAdminModal()" style="font-size:0.72rem;margin-left:8px;cursor:pointer;opacity:0.5;" title="管理员入口"><i class="fas fa-cog" style="font-size:0.8rem;"></i></span></div></div>';
+    c.innerHTML = '<div style="margin:0 auto;max-width:100%;"><div style="margin-bottom:10px;padding:8px 14px;background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.05));border-radius:10px;display:flex;align-items:center;gap:8px;color:#a5b4fc;font-size:0.85rem;"><i class="fas fa-broadcast-tower"></i> <span id="stats-broadcast"></span></div><div style="text-align:center;margin-bottom:25px;"><h2 style="font-size:1.8rem;font-weight:800;color:var(--text-main);display:inline-block;"><i class="fas fa-chart-line" style="color:var(--accent);margin-right:10px;"></i>学习统计</h2><button onclick="clearStudyData()" style="margin-left:15px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;vertical-align:middle;"><i class="fas fa-trash-alt" style="margin-right:5px;"></i>清空统计</button><p style="color:var(--text-muted);font-size:0.95rem;margin-top:5px;">' + today + ' · 数据总览</p></div><div class="dash-stats-grid"><div class="dash-card" style="border-top:3px solid var(--accent);"><div style="font-size:1.8rem;color:var(--accent);margin-bottom:10px;"><i class="fas fa-book"></i></div><div class="dash-card-value">' + studyStats.todayWords + '</div><div class="dash-card-label">今日学习</div><div class="dash-card-sub">目标 ' + dailyGoal + ' 词 <span style="font-size:0.7rem;color:#64748b;margin-left:4px;cursor:pointer;border-bottom:1px dashed #64748b;" onclick="showGoalSetting()">修改</span></div></div><div class="dash-card" style="border-top:3px solid #f59e0b;"><div style="font-size:1.8rem;color:#f59e0b;margin-bottom:10px;"><i class="fas fa-clock"></i></div><div class="dash-card-value">' + mins + '<span style="font-size:0.7em;color:var(--text-muted);">分' + secs + '秒</span></div><div class="dash-card-label">在线时长</div><div class="dash-card-sub">今日累计</div></div><div class="dash-card" style="border-top:3px solid #10b981;"><div style="font-size:1.8rem;color:#10b981;margin-bottom:10px;"><i class="fas fa-layer-group"></i></div><div class="dash-card-value">' + learnedN + '<span style="font-size:0.7em;color:var(--text-muted);">/' + totalLib + '</span></div><div class="dash-card-label">累计掌握</div><div class="dash-card-sub">总词汇量</div></div><div class="dash-card" style="border-top:3px solid #a78bfa;"><div style="font-size:1.8rem;color:#a78bfa;margin-bottom:10px;"><i class="fas fa-bullseye"></i></div><div class="dash-card-value">' + learnedPct + '%</div><div class="dash-card-label">掌握率</div><div class="dash-card-sub">' + learnedN + '/' + totalLib + ' 词</div></div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-tasks" style="color:var(--accent);margin-right:8px;"></i>词汇掌握进度</div><div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + learnedPct + '%;"></div></div><div class="dash-progress-labels"><span>已掌握 ' + learnedN + ' 词</span><span>总词汇量 ' + totalLib + ' 词</span></div><div style="margin-top:20px;">' + catBreakdown + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-history" style="color:var(--accent);margin-right:8px;"></i>练习历史</div><div class="dash-mini-grid"><div class="dash-mini-card"><div class="dash-mini-value">' + totalP + '</div><div class="dash-mini-label">练习次数</div></div><div class="dash-mini-card"><div class="dash-mini-value">' + avgS + '%</div><div class="dash-mini-label">平均正确率</div></div></div><div class="dash-history-list">' + histHTML + '</div></div><div class="dash-section"><div class="dash-section-title"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>今日已学单词</div><div class="dash-words-grid">' + wordsHTML + '</div></div></div>';
 }
 
 // 设置每日学习目标（弹窗形式）
@@ -2959,10 +2966,10 @@ async function loadBroadcasts() {
         document.getElementById('broadcast-title').textContent = bc.title || '';
         bar.style.display = '';
         // 同步广播到练习页和统计页的小广播
-        const practiceBc = document.getElementById('practice-broadcast');
-        if (practiceBc) practiceBc.textContent = bc.content || bc.title || '暂无公告';
-        const statsBc = document.getElementById('stats-broadcast');
-        if (statsBc) statsBc.textContent = bc.content || bc.title || '暂无公告';
+        const pText = document.getElementById('practice-broadcast-text');
+        if (pText) pText.textContent = bc.content || '';
+        const sText = document.getElementById('stats-broadcast-text');
+        if (sText) sText.textContent = bc.content || '';
 
         // 如果有多条，自动轮播
         if (broadcasts.length > 1) {
@@ -2976,10 +2983,10 @@ async function loadBroadcasts() {
                 if (textEl && titleEl && bar.style.display !== 'none') {
                     textEl.textContent = current.content || '';
                     titleEl.textContent = current.title || '';
-                    const pBc = document.getElementById('practice-broadcast');
-                    if (pBc) pBc.textContent = current.content || current.title || '暂无公告';
-                    const sBc = document.getElementById('stats-broadcast');
-                    if (sBc) sBc.textContent = current.content || current.title || '暂无公告';
+                    const pTxt = document.getElementById('practice-broadcast-text');
+                    if (pTxt) pTxt.textContent = current.content || '';
+                    const sTxt = document.getElementById('stats-broadcast-text');
+                    if (sTxt) sTxt.textContent = current.content || '';
                 }
             }, interval);
         }
