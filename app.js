@@ -952,7 +952,7 @@ function loadCourseWord(levelId, unitId, type, index) {
     if (!courseMenuData) return;
     const level = courseMenuData.levels.find(l => String(l.id) === String(levelId));
     if (!level) return;
-    const unit = level.units.find(u => u.id === unitId);
+    const unit = level.units.find(u => String(u.id) === String(unitId));
     if (!unit) return;
     const items = unit[type] || [];
     if (items.length === 0) return;

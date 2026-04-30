@@ -235,6 +235,14 @@ body {
     font-size: 0.95rem;
 }
 
+.app-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between !important;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
 .user-status {
     font-size: 0.9rem;
     color: #a5b4fc;
