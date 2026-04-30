@@ -148,6 +148,9 @@ function startAppVisitorTimer() {
         const sec = Math.floor((left % 60000) / 1000);
         const remainingEl = document.getElementById('app-visitor-remaining');
         if (remainingEl) remainingEl.textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+        // 同步到主页倒计时
+        const homeRemainingEl = document.getElementById('home-visitor-remaining');
+        if (homeRemainingEl) homeRemainingEl.textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
         if (left < 300000 && timerEl) {
             timerEl.style.color = '#ef4444';
             timerEl.style.borderColor = 'rgba(239,68,68,0.3)';
@@ -156,6 +159,18 @@ function startAppVisitorTimer() {
     }
     updateTimer();
     appVisitorTimerInterval = setInterval(updateTimer, 1000);
+}
+
+function syncHomeVisitorTimer() {
+    const expireStr = localStorage.getItem('fmi_visitor_expire');
+    if (!expireStr) return;
+    const expireMs = parseInt(expireStr);
+    if (isNaN(expireMs) || expireMs <= Date.now()) return;
+    const left = expireMs - Date.now();
+    const min = Math.floor(left / 60000);
+    const sec = Math.floor((left % 60000) / 1000);
+    const homeEl = document.getElementById('home-visitor-remaining');
+    if (homeEl) homeEl.textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
 }
 
 // 用户菜单切换
@@ -328,18 +343,7 @@ async function initUI() {
         <button class="nav-tab" onclick="switchMainPage('study')" data-tab="study"><i class="fas fa-book-open"></i> 勤学苦练</button>
         <button class="nav-tab" onclick="switchMainPage('challenge')" data-tab="challenge"><i class="fas fa-gamepad"></i> 闯天关</button>
     </div>
-     <header class="app-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-            <div class="weather-location" id="weather-location">
-                <i class="fas fa-cloud"></i>
-                <span>加载中...</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:4px;color:#64748b;font-size:0.8rem;" id="location-info">
-                <i class="fas fa-map-marker-alt" style="font-size:0.75rem;"></i>
-                <span id="location-name">定位中...</span>
-            </div>
-            <div class="date-time" id="date-time-header" style="color:#94a3b8;font-size:0.82rem;">${new Date().toLocaleString()}</div>
-        </div>
+     <header class="app-header" style="display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:12px;">
         <div class="user-status" id="user-status" style="font-size:0.9rem;">
             欢迎，管理员
         </div>
@@ -2225,11 +2229,13 @@ function renderHomeUserBar() {
                         </div>` : ''}`;
         // 管理员也隐藏注销账号
         const finalLogoutHTML = isAdmin ? logoutHTML.replace(/<div id="home-delete-account-item"[^>]*>[\s\S]*?<\/div>\s*$/, '') : logoutHTML;
+        const visitorTimerHTML = isVisitor ? '<span id="home-visitor-timer" style="display:flex;align-items:center;gap:5px;font-size:0.8rem;color:#f59e0b;"><i class="fas fa-clock" style="font-size:0.72rem;"></i> 访客剩余 <span id="home-visitor-remaining">--:--</span></span>' : '';
         bar.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 4px;">
                 <div style="display:flex;align-items:center;gap:14px;color:#94a3b8;font-size:0.82rem;flex-wrap:wrap;">
                     <span id="home-date-time">${new Date().toLocaleString()}</span>
                     <span id="home-weather-location"><i class="fas fa-cloud"></i> <span id="home-weather-text">加载中...</span></span>
+                    ${visitorTimerHTML}
                 </div>
                 <div style="position:relative;">
                     <span onclick="toggleUserMenu()" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
@@ -2242,6 +2248,8 @@ function renderHomeUserBar() {
                     </div>
                 </div>
             </div>`;
+        // 访客倒计时同步到主页
+        if (isVisitor) syncHomeVisitorTimer();
         // 同步天气信息到主页
         syncHomeWeather();
     } else {
@@ -3091,6 +3099,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ========== 勤学苦练 子Tab切换 ==========
 function switchStudySubTab(tab) {
+    const copyRight = document.getElementById('copyright');
     document.querySelectorAll('#study-sub-tabs .sub-tab').forEach(t => {
         t.classList.toggle('active', t.dataset.stab === tab);
     });
@@ -3104,17 +3113,20 @@ function switchStudySubTab(tab) {
         if (pagePractice) pagePractice.style.display = 'none';
         if (pageStats) pageStats.style.display = 'none';
         if (ctrl) ctrl.style.display = 'flex';
+        if (copyRight) copyRight.style.display = '';
     } else if (tab === 'practice') {
         if (pageStudy) pageStudy.style.display = 'none';
         if (pagePractice) pagePractice.style.display = '';
         if (pageStats) pageStats.style.display = 'none';
         if (ctrl) ctrl.style.display = 'none';
+        if (copyRight) copyRight.style.display = '';
         initPracticePage();
     } else if (tab === 'stats') {
         if (pageStudy) pageStudy.style.display = 'none';
         if (pagePractice) pagePractice.style.display = 'none';
         if (pageStats) pageStats.style.display = '';
         if (ctrl) ctrl.style.display = 'none';
+        if (copyRight) copyRight.style.display = 'none';
         initDashboardPage();
     }
 }
