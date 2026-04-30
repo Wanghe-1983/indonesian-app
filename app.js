@@ -2215,46 +2215,16 @@ function switchMainPage(page) {
 function renderHomeUserBar() {
     const bar = document.getElementById('home-user-bar');
     if (!bar) return;
-    if (typeof loginStatus !== 'undefined' && loginStatus && loginStatus.user) {
-        const isVisitor = localStorage.getItem('fmi_visitor_login');
-        const isAdmin = loginStatus.user && loginStatus.user.username === 'admin';
-        // 访客只隐藏注销账号，保留退出登录
-        const logoutHTML = `
-                        <div onclick="logout();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(248,113,113,0.1)'" onmouseout="this.style.background='transparent'">
-                            <i class="fas fa-sign-out-alt" style="color:#f87171;width:16px;text-align:center;"></i> 退出登录
-                        </div>${!isVisitor ? `
-                        <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 0;"></div>
-                        <div id="home-delete-account-item" onclick="showDeleteAccountDialog();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#ef4444;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">
-                            <i class="fas fa-user-slash" style="width:16px;text-align:center;"></i> 注销账号
-                        </div>` : ''}`;
-        // 管理员也隐藏注销账号
-        const finalLogoutHTML = isAdmin ? logoutHTML.replace(/<div id="home-delete-account-item"[^>]*>[\s\S]*?<\/div>\s*$/, '') : logoutHTML;
-        // visitorTimer removed - using header timer only
-        bar.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 4px;">
-                <div style="display:flex;align-items:center;gap:14px;color:#94a3b8;font-size:0.82rem;flex-wrap:wrap;">
-                    <span id="home-date-time">${new Date().toLocaleString()}</span>
-                    <span id="home-weather-location"><i class="fas fa-cloud"></i> <span id="home-weather-text">加载中...</span></span>
-
-                </div>
-                <div style="position:relative;">
-                    <span onclick="toggleUserMenu()" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-                        <i class="fas fa-user-circle" style="color:#a5b4fc;font-size:1.1rem;"></i>
-                        欢迎，${loginStatus.user.name}
-                        <i class="fas fa-chevron-down" style="font-size:0.65rem;color:#64748b;"></i>
-                    </span>
-                    <div id="user-dropdown-home" style="display:none;position:absolute;top:100%;right:0;margin-top:8px;background:rgba(30,41,59,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;min-width:150px;z-index:9999;backdrop-filter:blur(20px);box-shadow:0 10px 40px rgba(0,0,0,0.6);">
-                        ${finalLogoutHTML}
-                    </div>
-                </div>
-            </div>`;
-// visitorTimer sync removed - using header timer only
-        // 同步天气信息到主页
-        syncHomeWeather();
-    } else {
-        bar.innerHTML = `<span style="color:#94a3b8;font-size:0.9rem;">加载中...</span>`;
-    }
+    // 只显示日期和天气，登录者信息由全局 header #user-status 统一管理
+    bar.innerHTML = `
+        <div style="display:flex;align-items:center;gap:14px;color:#94a3b8;font-size:0.82rem;flex-wrap:wrap;padding:4px 0;">
+            <span id="home-date-time">${new Date().toLocaleString()}</span>
+            <span id="home-weather-location"><i class="fas fa-cloud"></i> <span id="home-weather-text">加载中...</span></span>
+        </div>`;
+    // 同步天气信息到主页
+    syncHomeWeather();
 }
+
 
 // 同步天气信息到主页user-bar
 function syncHomeWeather() {
