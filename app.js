@@ -392,10 +392,6 @@ async function initUI() {
         <button class="sub-tab" data-stab="stats" onclick="switchStudySubTab('stats')"><i class="fas fa-chart-line"></i> 统计</button>
     </div>
 
-    <div id="page-study" style="display:none;">
-
-    
-
     <div id="broadcast-bar" style="display:none;margin:10px 0;padding:12px 18px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(168,85,247,0.12));border:1px solid rgba(99,102,241,0.2);border-radius:12px;overflow:hidden;position:relative;">
         <div style="display:flex;align-items:center;gap:10px;">
             <span style="color:#a78bfa;font-size:0.8rem;flex-shrink:0;"><i class="fas fa-bullhorn"></i></span>
@@ -406,6 +402,12 @@ async function initUI() {
 
         </div>
     </div>
+
+    <div id="page-study" style="display:none;">
+
+    
+
+    
     <div class="tip-box" id="study-tip">
         <div class="tip-title">每日学习小贴士</div>
         <div id="tip-content">每天学习一点，进步一大步！</div>

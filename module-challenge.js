@@ -96,7 +96,7 @@ const ChallengeModule = {
         const maxStars = stages.reduce((sum, s) => sum + (this.serverProgress[s.id]?.stars || 0), 0);
 
         // 按关卡所属等级分组，并标记地狱模式
-        const HELL_LEVELS = (window._systemInfo && window._systemInfo.hellLevels) || [];
+        const HELL_LEVELS = (window._systemInfo && window._systemInfo.hellLevels) || [5, 6, 7];
         const levelNames = {};
         this.allStages.forEach(s => {
             if (!levelNames[s.levelId]) levelNames[s.levelId] = s.levelId === '0' ? '通用印尼语学习手册' : '';
