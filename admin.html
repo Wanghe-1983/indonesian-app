@@ -393,6 +393,21 @@
                             <div class="form-group"><label style="font-size:0.8rem;color:#64748b;">题目类型</label><select id="lbType" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;"><option value="indo2cn">印尼语→中文</option><option value="cn2indo">中文→印尼语</option><option value="mixed">混合模式</option></select></div>
                         </div>
                     </div>
+                        <div class="setting-row" style="border-top:1px solid rgba(239,68,68,0.12);padding-top:14px;margin-top:10px;">
+                            <div class="setting-info">
+                                <div class="setting-label" style="display:flex;align-items:center;gap:6px;"><i class="fas fa-skull-crossbones" style="color:#f87171;font-size:0.9rem;"></i> 地狱模式关卡</div>
+                                <div class="setting-desc">勾选的 BIPA 等级将标记为地狱模式，需要通过前置关卡才可挑战</div>
+                            </div>
+                            <div class="setting-control" style="display:flex;flex-wrap:wrap;gap:8px;">
+                                <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="1"> BIPA 1</label>
+                                <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="2"> BIPA 2</label>
+                                <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="3"> BIPA 3</label>
+                                <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="4"> BIPA 4</label>
+                                <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="5"> BIPA 5</label>
+                                <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="6"> BIPA 6</label>
+                                <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="7"> BIPA 7</label>
+                            </div>
+                        </div>
                     <!-- ===== 闯天关配置结束 ===== -->
                     <div style="margin-top:20px;display:flex;gap:10px;">
                         <button class="hdr-btn primary" onclick="saveAllSettings()"><i class="fas fa-save"></i> 保存所有设置</button>
@@ -832,6 +847,11 @@ let allUsers = [];
         document.getElementById('showOnlineCount-hint').textContent = s.showOnlineCount !== false ? '显示中' : '已隐藏';
         document.getElementById('setShowRegCount').checked = s.showRegCount !== false;
         document.getElementById('showRegCount-hint').textContent = s.showRegCount !== false ? '显示中' : '已隐藏';
+        // 地狱模式关卡
+        const hellLevels = s.hellLevels || [5, 6, 7];
+        document.querySelectorAll('.hell-level-cb').forEach(cb => {
+            cb.checked = hellLevels.includes(parseInt(cb.value));
+        });
         loadLbConfig();
     }
 
@@ -851,6 +871,7 @@ let allUsers = [];
             adminPanelPassword: document.getElementById('setAdminPassword').value || 'admin123',
             showOnlineCount: document.getElementById('setShowOnlineCount').checked,
             showRegCount: document.getElementById('setShowRegCount').checked,
+            hellLevels: Array.from(document.querySelectorAll('.hell-level-cb:checked')).map(cb => parseInt(cb.value)),
         };
         const result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
         if (typeof showAdminToast === 'function') {
@@ -879,6 +900,7 @@ let allUsers = [];
             adminPanelPassword: document.getElementById('setAdminPassword').value || 'admin123',
             showOnlineCount: document.getElementById('setShowOnlineCount').checked,
             showRegCount: document.getElementById('setShowRegCount').checked,
+            hellLevels: Array.from(document.querySelectorAll('.hell-level-cb:checked')).map(cb => parseInt(cb.value)),
         };
         var result1 = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
         var lbConfig = {
