@@ -25,26 +25,8 @@ async function loadWhitelist() {
     try {
         const res = await fetch('whitelist.json');
         if (res.ok) {
-            whitelist = await res.json();        } else if (String(lv.id) === '3') {
-            // 3级：按篇章分组
-            for (const ch of level3Chapters) {
-                let chUnitsHTML = '';
-                for (const uIdx of ch.unitIndices) {
-                    if (uIdx < lv.units.length) {
-                        chUnitsHTML += buildUnitHTML(lv.id, lv.units[uIdx], uIdx);
-                    }
-                }
-                if (chUnitsHTML) {
-                    unitsHTML += `
-                    <div style="padding:8px 10px;font-size:13px;color:${ch.color};font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="this.nextElementSibling.classList.toggle('active')">
-                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ch.color};flex-shrink:0;"></span> ${ch.name}
-                        <i class="fas fa-chevron-right" style="font-size:9px;margin-left:auto;opacity:0.4;transition:transform 0.2s;"></i>
-                    </div>
-                    <div class="sub-menu" style="padding-left:6px;">${chUnitsHTML}</div>`;
-                }
-            }
+            whitelist = await res.json();
         } else {
-            // 其他级别：直接列出单元（无篇章分组）else {
             whitelist = JSON.parse(localStorage.getItem('fmi_whitelist') || JSON.stringify([
                 { username: "admin", password: "admin123", name: "超级管理员" },
                 { username: "user01", password: "123456", name: "普通用户" }
@@ -839,6 +821,32 @@ async function buildMenu() {
             { name: '体育与法律篇', color: '#fbbf24', unitIndices: [8,9] },
             { name: '社会与国际篇', color: '#fb923c', unitIndices: [10,11] },
         ];
+        // 4级课程（BIPA 4 Lanjutan）
+        const level4Chapters = [
+            { name: '职场与经济篇', color: '#fb923c', unitIndices: [0,1] },
+            { name: '历史与宗教篇', color: '#f472b6', unitIndices: [2,3] },
+            { name: '地理与教育篇', color: '#34d399', unitIndices: [4,5] },
+            { name: '艺术与健康篇', color: '#a78bfa', unitIndices: [6,7] },
+            { name: '政治与科技篇', color: '#38bdf8', unitIndices: [8,9] },
+        ];
+        // 5级课程（BIPA 5 Lanjutan Atas）
+        const level5Chapters = [
+            { name: '哲学与文学篇', color: '#f472b6', unitIndices: [0,1] },
+            { name: '心理与社会篇', color: '#34d399', unitIndices: [2,3] },
+            { name: '经济与法律篇', color: '#fb923c', unitIndices: [4,5] },
+            { name: '环境与艺术篇', color: '#38bdf8', unitIndices: [6,7] },
+        ];
+        // 6级课程（BIPA 6 Mahir）
+        const level6Chapters = [
+            { name: '新闻与修辞篇', color: '#f472b6', unitIndices: [0,1] },
+            { name: '社会与人类学篇', color: '#34d399', unitIndices: [2,3] },
+            { name: '教育与健康篇', color: '#38bdf8', unitIndices: [4,5] },
+        ];
+        // 7级课程（BIPA 7 Unggul）
+        const level7Chapters = [
+            { name: '文学与语言学篇', color: '#f472b6', unitIndices: [0,1] },
+            { name: '外交与思辨篇', color: '#34d399', unitIndices: [2,3] },
+        ];
 
 
 
@@ -881,45 +889,20 @@ async function buildMenu() {
                 <div class="sub-menu" style="padding-left:8px;">${typesHTML}</div>`;
         }
 
-        if (String(lv.id) === '0') {
-            // 0级：按篇章分组
-            for (const ch of level0Chapters) {
-                let chUnitsHTML = '';
-                for (const uIdx of ch.unitIndices) {
-                    if (uIdx < lv.units.length) {
-                        chUnitsHTML += buildUnitHTML(lv.id, lv.units[uIdx], uIdx);
-                    }
-                }
-                if (chUnitsHTML) {
-                    unitsHTML += `
-                    <div style="padding:8px 10px;font-size:13px;color:${ch.color};font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="this.nextElementSibling.classList.toggle('active')">
-                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ch.color};flex-shrink:0;"></span> ${ch.name}
-                        <i class="fas fa-chevron-right" style="font-size:9px;margin-left:auto;opacity:0.4;transition:transform 0.2s;"></i>
-                    </div>
-                    <div class="sub-menu" style="padding-left:6px;">${chUnitsHTML}</div>`;
-                }
-            }
-        } else if (String(lv.id) === '1') {
-            // 1级：按主题篇章分组
-            for (const ch of level1Chapters) {
-                let chUnitsHTML = '';
-                for (const uIdx of ch.unitIndices) {
-                    if (uIdx < lv.units.length) {
-                        chUnitsHTML += buildUnitHTML(lv.id, lv.units[uIdx], uIdx);
-                    }
-                }
-                if (chUnitsHTML) {
-                    unitsHTML += `
-                    <div style="padding:8px 10px;font-size:13px;color:${ch.color};font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="this.nextElementSibling.classList.toggle('active')">
-                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ch.color};flex-shrink:0;"></span> ${ch.name}
-                        <i class="fas fa-chevron-right" style="font-size:9px;margin-left:auto;opacity:0.4;transition:transform 0.2s;"></i>
-                    </div>
-                    <div class="sub-menu" style="padding-left:6px;">${chUnitsHTML}</div>`;
-                }
-            }
-        } else if (String(lv.id) === '2') {
-            // 2级：按篇章分组
-            for (const ch of level2Chapters) {
+        // 使用 chaptersMap 统一处理所有级别的篇章分组
+        const chaptersMap = {
+            '0': level0Chapters,
+            '1': level1Chapters,
+            '2': level2Chapters,
+            '3': level3Chapters,
+            '4': level4Chapters,
+            '5': level5Chapters,
+            '6': level6Chapters,
+            '7': level7Chapters,
+        };
+        const chapters = chaptersMap[String(lv.id)];
+        if (chapters) {
+            for (const ch of chapters) {
                 let chUnitsHTML = '';
                 for (const uIdx of ch.unitIndices) {
                     if (uIdx < lv.units.length) {
@@ -936,7 +919,7 @@ async function buildMenu() {
                 }
             }
         } else {
-            // 其他级别：直接列出单元（无篇章分组）
+            // 无章节映射时直接列出单元
             for (const unit of lv.units) {
                 unitsHTML += buildUnitHTML(lv.id, unit, lv.units.indexOf(unit));
             }
@@ -2626,7 +2609,7 @@ function initDashboardPage() {
         histHTML = hist.slice(-10).reverse().map(h => {
             const tn = h.type === 'choice' ? '选择题' : h.type === 'fill' ? '填空题' : '听力题';
             const clr = h.percent >= 70 ? 'var(--success)' : 'var(--danger)';
-            return '<div class="dash-history-item"><div class="dash-history-date">' + h.date + '</div><div class="dash-history-type">' + tn + '</div><div class="dash-history-score" style="color:' + clr + ';">' + h.score + '/' + h.total + ' (' + h.percent + '%)</div><div class="copyright" id="dash-copyright" style="margin-top:30px;">仅供学习・禁止商用 © 2026｜联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span> Ver 2.1 <span class="clickable" onclick="openAdminModal()" style="font-size:0.72rem;margin-left:8px;cursor:pointer;opacity:0.5;" title="管理员入口"><i class="fas fa-cog" style="font-size:0.8rem;"></i></span></div></div>';
+            return '<div class="dash-history-item"><div class="dash-history-date">' + h.date + '</div><div class="dash-history-type">' + tn + '</div><div class="dash-history-score" style="color:' + clr + ';">' + h.score + '/' + h.total + ' (' + h.percent + '%)</div></div>';
         }).join('');
     } else {
         histHTML = '<div style="color:var(--text-dim);text-align:center;padding:20px;">暂无练习记录</div>';
