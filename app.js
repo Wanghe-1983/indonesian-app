@@ -599,12 +599,15 @@ async function initUI() {
     `;
 
     // 实时更新时间
-    setInterval(() => {
+    function updateDateTime() {
+        const el = document.getElementById('date-time-header');
+        if (!el) return;
         const d = new Date();
         const pad = n => n.toString().padStart(2, '0');
-        document.getElementById('date-time-header').innerText = 
-            `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    }, 1000);
+        el.innerText = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
 
     // 加载随机推荐单词
     setTimeout(() => {

@@ -11,10 +11,11 @@ const ChallengeModule = {
     currentStageId: null,
     challengeState: null, // 当前答题状态
 
-    // 计分配置
-    ACCURACY_WEIGHT: 0.9,
-    TIME_WEIGHT: 0.1,
-    TIME_MULTIPLIER: 5,
+    // 计分配置（从后台设置读取，带默认值）
+    get ACCURACY_WEIGHT() { return (window._systemInfo && window._systemInfo.challengeAccuracyWeight) || 0.9; },
+    get TIME_WEIGHT() { return (window._systemInfo && window._systemInfo.challengeTimeWeight) || 0.1; },
+    get TIME_MULTIPLIER() { return (window._systemInfo && window._systemInfo.challengeTimeMultiplier) || 5; },
+    get CHALLENGE_TIME_LIMIT() { return (window._systemInfo && window._systemInfo.challengeTimeLimit) || 0; },
 
     // ========== 初始化 ==========
     async init(container) {
@@ -121,13 +122,16 @@ const ChallengeModule = {
 
         let stageGrid = '';
         groups.forEach(group => {
+            // 地狱模式未开放时，跳过整个地狱关卡分组
+            const hellEnabled = window._systemInfo ? window._systemInfo.hellModeEnabled !== false : true;
+            if (group.isHell && !hellEnabled) return;
             const hellTag = group.isHell ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:6px;font-size:0.7rem;font-weight:600;"><i class="fas fa-skull-crossbones"></i> 地狱模式</span>` : '';
             stageGrid += `<div style="grid-column:1/-1;padding:8px 4px 2px;display:flex;align-items:center;gap:8px;"><span style="font-size:0.75rem;color:#64748b;font-weight:600;">${group.levelName}</span>${hellTag}</div>`;
             group.stages.forEach(({stage, index: i}) => {
                 const p = this.serverProgress[stage.id];
                 const isCleared = p && p.cleared;
                 const isCurrent = i === nextAvailable;
-                // 地狱模式关卡：未解锁且后端未开放地狱权限时锁定
+                // 地狱模式关卡：地狱模式下按顺序解锁
                 const isHellLocked = group.isHell && i > nextAvailable;
                 const isLocked = isHellLocked;
                 const stars = p?.stars || 0;
@@ -181,9 +185,23 @@ const ChallengeModule = {
 
     // ========== 答题界面 ==========
     enterStage(stageId) {
+        // 检查闯天关是否启用
+        if (window._systemInfo && window._systemInfo.challengeEnabled === false) {
+            alert('闯天关功能尚未开放');
+            return;
+        }
         this.currentStageId = stageId;
         const stage = this.allStages.find(s => s.id === stageId);
         if (!stage) return;
+        // 检查地狱模式关卡是否开放
+        const HELL_LEVELS = (window._systemInfo && window._systemInfo.hellLevels) || [5, 6, 7];
+        const hellEnabled = window._systemInfo ? window._systemInfo.hellModeEnabled !== false : true;
+        if (HELL_LEVELS.includes(Number(stage.levelId)) && !hellEnabled) {
+            alert('地狱模式尚未开放，请耐心等待');
+            this.currentStageId = null;
+            this.render();
+            return;
+        }
 
         this.challengeState = {
             stageId,
@@ -368,11 +386,14 @@ const ChallengeModule = {
         const timeScore = Math.max(0, (1 - timeSpent / (Math.max(timeSpent, 10) * this.TIME_MULTIPLIER))) * 100;
         const score = accuracy * this.ACCURACY_WEIGHT + timeScore * this.TIME_WEIGHT;
 
-        // 星级
+        // 星级（从后台设置读取阈值）
+        const STAR3 = (window._systemInfo && window._systemInfo.challengeStar3) || 90;
+        const STAR2 = (window._systemInfo && window._systemInfo.challengeStar2) || 70;
+        const STAR1 = (window._systemInfo && window._systemInfo.challengeStar1) || 50;
         let stars = 0;
-        if (score >= 90) stars = 3;
-        else if (score >= 70) stars = 2;
-        else if (score >= 50) stars = 1;
+        if (score >= STAR3) stars = 3;
+        else if (score >= STAR2) stars = 2;
+        else if (score >= STAR1) stars = 1;
 
         const isNew = !this.serverProgress[state.stageId] || score > this.serverProgress[state.stageId].bestScore;
 

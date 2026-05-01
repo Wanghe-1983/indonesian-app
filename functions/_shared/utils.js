@@ -119,6 +119,16 @@ function defaultSettings() {
         showRegCount: true,
         allowVisitorChallenge: false,
         hellLevels: [5, 6, 7], // 地狱模式关卡等级（BIPA 5/6/7）
+        // 闯天关配置
+        challengeEnabled: true,        // 启用闯天关功能
+        challengeTimeLimit: 0,         // 每关时间限制（秒），0=不限时
+        challengeStar3: 90,            // 3星分数线
+        challengeStar2: 70,            // 2星分数线
+        challengeStar1: 50,            // 1星分数线（低于此为失败）
+        challengeAccuracyWeight: 0.9,  // 准确率权重
+        challengeTimeWeight: 0.1,      // 用时权重
+        challengeTimeMultiplier: 5,    // 时间惩罚系数（越大对慢答题越宽容）
+        hellModeEnabled: true,         // 地狱模式总开关
     };
 }
 
