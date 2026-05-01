@@ -1694,89 +1694,82 @@ let allUsers = [];
 
 
     
+    
+
     <script>
-    // ========== [DEBUG] 宽度诊断 v2 ==========
+    // ========== [DEBUG] V3 - 追踪 switchTab 宽度变化 ==========
     (function() {
-        const props = ['width','max-width','min-width','display','position','box-sizing',
-            'margin-left','margin-right','padding-left','padding-right',
-            'border-left-width','border-right-width',
-            'flex-grow','flex-shrink','flex-basis','flex',
-            'float','clear','overflow','overflow-x',
-            'transform','will-change','contain'];
+        // 在 switchTab 的每一步前后检查 tab-changelog 的宽度
+        const realSwitchTab = window.switchTab;
         
-        function diagPanel(panelId) {
-            const panel = document.getElementById(panelId);
-            if (!panel) return 'Panel not found: ' + panelId;
-            const cards = panel.querySelectorAll('.card');
-            let out = '=== ' + panelId + ' ===\n';
-            out += 'Panel: display=' + getComputedStyle(panel).display + 
-                   ', width=' + getComputedStyle(panel).width +
-                   ', offsetWidth=' + panel.offsetWidth + 'px\n';
-            cards.forEach((c, i) => {
-                const cs = getComputedStyle(c);
-                out += '  card[' + i + ']: offsetWidth=' + c.offsetWidth + 'px, clientWidth=' + c.clientWidth + 'px\n';
-                out += '    parent: ' + c.parentElement.tagName + '#' + c.parentElement.id + '.' + c.parentElement.className + 
-                       ' offsetWidth=' + c.parentElement.offsetWidth + 'px\n';
-                props.forEach(p => {
-                    out += '    ' + p + ': ' + cs.getPropertyValue(p) + '\n';
+        window.switchTab = function(tab, el) {
+            console.log('[DEBUG-V3] switchTab called with tab=' + tab);
+            
+            // 在 origSwitchTab 调用前/后检查
+            const panel = document.getElementById('tab-' + tab);
+            
+            // 调用原始 switchTab
+            realSwitchTab(tab, el);
+            
+            // 立即检查
+            setTimeout(function() {
+                const p = document.getElementById('tab-' + tab);
+                const cs = getComputedStyle(p);
+                const cards = p.querySelectorAll('.card');
+                let info = '[DEBUG-V3] After switchTab("' + tab + '") + 100ms\n';
+                info += '  Panel #' + tab + ': display=' + cs.display + ', width=' + cs.width + ', offsetWidth=' + p.offsetWidth + 'px\n';
+                info += '  Panel classList: ' + Array.from(p.classList).join(', ') + '\n';
+                cards.forEach(function(c, i) {
+                    info += '  card[' + i + ']: offsetWidth=' + c.offsetWidth + 'px, width=' + getComputedStyle(c).width + '\n';
                 });
-            });
-            return out;
-        }
-        
-        function runDiag() {
-            // 先收集当前面板（运行概览）
-            let report = diagPanel('tab-overview') + '\n\n';
-            // 保存当前激活的面板
-            const activePanel = document.querySelector('.tab-panel.active');
-            const activeId = activePanel ? activePanel.id : '';
-            // 切换到版本说明
-            if (activeId === 'tab-changelog') {
-                report += diagPanel('tab-changelog');
-            } else {
-                // 触发 switchTab
-                const navItems = document.querySelectorAll('.nav-item');
-                navItems.forEach(n => {
-                    if (n.textContent.includes('版本说明')) n.click();
-                });
-                // 等待渲染
-                setTimeout(function() {
-                    report += diagPanel('tab-changelog') + '\n\n';
-                    // 切回原面板
-                    if (activeId && activeId !== 'tab-changelog') {
-                        navItems.forEach(n => {
-                            if (n.textContent.includes('运行概览')) n.click();
-                        });
-                        setTimeout(function() {
-                            report += '=== After switch back ===\n';
-                            report += diagPanel('tab-overview');
-                            showDiag(report);
-                        }, 500);
-                    } else {
-                        showDiag(report);
+                console.log(info);
+                
+                // 检查 admin-content
+                const ac = document.querySelector('.admin-content');
+                info += '  admin-content: offsetWidth=' + ac.offsetWidth + 'px\n';
+                
+                // 显示在页面上
+                const dbg = document.getElementById('debug-computed');
+                if (dbg) dbg.textContent += '\n' + info;
+                else {
+                    const d = document.createElement('div');
+                    d.id = 'debug-computed';
+                    d.style.cssText = 'position:fixed;top:40px;right:10px;z-index:999999;background:#000;color:#0f0;font-size:11px;padding:10px;border:2px solid #0f0;max-height:80vh;overflow:auto;width:500px;white-space:pre-wrap;';
+                    d.textContent = info;
+                    document.body.appendChild(d);
+                }
+            }, 100);
+            
+            // 300ms 后再检查一次
+            setTimeout(function() {
+                const p = document.getElementById('tab-' + tab);
+                const cards = p.querySelectorAll('.card');
+                let info = '[DEBUG-V3] After switchTab("' + tab + '") + 300ms\n';
+                info += '  Panel offsetWidth=' + p.offsetWidth + 'px, classList: ' + Array.from(p.classList).join(', ') + '\n';
+                cards.forEach(function(c, i) {
+                    info += '  card[' + i + ']: offsetWidth=' + c.offsetWidth + 'px\n';
+                    // 检查 card 的 parent chain
+                    let parent = c.parentElement;
+                    let chain = '';
+                    while (parent && parent !== document.body) {
+                        chain += ' <- ' + parent.tagName + '#' + (parent.id||'?') + '.' + (parent.className||'?').toString().substring(0,30);
+                        parent = parent.parentElement;
                     }
-                }, 500);
-            }
-        }
+                    info += '    chain: ' + chain + '\n';
+                });
+                console.log(info);
+                const dbg = document.getElementById('debug-computed');
+                if (dbg) dbg.textContent += '\n' + info;
+            }, 300);
+        };
         
-        function showDiag(report) {
-            const ac = document.querySelector('.admin-content');
-            if (ac) {
-                report = '=== admin-content ===\noffsetWidth=' + ac.offsetWidth + 'px\n  width=' + getComputedStyle(ac).width + ', flex=' + getComputedStyle(ac).flex + '\n\n' + report;
-            }
-            console.log('[DEBUG-V2] report:\n' + report);
-            const dbg = document.getElementById('debug-computed');
-            if (dbg) { dbg.textContent = report; dbg.style.display = ''; }
-            else {
-                const d = document.createElement('div');
-                d.id = 'debug-computed';
-                d.style.cssText = 'position:fixed;top:40px;right:10px;z-index:999999;background:#000;color:#0f0;font-size:11px;padding:10px;border:2px solid #0f0;max-height:80vh;overflow:auto;width:420px;white-space:pre-wrap;';
-                d.textContent = report;
-                document.body.appendChild(d);
-            }
-        }
-        
-        setTimeout(runDiag, 1000);
+        // 自动点击版本说明
+        setTimeout(function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(function(n) {
+                if (n.textContent.includes('版本说明')) n.click();
+            });
+        }, 2000);
     })();
     </script>
 
