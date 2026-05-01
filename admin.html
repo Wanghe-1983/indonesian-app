@@ -10,7 +10,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理后台 - 印尼语学习助手</title>
-    <link rel="stylesheet" href="style.css?v=202604251539">
+    <link rel="stylesheet" href="style.css?v=202605011200">
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="config.js?v=20260425"></script>
     <script>
@@ -95,22 +95,22 @@
         .nav-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 15px 20px; }
 
         /* Content */
-        .admin-content { flex: 1; padding: 24px 30px; overflow-y: auto; min-width: 0; }
-        .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
+        .admin-content { flex: 1; padding: 24px 30px; overflow-y: auto; min-width: 0; max-width: 100%; }
         .panel-title { font-size: 1.2rem; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         .panel-title i { color: #a78bfa; }
 
         /* Cards */
-        .card { background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px; margin-bottom: 20px; width: 100%; box-sizing: border-box; }
+        .card { background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px; margin-bottom: 20px; width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
         .tab-panel .card { max-width: 100% !important; width: 100% !important; }
         .tab-panel { display: none; width: 100%; }
-        .tab-panel.active { display: block; width: 100%; }
+        .tab-panel.active { display: block; width: 100%; max-width: 100%; }
+        .tab-panel.active > * { max-width: 100% !important; width: 100% !important; }
         .card-title { font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px; font-weight: 600; }
 
         /* Stats row */
         .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }\n        .stat-card { background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px; }
+        .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px; }
         .stat-card .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 12px; }
         .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: #fff; }
         .stat-card .stat-label { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
@@ -242,7 +242,7 @@
 </head>
 <body>
     <!-- 版本标识 v20260422c -->
-    <div id="admin-version-tag" style="position:fixed;bottom:10px;left:10px;z-index:99999;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3);padding:3px 10px;border-radius:6px;font-size:0.7rem;cursor:pointer;" onclick="location.href=location.pathname+'?v='+Date.now()">v2.25 · 点击刷新</div>
+    <div id="admin-version-tag" style="position:fixed;bottom:10px;left:10px;z-index:99999;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3);padding:3px 10px;border-radius:6px;font-size:0.7rem;cursor:pointer;" onclick="location.href=location.pathname+'?v='+Date.now()">v2.26 · 点击刷新</div>
     <!-- 固定右上角操作按钮 -->
     <div class="admin-float-actions">
         <button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button>
