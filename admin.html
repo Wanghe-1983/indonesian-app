@@ -1699,5 +1699,73 @@ let allUsers = [];
     
 
     
+
+    <script>
+    // ========== [DEBUG] V4 - 检查 inline style 和 layout ==========
+    (function() {
+        const realSwitchTab = window.switchTab;
+        
+        window.switchTab = function(tab, el) {
+            const ac = document.querySelector('.admin-content');
+            const ab = document.querySelector('.admin-body');
+            
+            // 记录调用前的状态
+            let before = 'BEFORE switchTab("' + tab + '"):\n';
+            before += '  admin-content.style.cssText="' + ac.style.cssText + '"\n';
+            before += '  admin-content.offsetWidth=' + ac.offsetWidth + 'px\n';
+            before += '  admin-body.style.cssText="' + ab.style.cssText + '"\n';
+            before += '  admin-body.offsetWidth=' + ab.offsetWidth + 'px\n';
+            before += '  admin-body.display=' + getComputedStyle(ab).display + '\n';
+            before += '  admin-body.flexDirection=' + getComputedStyle(ab).flexDirection + '\n';
+            before += '  admin-nav.offsetWidth=' + document.querySelector('.admin-nav').offsetWidth + 'px\n';
+            before += '  window.innerWidth=' + window.innerWidth + 'px\n';
+            
+            realSwitchTab(tab, el);
+            
+            let after = 'AFTER switchTab("' + tab + '"):\n';
+            after += '  admin-content.style.cssText="' + ac.style.cssText + '"\n';
+            after += '  admin-content.offsetWidth=' + ac.offsetWidth + 'px\n';
+            after += '  admin-body.offsetWidth=' + ab.offsetWidth + 'px\n';
+            
+            // 找到被激活的 tab-panel
+            const activePanel = document.querySelector('.tab-panel.active');
+            if (activePanel) {
+                after += '  Active panel: #' + activePanel.id + ', offsetWidth=' + activePanel.offsetWidth + 'px\n';
+                after += '  Active panel inline style: ' + activePanel.getAttribute('style') + '\n';
+                // 检查 panel 的所有子元素的 offsetWidth
+                const children = activePanel.children;
+                for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    after += '    child[' + i + '] ' + child.tagName + '.' + child.className.substring(0,30) + ': offsetWidth=' + child.offsetWidth + 'px, inlineStyle="' + (child.getAttribute('style')||'') + '"\n';
+                    // 如果子元素有 inline width，打印出来
+                    if (child.getAttribute('style') && child.getAttribute('style').includes('width')) {
+                        after += '      ^^^ HAS INLINE WIDTH!\n';
+                    }
+                }
+            }
+            
+            console.log(before + '\n' + after);
+            
+            const dbg = document.getElementById('debug-computed');
+            const text = before + '\n' + after;
+            if (dbg) dbg.textContent += '\n' + text;
+            else {
+                const d = document.createElement('div');
+                d.id = 'debug-computed';
+                d.style.cssText = 'position:fixed;top:40px;right:10px;z-index:999999;background:#000;color:#0f0;font-size:11px;padding:10px;border:2px solid #0f0;max-height:80vh;overflow:auto;width:600px;white-space:pre-wrap;';
+                d.textContent = text;
+                document.body.appendChild(d);
+            }
+        };
+        
+        // 2秒后自动点版本说明
+        setTimeout(function() {
+            document.querySelectorAll('.nav-item').forEach(function(n) {
+                if (n.textContent.includes('版本说明')) n.click();
+            });
+        }, 2000);
+    })();
+    </script>
+
 </body>
 </html>
