@@ -279,9 +279,7 @@ const ChallengeModule = {
         container.innerHTML = `
             <div class="challenge-play-page">
                 <div class="challenge-play-header">
-                    <button class="back-btn" onclick="ChallengeModule.confirmExit()">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
+                    
                     <div class="challenge-play-title">第${this.allStages.findIndex(s => s.id === state.stageId) + 1}关</div>
                     <div class="challenge-timer"><i class="fas fa-clock"></i> ${mm}:${ss}</div>
                     
@@ -303,26 +301,28 @@ const ChallengeModule = {
                         `).join('')}
                     </div>
                 </div>
-                <div class="challenge-controls">
-                    <div class="vslider-box">
-                        <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
-                        <div class="vslider-track-wrap">
-                            <input type="range" class="vslider vslider-rate" id="ch-rate-slider" min="1" max="15" value="${localStorage.getItem('fmi_rate') ? (RATE_LEVELS || []).indexOf(parseFloat(localStorage.getItem('fmi_rate'))) + 1 || 10 : 10}" step="1"
-                                oninput="ChallengeModule.setRate(this.value)" title="拖动调整语速">
-                            <div class="vslider-fill" id="ch-rate-fill"></div>
-                            <div class="vslider-thumb" id="ch-rate-thumb"><span id="ch-val-rate">${localStorage.getItem('fmi_rate') || '1.0'}x</span></div>
+                <div style="margin:16px 0;padding:16px 20px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);display:flex;align-items:center;gap:16px;">
+                    <div class="sliders-col" style="flex:1;min-width:0;">
+                        <div class="vslider-box">
+                            <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
+                            <div class="vslider-track-wrap">
+                                <input type="range" class="vslider vslider-rate" id="ch-rate-slider" min="1" max="15" value="${localStorage.getItem('fmi_rate') ? (RATE_LEVELS || []).indexOf(parseFloat(localStorage.getItem('fmi_rate'))) + 1 || 10 : 10}" step="1"
+                                    oninput="ChallengeModule.setRate(this.value)" title="拖动调整语速">
+                                <div class="vslider-fill" id="ch-rate-fill"></div>
+                                <div class="vslider-thumb" id="ch-rate-thumb"><span id="ch-val-rate">${localStorage.getItem('fmi_rate') || '1.0'}x</span></div>
+                            </div>
+                            <div class="vslider-range"><span>0.1x</span><span>1.5x</span></div>
                         </div>
-                        <div class="vslider-range"><span>0.1x</span><span>1.5x</span></div>
-                    </div>
-                    <div class="vslider-box">
-                        <div class="vslider-label"><i class="fas fa-redo"></i> 重复</div>
-                        <div class="vslider-track-wrap">
-                            <input type="range" class="vslider vslider-loop" id="ch-loop-slider" min="0" max="14" value="${(LOOP_LEVELS || []).indexOf(parseInt(localStorage.getItem('fmi_loop') || '1')) >= 0 ? (LOOP_LEVELS || []).indexOf(parseInt(localStorage.getItem('fmi_loop') || '1')) : 0}" step="1"
-                                oninput="ChallengeModule.setLoop(this.value)" title="拖动调整重复次数">
-                            <div class="vslider-fill" id="ch-loop-fill"></div>
-                            <div class="vslider-thumb" id="ch-loop-thumb"><span id="ch-val-loop">${localStorage.getItem('fmi_loop') || '1'}次</span></div>
+                        <div class="vslider-box">
+                            <div class="vslider-label"><i class="fas fa-redo"></i> 循环</div>
+                            <div class="vslider-track-wrap">
+                                <input type="range" class="vslider vslider-loop" id="ch-loop-slider" min="0" max="14" value="${(LOOP_LEVELS || []).indexOf(parseInt(localStorage.getItem('fmi_loop') || '1')) >= 0 ? (LOOP_LEVELS || []).indexOf(parseInt(localStorage.getItem('fmi_loop') || '1')) : 0}" step="1"
+                                    oninput="ChallengeModule.setLoop(this.value)" title="拖动调整循环次数">
+                                <div class="vslider-fill" id="ch-loop-fill"></div>
+                                <div class="vslider-thumb" id="ch-loop-thumb"><span id="ch-val-loop">${localStorage.getItem('fmi_loop') || '1'}次</span></div>
+                            </div>
+                            <div class="vslider-range"><span>1次</span><span>无限</span></div>
                         </div>
-                        <div class="vslider-range"><span>1次</span><span>无限</span></div>
                     </div>
                 </div>
             </div>
