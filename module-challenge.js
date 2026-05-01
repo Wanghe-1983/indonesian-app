@@ -265,8 +265,8 @@ const ChallengeModule = {
                 <div class="challenge-q-type">对话题</div>
                 <div class="challenge-q-title">${q.title || ''}</div>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div class="challenge-q-indo ch-speak-btn" ${q.title_id ? `onclick="ChallengeModule.challengeToggleSpeak('${encodeURIComponent(q.title_id)}')" style="cursor:pointer;"` : ''} style="flex:1;">${q.title_id || ''}</div>
                     ${q.title_id ? `<button class="circle-btn play-btn ch-speak-btn" onclick="ChallengeModule.challengeToggleSpeak('${encodeURIComponent(q.title_id)}')" style="flex-shrink:0;width:42px;height:42px;font-size:1rem;"><i class="fas fa-play ch-play-ico"></i></button>` : ''}
+                    <div class="challenge-q-indo ch-speak-btn" ${q.title_id ? `onclick="ChallengeModule.challengeToggleSpeak('${encodeURIComponent(q.title_id)}')" style="cursor:pointer;"` : ''} style="flex:1;">${q.title_id || ''}</div>
                 </div>
                 <div class="challenge-q-prompt">这个对话的主题是什么？</div>
             `;
@@ -274,8 +274,8 @@ const ChallengeModule = {
             questionContent = `
                 <div class="challenge-q-type">${stageType === 'words' ? '生词' : stageType === 'sentences' ? '短句' : '对话'}</div>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div class="challenge-q-indo ch-speak-btn" onclick="ChallengeModule.challengeToggleSpeak('${encodeURIComponent(q.indonesian)}')" style="cursor:pointer;flex:1;">${q.indonesian}</div>
                     <button class="circle-btn play-btn ch-speak-btn" onclick="ChallengeModule.challengeToggleSpeak('${encodeURIComponent(q.indonesian)}')" style="flex-shrink:0;width:42px;height:42px;font-size:1rem;"><i class="fas fa-play ch-play-ico"></i></button>
+                    <div class="challenge-q-indo ch-speak-btn" onclick="ChallengeModule.challengeToggleSpeak('${encodeURIComponent(q.indonesian)}')" style="cursor:pointer;flex:1;">${q.indonesian}</div>
                 </div>
                 <div class="challenge-q-prompt">请选择正确的中文释义：</div>
             `;
@@ -329,6 +329,14 @@ const ChallengeModule = {
                             <div class="vslider-range"><span>1次</span><span>无限</span></div>
                         </div>
                     </div>
+                </div>
+                <div style="margin-top:16px;display:flex;align-items:center;justify-content:flex-end;gap:10px;">
+                    <button style="background:rgba(148,163,184,0.1);color:#94a3b8;border:1px solid rgba(148,163,184,0.2);padding:8px 16px;border-radius:10px;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;gap:5px;" onclick="ChallengeModule.confirmExitWithoutSave()">
+                        <i class="fas fa-sign-out-alt"></i> 退出
+                    </button>
+                    <button style="background:rgba(251,191,36,0.2);color:#fbbf24;border:1px solid rgba(251,191,36,0.4);padding:12px 28px;border-radius:12px;cursor:pointer;font-size:0.95rem;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 0 20px rgba(251,191,36,0.15);" onclick="ChallengeModule.confirmFinish()">
+                        <i class="fas fa-file-alt"></i> 交卷
+                    </button>
                 </div>
             </div>
         `;
