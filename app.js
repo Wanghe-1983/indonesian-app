@@ -1046,6 +1046,17 @@ function buildLevelConfig(config, oldArray) {
         }
         const lvIcon = lv.icon || 'fa-book';
         const lvColor = lv.color || 'var(--accent)';
+        const lvState = levelConfig[Number(lv.id)];
+        const lvReadonly = lvState === 1; // 仅展示模式
+        if (lvReadonly) {
+            courseMenuHTML += `
+            <div class="cat-item">
+                <div class="cat-head" style="opacity:0.6;cursor:default;">
+                    <span><i class="fas fa-lock" style="color:#f59e0b;margin-right:4px;font-size:10px;"></i> ${lv.id}级课程 - ${lv.name}</span>
+                    <span style="font-size:11px;color:#f59e0b;margin-right:4px;">仅展示</span>
+                </div>
+            </div>`;
+        } else {
         courseMenuHTML += `
         <div class="cat-item">
             <div class="cat-head" onclick="this.nextElementSibling.classList.toggle('active')">
@@ -1053,7 +1064,7 @@ function buildLevelConfig(config, oldArray) {
                 <i class="fas fa-chevron-down"></i>
             </div>
             <div class="sub-menu">${unitsHTML}</div>
-        </div>`;
+        </div>`; }
     }
 
 
