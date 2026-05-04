@@ -889,6 +889,7 @@ function buildLevelConfig(config, oldArray) {
         console.warn('获取系统设置失败，显示所有课程:', e);
         levelConfig = {0:2,1:2,2:2,3:2,4:2,5:2,6:2,7:2};
     }
+    window._levelConfig = levelConfig; // 同步到全局供loadCourseWord使用
 
     const levels = allLevels.filter(l => {
         const state = levelConfig[Number(l.id)];
