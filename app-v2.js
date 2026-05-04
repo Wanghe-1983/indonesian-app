@@ -50,12 +50,12 @@
     // ========== 初始化 UI ==========
     async function initV2() {
         // 获取用户信息
-        const userStatus = JSON.parse(localStorage.getItem('fmi_login_status') || '{"isLogin":false}');
+        const userStatus = JSON.parse(sessionStorage.getItem('fmi_login_status') || '{"isLogin":false}');
         if (!userStatus.isLogin) {
             location.href = 'login.html';
             return;
         }
-        const userData = JSON.parse(localStorage.getItem('fmi_user') || '{}');
+        const userData = JSON.parse(sessionStorage.getItem('fmi_user') || '{}');
         const userName = userData.name || 'User';
 
         // 加载随机学习小贴士

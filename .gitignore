@@ -11,3 +11,5 @@ debug.html
 
 # Textbook resources (too large for Git)
 教材/
+
+node_modules/

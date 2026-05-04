@@ -27,11 +27,8 @@ export async function onRequest(context) {
 
         // ========== 学习 ==========
         'study/save':                   { post: handleStudySave },
+        'study/sync':                   { post: handleStudySync },
         'study/stats':                  { get: handleStudyStats },
-
-        // ========== 排行榜 ==========
-        'leaderboard':                  { get: handleGetLeaderboard },
-        'leaderboard/submit':           { post: handleLeaderboardSubmit },
 
         // ========== 管理后台 ==========
         'admin/settings':               { get: handleAdminGetSettings, put: handleAdminPutSettings },
@@ -42,7 +39,6 @@ export async function onRequest(context) {
         'admin/whitelist':              { get: handleAdminGetWhitelist, put: handleAdminPutWhitelist },
         'admin/study-stats':            { get: handleAdminStudyStats },
         'admin/study-clear':            { post: handleAdminStudyClear },
-        'admin/leaderboard-config':     { get: handleAdminGetLBConfig, put: handleAdminPutLBConfig },
         'admin/verify':                 { post: handleAdminVerify },
         'admin/init-users':             { post: handleAdminInitUsers },
 
@@ -131,6 +127,50 @@ function defaultSettings() {
         challengeTimeWeight: 0.1,      // 用时权重
         challengeTimeMultiplier: 5,    // 时间惩罚系数（越大对慢答题越宽容）
         hellModeEnabled: true,         // 地狱模式总开关
+        // 每关题目配置
+        challengeQuestionCount: 10,     // 普通模式每关题目数量
+        challengeQuestionType: 'words', // 题目类型: words(单词)/sentences(短句)/dialogues(对话)/mixed(混合)
+        // 地狱模式独立配置
+        hellQuestionCount: 15,          // 地狱模式每关题目数量
+        hellQuestionType: 'mixed',      // 地狱模式题目类型
+        hellTimeLimit: 120,             // 地狱模式每关时间限制（秒），0=不限时
+
+        // ========== 勤学苦练配置 ==========
+        // 课程可见性
+        studyLevelConfigUser: {0:2,1:2,2:2,3:2,4:2,5:2,6:2,7:2},  // 用户等级控制(2=可学习,1=仅展示,0=隐藏)
+        studyLevelConfigVisitor: {0:2,1:0,2:0,3:0,4:0,5:0,6:0,7:0}, // 访客等级控制
+        studyVisibleLevelsUser: [0, 1, 2, 3, 4, 5, 6, 7],   // 用户可见的BIPA等级(兼容旧版)
+        studyVisibleLevelsVisitor: [0],                        // 访客可见的BIPA等级(兼容旧版)
+
+        // 练习功能配置 - 用户
+        studyPracticeUser: {
+            includeMastered: true,       // 练习题库包含已掌握内容
+            enableWrongBook: true,       // 启用错题集
+            allowDeleteWrong: true,      // 允许删除单条错题
+            allowClearWrong: true,       // 允许清空错题集
+            allowUnmarkMastered: true,   // 允许取消已掌握标记
+            trackStudyTime: true,        // 统计学习时长
+            trackAccuracy: true,         // 统计练习准确率
+            showRateSlider: true,        // 显示倍速滑块
+            allowAdjustRate: true,       // 允许调节倍速
+            showLoopSlider: true,        // 显示循环滑块
+            allowAdjustLoop: true,       // 允许调节循环
+        },
+
+        // 练习功能配置 - 访客
+        studyPracticeVisitor: {
+            includeMastered: false,      // 访客练习不包含已掌握内容
+            enableWrongBook: false,      // 访客不启用错题集
+            allowDeleteWrong: false,
+            allowClearWrong: false,
+            allowUnmarkMastered: true,   // 访客可取消掌握标记
+            trackStudyTime: false,       // 访客不统计时长
+            trackAccuracy: false,        // 访客不统计准确率
+            showRateSlider: true,        // 访客可调倍速
+            allowAdjustRate: true,
+            showLoopSlider: true,
+            allowAdjustLoop: true,
+        },
     };
 }
 
@@ -439,6 +479,75 @@ async function handleStudySave(context) {
     return jsonOK();
 }
 
+
+// ========== 学习数据双向同步 ==========
+
+async function handleStudySync(context) {
+    const { env, username } = await requireAuth(context);
+    const body = await context.request.json();
+
+    // 自动建表
+    await env.INDO_LEARN_DB.prepare(`CREATE TABLE IF NOT EXISTS user_study_data (
+        username TEXT PRIMARY KEY,
+        mastery_records TEXT NOT NULL DEFAULT '{}',
+        favs TEXT NOT NULL DEFAULT '[]',
+        all_words TEXT NOT NULL DEFAULT '[]',
+        study_stats TEXT NOT NULL DEFAULT '{}',
+        daily_goal INTEGER NOT NULL DEFAULT 20,
+        practice_history TEXT NOT NULL DEFAULT '[]',
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run();
+
+    // 拉取：从 D1 返回用户学习数据
+    if (body && body._action === 'pull') {
+        const row = await dbGet(env, 'SELECT * FROM user_study_data WHERE username = ?', [username]);
+        if (row) {
+            return json({
+                success: true,
+                _action: 'pull',
+                data: {
+                    masteryRecords: row.mastery_records || '{}',
+                    favs: row.favs || '[]',
+                    allWords: row.all_words || '[]',
+                    studyStats: row.study_stats || '{}',
+                    dailyGoal: row.daily_goal || 20,
+                    practiceHistory: row.practice_history || '[]',
+                }
+            });
+        }
+        // 没有云端数据，返回空
+        return json({ success: true, _action: 'pull', data: null });
+    }
+
+    // 推送：将前端学习数据存入 D1（使用 UPSERT）
+    const now = new Date().toISOString();
+    await env.INDO_LEARN_DB.prepare(`
+        INSERT INTO user_study_data (username, mastery_records, favs, all_words, study_stats, daily_goal, practice_history, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(username) DO UPDATE SET
+            mastery_records = excluded.mastery_records,
+            favs = excluded.favs,
+            all_words = excluded.all_words,
+            study_stats = excluded.study_stats,
+            daily_goal = excluded.daily_goal,
+            practice_history = excluded.practice_history,
+            updated_at = excluded.updated_at
+    `).bind(
+        username,
+        body.masteryRecords || '{}',
+        body.favs || '[]',
+        body.allWords || '[]',
+        body.studyStats || '{}',
+        body.dailyGoal || 20,
+        body.practiceHistory || '[]',
+        now
+    ).run();
+
+    return json({ success: true, _action: 'push' });
+}
+
+
+
 async function handleStudyStats(context) {
     const { env, username } = await requireAuth(context);
     const stats = await dbGet(env,
@@ -456,50 +565,6 @@ async function handleStudyStats(context) {
         todayWords: todayStat?.todayWords || 0,
         todaySeconds: todayStat?.todaySeconds || 0,
     });
-}
-
-// ========== 排行榜 ==========
-
-async function handleGetLeaderboard(context) {
-    const { env } = context;
-    const url = new URL(context.request.url);
-    const date = url.searchParams.get('date') || new Date().toISOString().slice(0, 10);
-
-    const entries = await dbAll(env,
-        `SELECT u.name, SUM(s.words_learned) as score
-         FROM study_stats s JOIN users u ON s.username = u.username
-         WHERE s.date LIKE ?
-         GROUP BY s.username ORDER BY score DESC LIMIT 50`,
-        [date.slice(0, 7) + '%']
-    );
-
-    return json({ entries });
-}
-
-async function handleLeaderboardSubmit(context) {
-    const { env, username } = await requireAuth(context);
-    const { score, period } = await context.request.json();
-
-    // 计算周期 key
-    let periodKey;
-    const now = new Date();
-    if (period === 'weekly') {
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
-        periodKey = weekStart.toISOString().slice(0, 10);
-    } else if (period === 'monthly') {
-        periodKey = now.toISOString().slice(0, 7);
-    } else {
-        periodKey = now.toISOString().slice(0, 10);
-    }
-
-    const user = await dbGet(env, 'SELECT name FROM users WHERE username = ?', [username]);
-    await dbRun(env,
-        'INSERT INTO leaderboard_entries (username, name, score, period, period_key) VALUES (?, ?, ?, ?, ?)',
-        [username, user?.name || username, score || 0, period || 'weekly', periodKey]
-    );
-
-    return jsonOK();
 }
 
 // ========== 管理后台 ==========
@@ -684,21 +749,6 @@ async function handleAdminStudyClear(context) {
     await dbRun(context.env, 'DELETE FROM study_stats');
     await dbRun(context.env, 'DELETE FROM study_records');
     return jsonOK({ message: '已清空' });
-}
-
-// ========== 排行榜配置 ==========
-
-async function handleAdminGetLBConfig(context) {
-    await requireAdmin(context);
-    const data = await context.env.INDO_LEARN_KV.get('lb_config');
-    return json(data ? JSON.parse(data) : { enabled: false, title: '学习排行', period: 'weekly' });
-}
-
-async function handleAdminPutLBConfig(context) {
-    await requireAdmin(context);
-    const config = await context.request.json();
-    await context.env.INDO_LEARN_KV.put('lb_config', JSON.stringify(config));
-    return jsonOK({ message: '已保存' });
 }
 
 // ========== 初始化用户 ==========

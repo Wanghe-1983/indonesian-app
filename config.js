@@ -30,19 +30,19 @@ const API = {
 
     // 初始化 token
     init() {
-        this._token = localStorage.getItem('fmi_token') || null;
+        this._token = sessionStorage.getItem('fmi_token') || null;
     },
 
     // 保存 token
     setToken(token) {
         this._token = token;
-        localStorage.setItem('fmi_token', token);
+        sessionStorage.setItem('fmi_token', token);
     },
 
     // 清除 token
     clearToken() {
         this._token = null;
-        localStorage.removeItem('fmi_token');
+        sessionStorage.removeItem('fmi_token');
     },
 
     // 获取 token
@@ -68,7 +68,7 @@ const API = {
             // 被踢下线
             if (data.error === 'kicked') {
                 this.clearToken();
-                localStorage.removeItem('fmi_login_status');
+                sessionStorage.removeItem('fmi_login_status');
                 alert('您已被管理员强制下线');
                 window.location.href = 'login.html';
                 return data;
@@ -76,9 +76,9 @@ const API = {
             // 访客时长到期
             if (data.error === 'visitor_expired') {
                 this.clearToken();
-                localStorage.removeItem('fmi_login_status');
-                localStorage.removeItem('fmi_visitor_login');
-                localStorage.removeItem('fmi_visitor_expire');
+                sessionStorage.removeItem('fmi_login_status');
+                sessionStorage.removeItem('fmi_visitor_login');
+                sessionStorage.removeItem('fmi_visitor_expire');
                 alert('访客体验时间已到，感谢使用！如需继续学习，请注册账号。');
                 window.location.href = 'login.html';
                 return data;
@@ -154,6 +154,23 @@ const API = {
         return await this.request('leaderboard/submit', {
             method: 'POST',
             body: JSON.stringify(entry),
+        });
+    },
+
+    // ========== 学习数据同步 ==========
+    // 从服务端拉取学习数据
+    async loadStudy() {
+        return await this.request('study/sync', {
+            method: 'POST',
+            body: JSON.stringify({ _action: 'pull' }),
+        });
+    },
+
+    // 推送学习数据到服务端
+    async saveStudySync(data) {
+        return await this.request('study/sync', {
+            method: 'POST',
+            body: JSON.stringify(data),
         });
     },
 

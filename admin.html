@@ -29,7 +29,7 @@
         const url = (CONFIG.apiBase || location.origin) + '/api/' + path;
         const headers = {};
         if (method !== 'GET') headers['Content-Type'] = 'application/json';
-        const token = localStorage.getItem('admin_fmi_token') || localStorage.getItem('fmi_token');
+        const token = localStorage.getItem('admin_fmi_token') || sessionStorage.getItem('fmi_token') || localStorage.getItem('fmi_token');
         if (token) headers['Authorization'] = 'Bearer ' + token;
         try {
             const res = await fetch(url, { method, headers, body: opts.body, signal: AbortSignal.timeout(8000) });
@@ -74,7 +74,7 @@
         .admin-header { background: rgba(17,24,39,0.95); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); }
         .admin-header h1 { font-size: 1.3rem; color: #fff; display: flex; align-items: center; gap: 10px; }
         .admin-header h1 i { color: #a78bfa; }
-        .admin-float-actions { position:fixed;top:12px;right:20px;z-index:200;display:flex;gap:8px; }
+        .admin-float-actions { display: none; }
         .header-actions { display: flex; gap: 10px; }
         .hdr-btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
         .hdr-btn.primary { background: #6366f1; color: #fff; }
@@ -95,8 +95,8 @@
         .nav-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 15px 20px; }
 
         /* Content */
-        .admin-content { flex: 1; padding: 24px 30px; overflow-y: auto; min-width: 0; max-width: 100%; }
-        .panel-title { font-size: 1.2rem; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .admin-content { flex: 1; padding: 0 30px 24px 30px; overflow-y: auto; min-width: 0; max-width: 100%; }
+        .panel-title { font-size: 1.2rem; color: #fff; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; padding: 14px 30px; border-bottom: 1px solid rgba(255,255,255,0.06); background: var(--bg-main, #0b1120); margin-left: -30px; margin-right: -30px; } .panel-title .title-actions { display: flex; gap: 8px; flex-shrink: 0; }
         .panel-title i { color: #a78bfa; }
 
         /* Cards */
@@ -104,7 +104,7 @@
         .tab-panel .card { max-width: 100% !important; width: 100% !important; }
         .tab-panel { display: none; width: 100%; }
         .tab-panel.active { display: block; width: 100%; max-width: 100%; }
-        .tab-panel.active > * { max-width: 100% !important; width: 100% !important; }
+        .tab-panel.active > *:not(.panel-title) { max-width: 100% !important; width: 100% !important; }
         .card-title { font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px; font-weight: 600; }
 
         /* Stats row */
@@ -128,7 +128,7 @@
 
         /* Table */
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
-        .data-table th { text-align: left; padding: 12px 10px; color: #64748b; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+        .data-table th { text-align: left; padding: 12px 10px; color: #64748b; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; position: sticky; top: 0; z-index: 40; background: rgba(30,41,59,0.98); }
         .data-table td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #cbd5e1; }
         .data-table tr:hover td { background: rgba(99,102,241,0.05); }
 
@@ -238,7 +238,147 @@
     .btn-accent:hover { background:#4f46e5; }
     .btn-cancel { padding:8px 20px;background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:0.85rem; }
     .btn-cancel:hover { background:rgba(255,255,255,0.1);color:#fff; }
-</style>
+
+    /* ===== 勤学苦练设置面板样式 ===== */
+    .card-section-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .study-config-group {
+        margin-bottom: 20px;
+        padding: 16px;
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .study-config-label {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .study-level-checkboxes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .level-cb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 0.85rem;
+        color: #cbd5e1;
+    }
+    .level-cb:hover {
+        border-color: rgba(99, 102, 241, 0.4);
+        background: rgba(99, 102, 241, 0.1);
+    }
+    .level-cb input[type="checkbox"] {
+        accent-color: #6366f1;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+
+    /* 课程等级三态选择器 */
+        /* 批量操作按钮 */
+    .batch-btns { display:flex; align-items:center; gap:4px; }
+    .batch-label { font-size:0.75rem; color:#64748b; margin-right:2px; }
+    .batch-btn {
+        padding:3px 8px; border:1px solid rgba(255,255,255,0.1); border-radius:5px;
+        background:rgba(255,255,255,0.03); color:#94a3b8; cursor:pointer;
+        font-size:0.72rem; display:flex; align-items:center; gap:3px;
+        transition:all 0.15s; white-space:nowrap;
+    }
+    .batch-btn:hover { background:rgba(255,255,255,0.08); color:#e2e8f0; }
+    .batch-btn-all:hover { border-color:#10b981; color:#10b981; }
+    .batch-btn-readonly:hover { border-color:#f59e0b; color:#f59e0b; }
+    .batch-btn-hidden:hover { border-color:#6b7280; color:#9ca3af; }
+
+    .study-level-selectors { display:flex; flex-direction:column; gap:6px; }
+    .level-selector-item {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.03);
+        border:1px solid rgba(255,255,255,0.06); transition:all 0.2s;
+    }
+    .level-selector-item:hover { background:rgba(255,255,255,0.06); }
+    .level-selector-name { font-size:0.88rem; color:#cbd5e1; font-weight:500; }
+    .level-selector-btns { display:flex; gap:4px; }
+    .lv-btn {
+        width:32px; height:28px; border:1px solid rgba(255,255,255,0.1); border-radius:6px;
+        background:rgba(255,255,255,0.04); color:#64748b; cursor:pointer;
+        display:flex; align-items:center; justify-content:center; font-size:0.75rem;
+        transition:all 0.15s; opacity:0.5;
+    }
+    .lv-btn:hover { opacity:0.8; background:rgba(255,255,255,0.08); }
+    .lv-btn.active { opacity:1; transform:scale(1.05); }
+    .lv-btn-hidden.active { background:rgba(55,65,81,0.6); border-color:#374151; color:#9ca3af; }
+    .lv-btn-readonly.active { background:rgba(245,158,11,0.15); border-color:#f59e0b; color:#f59e0b; }
+    .lv-btn-learnable.active { background:rgba(16,185,129,0.15); border-color:#10b981; color:#10b981; }
+
+    .level-cb-desc {
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-left: 2px;
+    }
+    .study-toggle-group {
+        margin-bottom: 18px;
+    }
+    .study-toggle-section {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #a78bfa;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        padding-left: 2px;
+    }
+    .toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        margin-bottom: 4px;
+        border-radius: 6px;
+        transition: 0.15s;
+        cursor: pointer;
+    }
+    .toggle-row:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .toggle-label {
+        flex: 1;
+        font-size: 0.85rem;
+        color: #e2e8f0;
+    }
+    .toggle-hint {
+        font-size: 0.75rem;
+        color: #64748b;
+        max-width: 280px;
+        text-align: right;
+    }
+    .toggle-row input[type="checkbox"] {
+        accent-color: #6366f1;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    </style>
 </head>
 <body>
     <!-- 版本标识 v20260422c -->
@@ -267,7 +407,7 @@
         <div class="admin-content">
             <!-- 概览 -->
             <div class="tab-panel active" id="tab-overview">
-                <div class="panel-title"><i class="fas fa-chart-pie"></i> 运行概览</div>
+                <div class="panel-title"><i class="fas fa-chart-pie"></i> 运行概览<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
                 <div class="stats-row" id="statsRow"></div>
                 <div class="card">
                     <div class="card-title"><i class="fas fa-wifi" style="color:#34d399;"></i> 当前在线用户</div>
@@ -277,7 +417,7 @@
 
             <!-- 用户管理 -->
             <div class="tab-panel" id="tab-users">
-                <div class="panel-title"><i class="fas fa-users-gear"></i> 用户管理</div>
+                <div class="panel-title"><i class="fas fa-users-gear"></i> 用户管理<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
                 <div class="card">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
                         <input type="text" id="userSearch" placeholder="搜索用户名/昵称..." oninput="filterUsers()" style="padding:8px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.85rem;width:250px;">
@@ -311,7 +451,7 @@
 
             <!-- 系统设置 -->
             <div class="tab-panel" id="tab-settings">
-                <div class="panel-title"><i class="fas fa-sliders"></i> 系统设置</div>
+                <div class="panel-title"><i class="fas fa-sliders"></i> 系统设置<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
                 <div class="card">
                     <div class="setting-row">
                         <div class="setting-info"><div class="setting-label">最大同时在线人数</div><div class="setting-desc">0 表示不限制</div></div>
@@ -372,7 +512,7 @@
 
             <!-- 白名单管理 -->
             <div class="tab-panel" id="tab-whitelist">
-                <div class="panel-title"><i class="fas fa-user-check"></i> 白名单</div>
+                <div class="panel-title"><i class="fas fa-user-check"></i> 白名单<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
                 <div class="card">
                     <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:15px;">管理可注册登录的用户白名单，上传名单文件自动解析并导入</p>
                     <div style="display:flex;gap:10px;align-items:center;margin-bottom:15px;">
@@ -409,22 +549,143 @@
             </div>
             <!-- 学习统计管理面板 -->
             <div class="tab-panel" id="tab-study">
-                <div class="panel-title"><i class="fas fa-book-open"></i> 勤学苦练设置</div>
+                <div class="panel-title"><i class="fas fa-book-open"></i> 勤学苦练设置<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
+
+                <!-- ===== 模块一：课程可学习性控制 ===== -->
                 <div class="card">
-                    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:15px;">查看所有用户的学习数据和累计统计</p>
+                    <div class="card-section-title"><i class="fas fa-layer-group" style="color:#a78bfa;"></i> 课程可见性与访问控制</div>
+                    <p style="color:#94a3b8;font-size:0.82rem;margin-bottom:12px;">控制前端"勤学苦练"课程列表的显示与访问权限</p>
+                    <div style="display:flex;gap:16px;margin-bottom:18px;font-size:0.78rem;color:#64748b;">
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;vertical-align:middle;margin-right:4px;"></span>可学习 = 显示且可进入</span>
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;vertical-align:middle;margin-right:4px;"></span>仅展示 = 显示但不可进入</span>
+                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#374151;vertical-align:middle;margin-right:4px;"></span>隐藏 = 不显示</span>
+                    </div>
+
+                    <div class="study-config-group">
+                        <div class="study-config-label" style="display:flex;align-items:center;justify-content:space-between;">
+                            <span>已登录用户</span>
+                            <div class="batch-btns">
+                                <span class="batch-label">批量:</span>
+                                <button type="button" class="batch-btn batch-btn-all" onclick="batchSetLevels('studyLevelsUser',2)" title="全部可学习"><i class="fas fa-book-open"></i> 可学习</button>
+                                <button type="button" class="batch-btn batch-btn-readonly" onclick="batchSetLevels('studyLevelsUser',1)" title="全部仅展示"><i class="fas fa-eye"></i> 仅展示</button>
+                                <button type="button" class="batch-btn batch-btn-hidden" onclick="batchSetLevels('studyLevelsUser',0)" title="全部隐藏"><i class="fas fa-eye-slash"></i> 隐藏</button>
+                            </div>
+                        </div>
+                        <div class="study-level-selectors" id="studyLevelsUser"></div>
+                    </div>
+
+                    <div class="study-config-group">
+                        <div class="study-config-label" style="display:flex;align-items:center;justify-content:space-between;">
+                            <span>访客</span>
+                            <div class="batch-btns">
+                                <span class="batch-label">批量:</span>
+                                <button type="button" class="batch-btn batch-btn-all" onclick="batchSetLevels('studyLevelsVisitor',2)" title="全部可学习"><i class="fas fa-book-open"></i> 可学习</button>
+                                <button type="button" class="batch-btn batch-btn-readonly" onclick="batchSetLevels('studyLevelsVisitor',1)" title="全部仅展示"><i class="fas fa-eye"></i> 仅展示</button>
+                                <button type="button" class="batch-btn batch-btn-hidden" onclick="batchSetLevels('studyLevelsVisitor',0)" title="全部隐藏"><i class="fas fa-eye-slash"></i> 隐藏</button>
+                            </div>
+                        </div>
+                        <div class="study-level-selectors" id="studyLevelsVisitor"></div>
+                    </div>
+                </div>
+
+                <!-- ===== 模块二：练习功能配置 - 用户 ===== -->
+                <div class="card">
+                    <div class="card-section-title"><i class="fas fa-sliders-h" style="color:#6366f1;"></i> 练习功能配置 - 已登录用户</div>
+                    <p style="color:#94a3b8;font-size:0.82rem;margin-bottom:18px;">控制已登录用户在练习页面的功能选项</p>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">题库设置</div>
+                        <label class="toggle-row"><span class="toggle-label">练习题库包含"已掌握"内容</span><span class="toggle-hint">关闭后，已标记掌握的词汇不会出现在练习题中</span><input type="checkbox" id="sp_user_includeMastered" checked></label>
+                    </div>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">错题集</div>
+                        <label class="toggle-row"><span class="toggle-label">启用错题集</span><span class="toggle-hint">练习答错时自动加入错题集</span><input type="checkbox" id="sp_user_enableWrongBook" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">允许删除单条错题</span><input type="checkbox" id="sp_user_allowDeleteWrong" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">允许清空错题集</span><input type="checkbox" id="sp_user_allowClearWrong" checked></label>
+                    </div>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">掌握标记</div>
+                        <label class="toggle-row"><span class="toggle-label">允许用户取消"已掌握"标记</span><span class="toggle-hint">关闭后，已勾选掌握的内容不可再取消</span><input type="checkbox" id="sp_user_allowUnmarkMastered" checked></label>
+                    </div>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">学习统计</div>
+                        <label class="toggle-row"><span class="toggle-label">统计学习时长</span><span class="toggle-hint">记录用户在"学习"页面的停留时间</span><input type="checkbox" id="sp_user_trackStudyTime" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">统计练习准确率</span><span class="toggle-hint">记录每次练习的得分</span><input type="checkbox" id="sp_user_trackAccuracy" checked></label>
+                    </div>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">界面控件</div>
+                        <label class="toggle-row"><span class="toggle-label">显示倍速滑块</span><input type="checkbox" id="sp_user_showRateSlider" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">允许调节倍速</span><span class="toggle-hint">关闭后倍速固定为默认值1.0x</span><input type="checkbox" id="sp_user_allowAdjustRate" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">显示循环滑块</span><input type="checkbox" id="sp_user_showLoopSlider" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">允许调节循环</span><span class="toggle-hint">关闭后循环固定为默认值1次</span><input type="checkbox" id="sp_user_allowAdjustLoop" checked></label>
+                    </div>
+                </div>
+
+                <!-- ===== 模块三：练习功能配置 - 访客 ===== -->
+                <div class="card">
+                    <div class="card-section-title"><i class="fas fa-sliders-h" style="color:#f59e0b;"></i> 练习功能配置 - 访客</div>
+                    <p style="color:#94a3b8;font-size:0.82rem;margin-bottom:18px;">控制访客在练习页面的功能选项（与用户独立配置）</p>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">题库设置</div>
+                        <label class="toggle-row"><span class="toggle-label">练习题库包含"已掌握"内容</span><span class="toggle-hint">关闭后，已标记掌握的词汇不会出现在练习题中</span><input type="checkbox" id="sp_visitor_includeMastered"></label>
+                    </div>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">错题集</div>
+                        <label class="toggle-row"><span class="toggle-label">启用错题集</span><span class="toggle-hint">练习答错时自动加入错题集</span><input type="checkbox" id="sp_visitor_enableWrongBook"></label>
+                        <label class="toggle-row"><span class="toggle-label">允许删除单条错题</span><input type="checkbox" id="sp_visitor_allowDeleteWrong"></label>
+                        <label class="toggle-row"><span class="toggle-label">允许清空错题集</span><input type="checkbox" id="sp_visitor_allowClearWrong"></label>
+                    </div>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">掌握标记</div>
+                        <label class="toggle-row"><span class="toggle-label">允许访客取消"已掌握"标记</span><span class="toggle-hint">关闭后，已勾选掌握的内容不可再取消</span><input type="checkbox" id="sp_visitor_allowUnmarkMastered" checked></label>
+                    </div>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">学习统计</div>
+                        <label class="toggle-row"><span class="toggle-label">统计学习时长</span><span class="toggle-hint">访客不统计时长</span><input type="checkbox" id="sp_visitor_trackStudyTime"></label>
+                        <label class="toggle-row"><span class="toggle-label">统计练习准确率</span><span class="toggle-hint">访客不统计准确率</span><input type="checkbox" id="sp_visitor_trackAccuracy"></label>
+                    </div>
+
+                    <div class="study-toggle-group">
+                        <div class="study-toggle-section">界面控件</div>
+                        <label class="toggle-row"><span class="toggle-label">显示倍速滑块</span><input type="checkbox" id="sp_visitor_showRateSlider" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">允许调节倍速</span><span class="toggle-hint">关闭后倍速固定为默认值1.0x</span><input type="checkbox" id="sp_visitor_allowAdjustRate" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">显示循环滑块</span><input type="checkbox" id="sp_visitor_showLoopSlider" checked></label>
+                        <label class="toggle-row"><span class="toggle-label">允许调节循环</span><span class="toggle-hint">关闭后循环固定为默认值1次</span><input type="checkbox" id="sp_visitor_allowAdjustLoop" checked></label>
+                    </div>
+                </div>
+
+                <!-- ===== 保存按钮 ===== -->
+                <div style="text-align:center;margin:24px 0;">
+                    <button class="hdr-btn primary" style="padding:12px 40px;font-size:0.95rem;border-radius:10px;" onclick="saveStudySettings()">
+                        <i class="fas fa-save"></i> 保存勤学苦练设置
+                    </button>
+                </div>
+
+                <!-- ===== 学习数据统计（原功能保留） ===== -->
+                <div class="card">
+                    <div class="card-section-title"><i class="fas fa-chart-bar" style="color:#34d399;"></i> 学习数据统计</div>
+                    <p style="color:#94a3b8;font-size:0.82rem;margin-bottom:15px;">查看所有用户的学习数据和累计统计</p>
                     <div class="table-wrap">
                         <table class="data-table">
                             <thead><tr><th>用户名</th><th>昵称</th><th>角色</th><th>今日学习</th><th>累计词汇</th><th>学习时长</th><th>操作</th></tr></thead>
-                            <tbody id="studyStatsList"></tbody>
+                            <tbody id="studySettingsList"></tbody>
                         </table>
                     </div>
-                    <div id="studyStatsEmpty" style="display:none;text-align:center;color:#64748b;padding:30px;">暂无学习数据</div>
+                    <div id="studySettingsEmpty" style="display:none;text-align:center;color:#64748b;padding:30px;">暂无学习数据</div>
                 </div>
             </div>
 
             <!-- 版本说明面板 -->
             <div class="tab-panel" id="tab-changelog">
-                <div class="panel-title"><i class="fas fa-code-branch"></i> 版本说明</div>
+                <div class="panel-title"><i class="fas fa-code-branch"></i> 版本说明<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
                 <!-- 主界面版本号和更新日志设置 -->
                 <div class="card" style="margin-bottom:20px;">
                     <div class="card-title" style="margin-bottom:15px;"><i class="fas fa-info-circle" style="color:#60a5fa;"></i> 主界面版本信息</div>
@@ -453,7 +714,7 @@
             </div>
 <!-- 广播管理面板 -->
             <div class="tab-panel" id="tab-broadcast">
-                <div class="panel-title"><i class="fas fa-bullhorn"></i> 广播设置</div>
+                <div class="panel-title"><i class="fas fa-bullhorn"></i> 广播设置<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
 
                 <!-- 广播播放配置 -->
                 <div class="card" style="margin-bottom:20px;">
@@ -540,7 +801,7 @@
         
             <!-- 访客设置 -->
             <div class="tab-panel" id="tab-visitor">
-                <div class="panel-title"><i class="fas fa-user-secret"></i> 访客设置</div>
+                <div class="panel-title"><i class="fas fa-user-secret"></i> 访客设置<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
                 <div class="card">
                     <div class="setting-row">
                         <div class="setting-info">
@@ -565,7 +826,7 @@
 
             <!-- 闯天关设置 -->
             <div class="tab-panel" id="tab-challenge">
-                <div class="panel-title"><i class="fas fa-gamepad"></i> 闯天关设置</div>
+                <div class="panel-title"><i class="fas fa-gamepad"></i> 闯天关设置<div class="title-actions"><button class="hdr-btn ghost" onclick="location.href='index.html'"><i class="fas fa-home"></i> 返回主页</button><button class="hdr-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button></div></div>
                 <div class="card">
                     <div class="setting-row">
                         <div class="setting-info"><div class="setting-label">启用闯天关</div><div class="setting-desc">关闭后所有用户无法进入闯天关模式 <span id="challenge-enabled-hint" style="color:#22c55e;margin-left:8px;font-size:0.8rem;">已启用</span></div></div>
@@ -591,20 +852,25 @@
                             <div class="form-group"><label style="font-size:0.8rem;color:#64748b;">时间宽容度</label><input type="number" id="setChallengeTimeMultiplier" min="1" max="20" step="1" value="5" style="padding:8px 12px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;"><span style="font-size:0.7rem;color:#64748b;">越大越宽容</span></div>
                         </div>
                     </div>
-                    <!-- 排行榜配置 -->
+                    <!-- 题目配置 -->
                     <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;margin-top:8px;margin-bottom:12px;">
-                        <div style="font-size:0.85rem;color:#94a3b8;font-weight:600;margin-bottom:10px;"><i class="fas fa-trophy" style="color:#fbbf24;margin-right:4px;"></i> 排行榜配置</div>
-                        <div class="setting-row">
-                            <div class="setting-info"><div class="setting-label">启用排行榜</div><div class="setting-desc">开启后用户可在闯天关结束后提交成绩到排行榜</div></div>
-                            <div class="setting-control"><label class="toggle"><input type="checkbox" id="lbEnabled"><span class="slider"></span></label></div>
-                        </div>
+                        <div style="font-size:0.85rem;color:#94a3b8;font-weight:600;margin-bottom:10px;"><i class="fas fa-list-ol" style="color:#60a5fa;margin-right:4px;"></i> 题目配置</div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px;">
-                            <div class="form-group"><label style="font-size:0.8rem;color:#64748b;">打榜名称</label><input id="lbTitle" placeholder="例：每日单词挑战" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;"></div>
-                            <div class="form-group"><label style="font-size:0.8rem;color:#64748b;">题目数量</label><input type="number" id="lbQuestionCount" min="5" max="100" value="20" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;"></div>
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px;">
-                            <div class="form-group"><label style="font-size:0.8rem;color:#64748b;">课件分类</label><select id="lbCategory" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;"><option value="all">全部</option></select></div>
-                            <div class="form-group"><label style="font-size:0.8rem;color:#64748b;">题目类型</label><select id="lbType" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;"><option value="indo2cn">印尼语→中文</option><option value="cn2indo">中文→印尼语</option><option value="mixed">混合模式</option></select></div>
+                            <div class="form-group">
+                                <label style="font-size:0.8rem;color:#64748b;">每关题目数量</label>
+                                <input type="number" id="setChallengeQuestionCount" min="5" max="100" value="10" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;">
+                                <div style="font-size:0.72rem;color:#475569;margin-top:4px;">普通模式每关随机抽取的题目数量</div>
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.8rem;color:#64748b;">题目类型</label>
+                                <select id="setChallengeQuestionType" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;">
+                                    <option value="words">单词</option>
+                                    <option value="sentences">短句</option>
+                                    <option value="dialogues">对话</option>
+                                    <option value="mixed">混合模式</option>
+                                </select>
+                                <div style="font-size:0.72rem;color:#475569;margin-top:4px;">从关卡所属课件的题库中随机抽取</div>
+                            </div>
                         </div>
                     </div>
                     <!-- 地狱模式 -->
@@ -620,6 +886,7 @@
                                 <div class="setting-desc">勾选的 BIPA 等级将标记为地狱模式，需按顺序通关后解锁</div>
                             </div>
                             <div class="setting-control" style="display:flex;flex-wrap:wrap;gap:8px;">
+                                <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="0"> BIPA 0</label>
                                 <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="1"> BIPA 1</label>
                                 <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="2"> BIPA 2</label>
                                 <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="3"> BIPA 3</label>
@@ -629,10 +896,32 @@
                                 <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:#cbd5e1;cursor:pointer;"><input type="checkbox" class="hell-level-cb" value="7"> BIPA 7</label>
                             </div>
                         </div>
+                        <!-- 地狱模式独立配置 -->
+                        <div style="border-top:1px solid rgba(239,68,68,0.08);padding-top:10px;margin-top:4px;">
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;">
+                                <div class="form-group">
+                                    <label style="font-size:0.8rem;color:#64748b;">每关时间限制</label>
+                                    <input type="number" id="setHellTimeLimit" min="0" max="600" value="120" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;">
+                                    <span style="font-size:0.72rem;color:#475569;">秒 (0=不限时)</span>
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size:0.8rem;color:#64748b;">每关题目数量</label>
+                                    <input type="number" id="setHellQuestionCount" min="5" max="100" value="15" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;">
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size:0.8rem;color:#64748b;">题目类型</label>
+                                    <select id="setHellQuestionType" style="padding:10px 14px;background:rgba(15,23,42,0.8);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.9rem;width:100%;">
+                                        <option value="words">单词</option>
+                                        <option value="sentences">短句</option>
+                                        <option value="dialogues">对话</option>
+                                        <option value="mixed" selected>混合模式</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div style="margin-top:20px;display:flex;gap:10px;">
                         <button class="hdr-btn primary" onclick="saveChallengeSettings()"><i class="fas fa-save"></i> 保存闯天关设置</button>
-                        <button class="hdr-btn ghost" onclick="loadLbConfig()"><i class="fas fa-refresh"></i> 刷新排行榜配置</button>
                     </div>
                 </div>
             </div>
@@ -700,11 +989,11 @@ let allUsers = [];
             history.replaceState(null, '', location.pathname);
         }
 
-        const status = JSON.parse(localStorage.getItem('admin_login_status') || localStorage.getItem('fmi_login_status') || '{}');
+        const status = JSON.parse(localStorage.getItem('admin_login_status') || sessionStorage.getItem('fmi_login_status') || localStorage.getItem('fmi_login_status') || '{}');
         const user = status.user || status;
         if (user.role !== 'admin') {
             // 检查是否有 token，有 token 但无 login_status 说明直接访问，尝试恢复
-            const token = localStorage.getItem('admin_fmi_token') || localStorage.getItem('fmi_token');
+            const token = localStorage.getItem('admin_fmi_token') || sessionStorage.getItem('fmi_token') || localStorage.getItem('fmi_token');
             if (token) {
                 // 尝试用 token 获取用户信息
                 try {
@@ -738,7 +1027,7 @@ let allUsers = [];
         if (name === 'leaderboard') loadLbConfig();
         if (name === 'employees') loadEmployees();
         if (name === 'whitelist') { loadWhitelist(); loadEmployees(); }
-        if (name === 'study') loadStudyStats();
+        if (name === 'study') { loadStudySettings(); loadStudyStats(); }
         if (name === 'changelog') loadChangelog();
     }
 
@@ -901,6 +1190,7 @@ let allUsers = [];
     async function loadSystemSettings() {
         const s = await adminFetch('admin/settings', { method: 'GET' });
         if (s.error) return;
+        window._adminSettings = s;  // 缓存全局设置
         document.getElementById('setMaxOnline').value = s.maxOnline || 0;
         document.getElementById('setMaxRegistered').value = s.maxRegistered || 0;
         document.getElementById('setAllowRegister').checked = s.allowRegister !== false;
@@ -939,13 +1229,17 @@ let allUsers = [];
         document.getElementById('setChallengeAccuracyWeight').value = s.challengeAccuracyWeight || 0.9;
         document.getElementById('setChallengeTimeWeight').value = s.challengeTimeWeight || 0.1;
         document.getElementById('setChallengeTimeMultiplier').value = s.challengeTimeMultiplier || 5;
+        document.getElementById('setChallengeQuestionCount').value = s.challengeQuestionCount || 10;
+        document.getElementById('setChallengeQuestionType').value = s.challengeQuestionType || 'words';
         document.getElementById('setHellModeEnabled').checked = s.hellModeEnabled !== false;
         document.getElementById('hell-mode-hint').textContent = s.hellModeEnabled !== false ? '已启用' : '已关闭';
         const hellLevels = s.hellLevels || [5, 6, 7];
         document.querySelectorAll('.hell-level-cb').forEach(cb => {
             cb.checked = hellLevels.includes(parseInt(cb.value));
         });
-        loadLbConfig();
+        document.getElementById('setHellTimeLimit').value = s.hellTimeLimit || 0;
+        document.getElementById('setHellQuestionCount').value = s.hellQuestionCount || 15;
+        document.getElementById('setHellQuestionType').value = s.hellQuestionType || 'mixed';
     }
 
     async function loadMainVersionInfo() {
@@ -980,9 +1274,10 @@ let allUsers = [];
             showOnlineCount: document.getElementById('setShowOnlineCount').checked,
             showRegCount: document.getElementById('setShowRegCount').checked,
         };
+        console.log('[StudySettings] 正在保存:', JSON.stringify(settings).substring(0,200));
         var result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
         if (result && result.success) showAdminToast('系统设置已保存', 'success');
-        else showAdminToast((result && result.error) || '保存失败', 'error');
+        else showAdminToast((result && result.error) || (result === null ? '网络请求失败，请检查连接' : '保存失败'), 'error');
     }
 
     async function saveVisitorSettings() {
@@ -991,11 +1286,12 @@ let allUsers = [];
             visitorDuration: parseInt(document.getElementById('setVisitorDuration').value) || 3,
             allowVisitorChallenge: document.getElementById('setAllowVisitorChallenge').checked,
         };
+        console.log('[StudySettings] 正在保存:', JSON.stringify(settings).substring(0,200));
         var result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
         var vcHint = document.getElementById('visitor-challenge-hint');
         if (vcHint) vcHint.textContent = settings.allowVisitorChallenge ? '已开启' : '已关闭';
         if (result && result.success) showAdminToast('访客设置已保存', 'success');
-        else showAdminToast((result && result.error) || '保存失败', 'error');
+        else showAdminToast((result && result.error) || (result === null ? '网络请求失败，请检查连接' : '保存失败'), 'error');
     }
 
     async function saveChallengeSettings() {
@@ -1008,26 +1304,24 @@ let allUsers = [];
             challengeAccuracyWeight: parseFloat(document.getElementById('setChallengeAccuracyWeight').value) || 0.9,
             challengeTimeWeight: parseFloat(document.getElementById('setChallengeTimeWeight').value) || 0.1,
             challengeTimeMultiplier: parseInt(document.getElementById('setChallengeTimeMultiplier').value) || 5,
+            challengeQuestionCount: parseInt(document.getElementById('setChallengeQuestionCount').value) || 10,
+            challengeQuestionType: document.getElementById('setChallengeQuestionType').value || 'words',
             hellModeEnabled: document.getElementById('setHellModeEnabled').checked,
             hellLevels: Array.from(document.querySelectorAll('.hell-level-cb:checked')).map(cb => parseInt(cb.value)),
+            hellTimeLimit: parseInt(document.getElementById('setHellTimeLimit').value) || 0,
+            hellQuestionCount: parseInt(document.getElementById('setHellQuestionCount').value) || 15,
+            hellQuestionType: document.getElementById('setHellQuestionType').value || 'mixed',
         };
-        var result1 = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
-        var lbConfig = {
-            enabled: document.getElementById('lbEnabled').checked,
-            title: document.getElementById('lbTitle').value,
-            questionCount: parseInt(document.getElementById('lbQuestionCount').value) || 20,
-            category: document.getElementById('lbCategory').value,
-            type: document.getElementById('lbType').value,
-        };
-        var result2 = await adminFetch('admin/leaderboard-config', { method: 'PUT', body: JSON.stringify(lbConfig) });
+        console.log('[StudySettings] 正在保存:', JSON.stringify(settings).substring(0,200));
+        var result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
         var ceHint = document.getElementById('challenge-enabled-hint');
         if (ceHint) ceHint.textContent = settings.challengeEnabled ? '已启用' : '已关闭';
         var hmHint = document.getElementById('hell-mode-hint');
         if (hmHint) hmHint.textContent = settings.hellModeEnabled ? '已启用' : '已关闭';
-        if (result1 && result1.success && result2 && result2.success) {
+        if (result && result.success) {
             showAdminToast('闯天关设置已保存', 'success');
         } else {
-            showAdminToast((result1 && result1.error) || (result2 && result2.error) || '保存失败', 'error');
+            showAdminToast((result && result.error) || (result === null ? '网络请求失败，请检查连接' : '保存失败'), 'error');
         }
     }
 
@@ -1036,9 +1330,10 @@ let allUsers = [];
             mainVersion: document.getElementById('setMainVersion').value.trim() || '2.2',
             mainChangelog: document.getElementById('setMainChangelog').value.trim(),
         };
+        console.log('[StudySettings] 正在保存:', JSON.stringify(settings).substring(0,200));
         var result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
         if (result && result.success) showAdminToast('版本信息已保存', 'success');
-        else showAdminToast((result && result.error) || '保存失败', 'error');
+        else showAdminToast((result && result.error) || (result === null ? '网络请求失败，请检查连接' : '保存失败'), 'error');
     }
 
     // 兼容旧调用
@@ -1046,25 +1341,7 @@ let allUsers = [];
         await saveSystemSettings();
     }
 
-    // ========== 闯天关配置加载 ==========
-    async function loadLbConfig() {
-        // Load category list from learning data
-        try {
-            const resp = await fetch('./indonesian_learning_data.json');
-            const data = await resp.json();
-            const sel = document.getElementById('lbCategory');
-            const cats = [...new Set(data.words.map(w => w.category).filter(Boolean))];
-            sel.innerHTML = '<option value="all">全部</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
-        } catch(e) {}
 
-        const config = await adminFetch('admin/leaderboard-config', { method: 'GET' });
-        if (!config || config.error) return;
-        document.getElementById('lbEnabled').checked = config.enabled || false;
-        document.getElementById('lbTitle').value = config.title || '';
-        document.getElementById('lbQuestionCount').value = config.questionCount || 20;
-        document.getElementById('lbCategory').value = config.category || 'all';
-        document.getElementById('lbType').value = config.type || 'indo2cn';
-    }
 
     async function saveLbConfig() {
         const config = {
@@ -1329,7 +1606,9 @@ let allUsers = [];
             localStorage.removeItem('admin_fmi_token');
             localStorage.removeItem('admin_login_status');
             localStorage.removeItem('fmi_token');
+            sessionStorage.removeItem('fmi_token');
             localStorage.removeItem('fmi_login_status');
+            sessionStorage.removeItem('fmi_login_status');
             location.href = 'login.html';
         }
     }
@@ -1621,12 +1900,161 @@ let allUsers = [];
             if (tab === 'broadcast') { loadBroadcastList(); loadBroadcastConfig(); }
         };
     // ========== 学习统计管理 ==========
+    
+    // ========== 勤学苦练设置 - 加载 ==========
+    
+    // ========== 课程等级三态选择器 ==========
+    const LEVEL_NAMES = ['BIPA 0','BIPA 1','BIPA 2','BIPA 3','BIPA 4','BIPA 5','BIPA 6','BIPA 7'];
+    const LEVEL_DESCS = ['通用印尼语','','','','','','',''];
+    const LEVEL_STATES = { hidden: 0, readonly: 1, learnable: 2 }; // 0=隐藏 1=仅展示 2=可学习
+
+    function renderLevelSelectors(containerId, config) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        // config格式: {0:2, 1:1, 2:0} => levelId: state
+        const cfg = config || {};
+        let html = '';
+        for (let i = 0; i < 8; i++) {
+            const state = cfg[i] !== undefined ? cfg[i] : 2; // 默认可学习
+            html += `<div class="level-selector-item" data-level="${i}">
+                <span class="level-selector-name">${LEVEL_NAMES[i]}${LEVEL_DESCS[i] ? ' <small style="color:#64748b;">'+LEVEL_DESCS[i]+'</small>' : ''}</span>
+                <div class="level-selector-btns">
+                    <button type="button" class="lv-btn lv-btn-hidden ${state===0?'active':''}" onclick="setLevelState('${containerId}',${i},0)" title="隐藏">
+                        <i class="fas fa-eye-slash"></i>
+                    </button>
+                    <button type="button" class="lv-btn lv-btn-readonly ${state===1?'active':''}" onclick="setLevelState('${containerId}',${i},1)" title="仅展示">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button type="button" class="lv-btn lv-btn-learnable ${state===2?'active':''}" onclick="setLevelState('${containerId}',${i},2)" title="可学习">
+                        <i class="fas fa-book-open"></i>
+                    </button>
+                </div>
+            </div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    function setLevelState(containerId, levelId, state) {
+        const item = document.querySelector(`#${containerId} .level-selector-item[data-level="${levelId}"]`);
+        if (!item) return;
+        item.querySelectorAll('.lv-btn').forEach(b => b.classList.remove('active'));
+        item.querySelectorAll('.lv-btn')[state].classList.add('active');
+    }
+
+    function batchSetLevels(containerId, state) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.querySelectorAll('.level-selector-item').forEach(item => {
+            item.querySelectorAll('.lv-btn').forEach(b => b.classList.remove('active'));
+            item.querySelectorAll('.lv-btn')[state].classList.add('active');
+        });
+    }
+
+function collectLevelSelectors(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return {};
+        const config = {};
+        container.querySelectorAll('.level-selector-item').forEach(item => {
+            const levelId = parseInt(item.dataset.level);
+            const btns = item.querySelectorAll('.lv-btn');
+            let state = 2; // 默认可学习
+            if (btns[0].classList.contains('active')) state = 0;
+            else if (btns[1].classList.contains('active')) state = 1;
+            else if (btns[2].classList.contains('active')) state = 2;
+            config[levelId] = state;
+        });
+        return config;
+    }
+
+function loadStudySettings() {
+        // 从当前settings对象中读取（settings已在loadSystemSettings时加载）
+        const s = window._adminSettings || {};
+
+        // 课程可见性与访问控制 - 渲染三态选择器
+        renderLevelSelectors('studyLevelsUser', s.studyLevelConfigUser);
+        renderLevelSelectors('studyLevelsVisitor', s.studyLevelConfigVisitor);
+        
+        // 练习功能配置 - 用户
+        const pu = s.studyPracticeUser || {};
+        const userKeys = ['includeMastered','enableWrongBook','allowDeleteWrong','allowClearWrong',
+                          'allowUnmarkMastered','trackStudyTime','trackAccuracy',
+                          'showRateSlider','allowAdjustRate','showLoopSlider','allowAdjustLoop'];
+        userKeys.forEach(key => {
+            const el = document.getElementById('sp_user_' + key);
+            if (el) el.checked = pu[key] !== false;
+        });
+        
+        // 练习功能配置 - 访客
+        const pv = s.studyPracticeVisitor || {};
+        const visitorKeys = ['includeMastered','enableWrongBook','allowDeleteWrong','allowClearWrong',
+                             'allowUnmarkMastered','trackStudyTime','trackAccuracy',
+                             'showRateSlider','allowAdjustRate','showLoopSlider','allowAdjustLoop'];
+        visitorKeys.forEach(key => {
+            const el = document.getElementById('sp_visitor_' + key);
+            if (el) el.checked = !!pv[key];
+        });
+    }
+
+    // ========== 勤学苦练设置 - 保存 ==========
+    async function saveStudySettings() {
+        // 收集课程可见性与访问控制
+        const studyLevelConfigUser = collectLevelSelectors('studyLevelsUser');
+        const studyLevelConfigVisitor = collectLevelSelectors('studyLevelsVisitor');
+        
+        // 收集练习配置 - 用户
+        const userKeys = ['includeMastered','enableWrongBook','allowDeleteWrong','allowClearWrong',
+                          'allowUnmarkMastered','trackStudyTime','trackAccuracy',
+                          'showRateSlider','allowAdjustRate','showLoopSlider','allowAdjustLoop'];
+        const studyPracticeUser = {};
+        userKeys.forEach(key => {
+            const el = document.getElementById('sp_user_' + key);
+            if (el) studyPracticeUser[key] = el.checked;
+        });
+        
+        // 收集练习配置 - 访客
+        const studyPracticeVisitor = {};
+        userKeys.forEach(key => {
+            const el = document.getElementById('sp_visitor_' + key);
+            if (el) studyPracticeVisitor[key] = el.checked;
+        });
+        
+        // 从三态config派生旧版可见性数组（向后兼容前端旧代码）
+        const studyVisibleLevelsUser = Object.entries(studyLevelConfigUser)
+            .filter(([,s]) => s > 0).map(([id]) => parseInt(id));
+        const studyVisibleLevelsVisitor = Object.entries(studyLevelConfigVisitor)
+            .filter(([,s]) => s > 0).map(([id]) => parseInt(id));
+
+        const settings = {
+            studyLevelConfigUser,
+            studyLevelConfigVisitor,
+            studyVisibleLevelsUser,
+            studyVisibleLevelsVisitor,
+            studyPracticeUser,
+            studyPracticeVisitor,
+        };
+        
+        console.log('[StudySettings] 正在保存:', JSON.stringify(settings).substring(0,200));
+        var result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });
+        if (result && result.success) {
+            showAdminToast('勤学苦练设置已保存', 'success');
+            // 同步更新全局缓存
+            Object.assign(window._adminSettings || {}, settings);
+        } else {
+            showAdminToast((result && result.error) || (result === null ? '网络请求失败，请检查连接' : '保存失败'), 'error');
+        }
+    }
+
+    // 预览勾选等级（可选，用于高亮已选）
+    function studyPreviewLevels() {
+        // 仅视觉反馈，无需额外逻辑
+    }
+
     async function loadStudyStats() {
         try {
             const data = await adminFetch('admin/study-stats', { method: 'GET' });
             if (!data || data.error) { console.warn('loadStudyStats error:', data ? data.error : 'no data'); return; }
-            const tbody = document.getElementById('studyStatsList');
-            const empty = document.getElementById('studyStatsEmpty');
+            const tbody = document.getElementById('studySettingsList');
+            const empty = document.getElementById('studySettingsEmpty');
             const stats = data.stats || {};
             const keys = Object.keys(stats);
 

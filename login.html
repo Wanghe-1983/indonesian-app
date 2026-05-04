@@ -329,10 +329,10 @@
                 var result = await API.login(username, password);
                 if (result.token) {
                     // Clear any previous visitor session
-                    localStorage.removeItem('fmi_visitor_login');
-                    localStorage.removeItem('fmi_visitor_expire');
+                    sessionStorage.removeItem('fmi_visitor_login');
+                    sessionStorage.removeItem('fmi_visitor_expire');
                     if (visitorTimerInterval) { clearInterval(visitorTimerInterval); visitorTimerInterval = null; }
-                    localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: result.user, backend: true }));
+                    sessionStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: result.user, backend: true }));
                     setTimeout(function() { window.location.href = 'index.html'; }, 100);
                 } else if (result.error === 'network') {
                     fallbackLogin(username, password);
@@ -350,9 +350,9 @@
             var user = whitelist.find(function(item) { return item.username === username && item.password === password; });
             if (user) {
                 // Clear visitor session for non-visitor login
-                localStorage.removeItem('fmi_visitor_login');
-                localStorage.removeItem('fmi_visitor_expire');
-                localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: user, backend: false }));
+                sessionStorage.removeItem('fmi_visitor_login');
+                sessionStorage.removeItem('fmi_visitor_expire');
+                sessionStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: user, backend: false }));
                 setTimeout(function() { window.location.href = 'index.html'; }, 100);
             } else { showTip('login-tip', '用户名或密码错误', 'error'); }
         }
@@ -374,11 +374,11 @@
                 // API返回 { success, visitor, expire(绝对时间戳), username, password }
                 var visitorUser = { username: data.username, name: '访客', role: 'user', userType: 'visitor' };
                 var visitorExpire = data.expire || (Date.now() + 3 * 60 * 1000);
-                localStorage.setItem('fmi_token', data.token || '');
-                localStorage.setItem('fmi_user', JSON.stringify(visitorUser));
-                localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: visitorUser, backend: true }));
-                localStorage.setItem('fmi_visitor_login', '1');
-                localStorage.setItem('fmi_visitor_expire', String(visitorExpire));
+                sessionStorage.setItem('fmi_token', data.token || '');
+                sessionStorage.setItem('fmi_user', JSON.stringify(visitorUser));
+                sessionStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: visitorUser, backend: true }));
+                sessionStorage.setItem('fmi_visitor_login', '1');
+                sessionStorage.setItem('fmi_visitor_expire', String(visitorExpire));
                 startVisitorTimer(visitorExpire - Date.now());
                 showTip('login-tip', '登录成功，正在跳转...', 'success');
                 setTimeout(function() { location.href = 'index.html'; }, 600);
@@ -386,11 +386,11 @@
                 // 网络错误时使用本地访客模式 fallback
                 console.warn('API visitor login failed, using local fallback');
                 var guestUser = { username: 'visitor', name: '访客', role: 'guest', visitDuration: 10 };
-                localStorage.setItem('fmi_token', 'guest_local_' + Date.now());
-                localStorage.setItem('fmi_user', JSON.stringify(guestUser));
-                localStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: guestUser, backend: false }));
-                localStorage.setItem('fmi_visitor_login', '1');
-                localStorage.setItem('fmi_visitor_expire', String(Date.now() + 10 * 60 * 1000));
+                sessionStorage.setItem('fmi_token', 'guest_local_' + Date.now());
+                sessionStorage.setItem('fmi_user', JSON.stringify(guestUser));
+                sessionStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: guestUser, backend: false }));
+                sessionStorage.setItem('fmi_visitor_login', '1');
+                sessionStorage.setItem('fmi_visitor_expire', String(Date.now() + 10 * 60 * 1000));
                 startVisitorTimer(10 * 60 * 1000);
                 showTip('login-tip', '访客模式已启动（离线）', 'success');
                 setTimeout(function() { location.href = 'index.html'; }, 600);
@@ -405,11 +405,11 @@
                 var left = endTime - Date.now();
                 if (left <= 0) {
                     clearInterval(visitorTimerInterval);
-                    localStorage.removeItem('fmi_token');
-                    localStorage.removeItem('fmi_user');
-                    localStorage.removeItem('fmi_login_status');
-                    localStorage.removeItem('fmi_visitor_login');
-                    localStorage.removeItem('fmi_visitor_expire');
+                    sessionStorage.removeItem('fmi_token');
+                    sessionStorage.removeItem('fmi_user');
+                    sessionStorage.removeItem('fmi_login_status');
+                    sessionStorage.removeItem('fmi_visitor_login');
+                    sessionStorage.removeItem('fmi_visitor_expire');
                     timer.style.display = 'none';
                     alert('访客体验时间已到，感谢使用！');
                     location.href = 'login.html';
@@ -425,8 +425,8 @@
             }, 1000);
         }
         (function() {
-            var isVisitor = localStorage.getItem('fmi_visitor_login');
-            var expire = parseInt(localStorage.getItem('fmi_visitor_expire') || '0');
+            var isVisitor = sessionStorage.getItem('fmi_visitor_login');
+            var expire = parseInt(sessionStorage.getItem('fmi_visitor_expire') || '0');
             if (isVisitor && expire > Date.now()) { startVisitorTimer(expire - Date.now()); }
         })();
         async function ensureAdmin() {
@@ -473,7 +473,7 @@
         }
         document.body.setAttribute('data-theme', localStorage.getItem('fmi_theme') || 'dark');
         window.onload = function() {
-            var status = JSON.parse(localStorage.getItem('fmi_login_status') || '{"isLogin":false}');
+            var status = JSON.parse(sessionStorage.getItem('fmi_login_status') || '{"isLogin":false}');
             if (status.isLogin) { window.location.href = 'index.html'; return; }
             var todayStr = new Date().toLocaleDateString();
             var savedDate = localStorage.getItem('fmi_study_date');
