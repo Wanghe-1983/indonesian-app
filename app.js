@@ -1053,7 +1053,7 @@ function buildLevelConfig(config, oldArray) {
             <div class="cat-item">
                 <div class="cat-head" style="opacity:0.6;cursor:default;">
                     <span><i class="fas fa-lock" style="color:#f59e0b;margin-right:4px;font-size:10px;"></i> ${lv.id}级课程 - ${lv.name}</span>
-                    <span style="font-size:11px;color:#f59e0b;margin-right:4px;">仅展示</span>
+    
                 </div>
             </div>`;
         } else {

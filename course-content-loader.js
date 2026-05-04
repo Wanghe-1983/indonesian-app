@@ -159,10 +159,13 @@ const CourseContent = {
         if (!level) return [];
         const stages = [];
         let stageNum = 1;
-        for (const unit of level.units) {
+        for (let uIdx = 0; uIdx < level.units.length; uIdx++) {
+            const unit = level.units[uIdx];
             const words = unit.words || [];
             const sentences = unit.sentences || [];
             const dialogues = unit.dialogues || [];
+            // BIPA 0 "基础发音篇"（前4个单元）的短句为语音知识说明，不适合闯天关
+            const skipSentences = String(levelId) === '0' && uIdx < 4;
             const WORDS_PER_STAGE = 20;
             const SENTENCES_PER_STAGE = 10;
             const DIALOGUES_PER_STAGE = 5;
@@ -179,6 +182,7 @@ const CourseContent = {
                     });
                 }
             }
+            if (!skipSentences) {
             for (let i = 0; i < sentences.length; i += SENTENCES_PER_STAGE) {
                 const chunk = sentences.slice(i, i + SENTENCES_PER_STAGE);
                 if (chunk.length > 0) {
@@ -190,6 +194,7 @@ const CourseContent = {
                         totalQuestions: chunk.length,
                     });
                 }
+            }
             }
             for (let i = 0; i < dialogues.length; i += DIALOGUES_PER_STAGE) {
                 const chunk = dialogues.slice(i, i + DIALOGUES_PER_STAGE);
