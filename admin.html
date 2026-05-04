@@ -1043,6 +1043,7 @@ let allUsers = [];
             } catch(e) { console.error('loadOverview error:', e); return; }
             
             if (!settings || settings.error) { console.warn('settings load failed'); return; }
+            window._adminSettings = settings;  // 缓存全局设置
             const totalUsers = settings.totalUsers || allUsers.length || 0;
             const currentOnline = settings.currentOnline || (online.users ? online.users.length : 0) || 0;
             const row = document.getElementById('statsRow');
@@ -1895,7 +1896,7 @@ let allUsers = [];
             if (tab === 'settings') loadSystemSettings();
             if (tab === 'visitor') loadVisitorSettings();
             if (tab === 'challenge') loadChallengeSettings();
-            if (tab === 'study') loadStudyStats();
+            if (tab === 'study') { loadStudySettings(); loadStudyStats(); }
             if (tab === 'changelog') { loadChangelog(); loadMainVersionInfo(); }
             if (tab === 'broadcast') { loadBroadcastList(); loadBroadcastConfig(); }
         };
@@ -1966,8 +1967,12 @@ function collectLevelSelectors(containerId) {
         return config;
     }
 
-function loadStudySettings() {
-        // 从当前settings对象中读取（settings已在loadSystemSettings时加载）
+async function loadStudySettings() {
+        // 如果全局缓存为空，先从 API 加载
+        if (!window._adminSettings || !window._adminSettings.studyLevelConfigUser) {
+            const s = await adminFetch('admin/settings', { method: 'GET' });
+            if (s && !s.error) window._adminSettings = s;
+        }
         const s = window._adminSettings || {};
 
         // 课程可见性与访问控制 - 渲染三态选择器
