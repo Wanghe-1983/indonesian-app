@@ -83,29 +83,33 @@ const StudyModule = {
 
     // ========== 渲染入口 ==========
     render() {
+        const readonly = !this._isLevelLearnable(this.selectedLevelId);
         this.container.innerHTML = `
             <div class="study-module">
                 <div class="study-sub-tabs">
                     <button class="sub-tab ${this.currentSubTab === 'course' ? 'active' : ''}" onclick="StudyModule.switchSubTab('course')">
                         <i class="fas fa-book-open"></i> 课程
                     </button>
-                    <button class="sub-tab ${this.currentSubTab === 'learn' ? 'active' : ''}" onclick="StudyModule.switchSubTab('learn')">
-                        <i class="fas fa-graduation-cap"></i> 学习
-                    </button>
-                    <button class="sub-tab ${this.currentSubTab === 'practice' ? 'active' : ''}" onclick="StudyModule.switchSubTab('practice')">
-                        <i class="fas fa-pen-fancy"></i> 练习
-                    </button>
+                    ${readonly ? '<span class="sub-tab" style="opacity:0.4;cursor:not-allowed;pointer-events:none;"><i class="fas fa-graduation-cap"></i> 学习</span>' : `<button class="sub-tab ${this.currentSubTab === 'learn' ? 'active' : ''}" onclick="StudyModule.switchSubTab('learn')"><i class="fas fa-graduation-cap"></i> 学习</button>`}
+                    ${readonly ? '<span class="sub-tab" style="opacity:0.4;cursor:not-allowed;pointer-events:none;"><i class="fas fa-pen-fancy"></i> 练习</span>' : `<button class="sub-tab ${this.currentSubTab === 'practice' ? 'active' : ''}" onclick="StudyModule.switchSubTab('practice')"><i class="fas fa-pen-fancy"></i> 练习</button>`}
+                    ${readonly ? '<span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted);align-self:center;"><i class="fas fa-lock"></i> 仅展示模式</span>' : ''}
                 </div>
                 <div id="study-sub-content"></div>
             </div>
         `;
         const subContent = document.getElementById('study-sub-content');
+        if (readonly) {
+            this.currentSubTab = 'course';
+        }
         if (this.currentSubTab === 'course') this.renderCourse(subContent);
         else if (this.currentSubTab === 'learn') this.renderLearn(subContent);
         else this.renderPractice(subContent);
     },
 
     switchSubTab(tab) {
+        if (!this._isLevelLearnable(this.selectedLevelId) && tab !== 'course') {
+            return; // 仅展示模式只允许查看课程列表
+        }
         this.currentSubTab = tab;
         this.render();
     },
