@@ -2,9 +2,14 @@
 const app = document.getElementById('app');
 let db = {}; // 词库数据
 // 安全解析 localStorage：历史版本可能写入过损坏/不兼容的数据，
-// 直接 JSON.parse 会在脚本加载时抛错导致整个应用白屏
+// 直接 JSON.parse 会在脚本加载时抛错导致整个应用白屏。
+// 注意：JSON.parse(null) 不抛错而返回 null，必须显式兜底，否则全局变量会变成 null
 function safeJSONParse(str, fallback) {
-    try { return JSON.parse(str); } catch (e) { return fallback; }
+    try {
+        if (str === null || str === undefined || str === '') return fallback;
+        const v = JSON.parse(str);
+        return (v === null || v === undefined) ? fallback : v;
+    } catch (e) { return fallback; }
 }
 let favs = safeJSONParse(localStorage.getItem('fmi_v1_favs'), []); // 收藏
 let curCat = "1", curIdx = 0, curLesson = "1"; // 当前分类/单词索引
@@ -1986,7 +1991,7 @@ function clearTodayRecord() {
         localStorage.setItem('fmi_study_stats', JSON.stringify(studyStats));
         renderTodayRecord();
         updateStats();
-        syncStudyToCloud().catch(() => {});
+        syncStudyToCloud(); // 同步函数内部已有 try-catch，不可再链 .catch
     }
 }
 
@@ -3680,7 +3685,7 @@ function clearAllStudyData() {
             localStorage.removeItem('fmi_practice_history');
             localStorage.removeItem('fmi_learned_words');
             localStorage.removeItem('fmi_daily_history');
-            syncStudyToCloud().catch(() => {});
+            syncStudyToCloud(); // 同步函数内部已有 try-catch，不可再链 .catch
             const d = document.getElementById('clear-all-dialog');
             if (d) d.remove();
             initDashboardPage();
@@ -4097,7 +4102,7 @@ window.onload = async function() {
         }
         localStorage.setItem('fmi_last_session_date', todayStr);
         // Sync study data before leaving
-        syncStudyToCloud().catch(() => {});
+        syncStudyToCloud(); // 同步函数内部已有 try-catch，不可再链 .catch
     });
 };
 

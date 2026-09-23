@@ -7290,3 +7290,633 @@
     border-color: rgba(248,113,113,0.25);
 }
 .ch-action-btn i { font-size: 0.8rem; }
+
+/* ==============================================
+   【UI 视觉升级层】闯天关 · 主页卡片精修 (2026-09-23)
+   本层追加于文件末尾，用于覆盖旧样式，不影响功能。
+   ============================================== */
+
+/* ---------- 主页模块卡片：光感边框 + 图标发光 ---------- */
+.home-card {
+    background: linear-gradient(160deg, rgba(30,41,59,0.55), rgba(15,23,42,0.80)) !important;
+    border: 1px solid rgba(139,92,246,0.22) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 32px rgba(0,0,0,0.35) !important;
+}
+.home-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 70% 55% at 50% 0%, rgba(99,102,241,0.14), transparent 70%);
+}
+.home-card:hover {
+    transform: translateY(-6px) !important;
+    border-color: rgba(139,92,246,0.55) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 22px 48px rgba(0,0,0,0.5), 0 0 44px rgba(99,102,241,0.18) !important;
+}
+.home-card-icon {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 26px rgba(99,102,241,0.30) !important;
+}
+.home-card:hover .home-card-icon {
+    transform: scale(1.06);
+}
+.home-card-title {
+    color: #f1f5f9 !important;
+}
+
+/* ---------- 难度选择卡片（普通/地狱） ---------- */
+.ch-mode-card {
+    border-radius: 26px !important;
+    min-height: 360px !important;
+}
+.ch-mode-heaven {
+    background: linear-gradient(165deg, #1e1b4b 0%, #1e3a8a 45%, #0c4a6e 100%) !important;
+    border: 1px solid rgba(129,140,248,0.35) !important;
+    box-shadow: 0 0 44px rgba(99,102,241,0.16), inset 0 1px 0 rgba(255,255,255,0.10), 0 14px 40px rgba(0,0,0,0.45) !important;
+}
+.ch-mode-heaven::before {
+    content: '';
+    position: absolute;
+    top: -55%; left: -25%;
+    width: 150%; height: 120%;
+    background: radial-gradient(circle, rgba(129,140,248,0.20), transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+}
+.ch-mode-hell {
+    background: linear-gradient(165deg, #2a0a00 0%, #7f1d1d 55%, #450a0a 100%) !important;
+    border: 1px solid rgba(239,68,68,0.38) !important;
+    box-shadow: 0 0 44px rgba(239,68,68,0.14), inset 0 1px 0 rgba(255,255,255,0.07), 0 14px 40px rgba(0,0,0,0.45) !important;
+}
+.ch-mode-hell::before {
+    content: '';
+    position: absolute;
+    top: -55%; left: -25%;
+    width: 150%; height: 120%;
+    background: radial-gradient(circle, rgba(239,68,68,0.18), transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+}
+.ch-mode-heaven:hover {
+    transform: translateY(-8px) scale(1.02) !important;
+    border-color: rgba(129,140,248,0.70) !important;
+    box-shadow: 0 0 70px rgba(99,102,241,0.30), 0 22px 55px rgba(0,0,0,0.55) !important;
+}
+.ch-mode-hell:hover {
+    transform: translateY(-8px) scale(1.02) !important;
+    border-color: rgba(239,68,68,0.70) !important;
+    box-shadow: 0 0 70px rgba(239,68,68,0.26), 0 22px 55px rgba(0,0,0,0.55) !important;
+}
+/* 模式卡片文字发光 */
+.ch-mode-card .ch-mode-card-title,
+.ch-mode-card .ch-mode-card-subtitle {
+    position: relative;
+    z-index: 1;
+}
+
+/* ---------- 关卡卡片：立体质感 ---------- */
+.stage-grid {
+    padding: 10px 2px 14px !important;
+}
+.stage-card {
+    background: linear-gradient(180deg, rgba(38,49,77,0.55), rgba(17,24,39,0.80)) !important;
+    border: 1px solid rgba(99,102,241,0.18) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 6px 16px rgba(0,0,0,0.32) !important;
+    border-radius: 16px !important;
+}
+.stage-card.available {
+    background: linear-gradient(180deg, rgba(51,65,105,0.62), rgba(23,32,58,0.85)) !important;
+    border-color: rgba(99,102,241,0.28) !important;
+}
+.stage-card.available:hover {
+    transform: translateY(-4px) scale(1.03) !important;
+    border-color: rgba(129,140,248,0.65) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 12px 30px rgba(0,0,0,0.5), 0 0 26px rgba(99,102,241,0.22) !important;
+}
+.stage-card.current {
+    background: linear-gradient(180deg, rgba(76,74,160,0.50), rgba(30,27,75,0.75)) !important;
+    border-color: rgba(129,140,248,0.75) !important;
+    box-shadow: 0 0 0 1px rgba(129,140,248,0.18), 0 0 30px rgba(99,102,241,0.38), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+.stage-card.cleared {
+    background: linear-gradient(180deg, rgba(16,99,70,0.50), rgba(6,38,28,0.80)) !important;
+    border-color: rgba(52,211,153,0.45) !important;
+    box-shadow: 0 0 20px rgba(16,185,129,0.16), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+.stage-card.locked {
+    background: linear-gradient(180deg, rgba(30,41,59,0.32), rgba(15,23,42,0.55)) !important;
+    border-color: rgba(100,116,139,0.16) !important;
+    opacity: 0.55;
+    filter: saturate(0.35);
+}
+.stage-card.locked::after {
+    content: '🔒';
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 0.72rem;
+    opacity: 0.85;
+}
+/* 关卡数字 / 顶条 / 进度光效 */
+.stage-card .stage-card-number {
+    text-shadow: 0 0 18px color-mix(in srgb, var(--stage-color, #60a5fa) 55%, transparent), 0 1px 5px rgba(0,0,0,0.5) !important;
+}
+.stage-card-color-bar {
+    height: 4px !important;
+    opacity: 0.85 !important;
+    box-shadow: 0 0 12px var(--stage-color, #60a5fa);
+}
+.stage-card .stage-card-progress {
+    height: 4px !important;
+    background: rgba(255,255,255,0.08) !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+}
+.stage-card .stage-card-progress-fill {
+    box-shadow: 0 0 9px color-mix(in srgb, var(--stage-color, #60a5fa) 70%, transparent);
+}
+.stage-card .status-current {
+    animation: stage-pulse 1.8s ease-in-out infinite;
+}
+.stage-card .status-cleared {
+    background: rgba(16,185,129,0.16) !important;
+}
+
+/* ---------- 答题界面 ---------- */
+.challenge-play-page {
+    padding: 0 6px !important;
+}
+.challenge-play-title {
+    background: linear-gradient(135deg, #f8fafc, #a5b4fc, #818cf8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 1.15rem !important;
+    filter: drop-shadow(0 2px 6px rgba(99,102,241,0.35));
+}
+.challenge-timer {
+    color: #fbbf24 !important;
+    background: rgba(245,158,11,0.10);
+    border: 1px solid rgba(245,158,11,0.22);
+    padding: 4px 12px;
+    border-radius: 999px;
+    box-shadow: 0 0 14px rgba(245,158,11,0.14);
+}
+.challenge-progress-bar {
+    height: 7px !important;
+    background: rgba(255,255,255,0.07) !important;
+    border-radius: 999px !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+}
+.challenge-progress-fill {
+    background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899) !important;
+    border-radius: 999px !important;
+    box-shadow: 0 0 14px rgba(168,85,247,0.55) !important;
+}
+.challenge-question-area {
+    background: linear-gradient(165deg, rgba(30,41,59,0.62), rgba(15,23,42,0.75)) !important;
+    border: 1px solid rgba(139,92,246,0.24) !important;
+    border-radius: 18px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 18px 44px rgba(0,0,0,0.42) !important;
+    padding: 26px 24px !important;
+    backdrop-filter: blur(12px);
+}
+.challenge-q-type {
+    background: linear-gradient(135deg, rgba(245,158,11,0.26), rgba(217,119,6,0.16)) !important;
+    border: 1px solid rgba(245,158,11,0.35) !important;
+    border-radius: 999px !important;
+    padding: 3px 14px !important;
+    letter-spacing: 0.08em;
+    box-shadow: 0 0 16px rgba(245,158,11,0.12);
+}
+.challenge-q-indo {
+    background: linear-gradient(135deg, #f8fafc, #c7d2fe, #a5b4fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 3px 10px rgba(99,102,241,0.35));
+    font-size: 1.7rem !important;
+}
+.challenge-q-title {
+    color: #eef2ff !important;
+}
+.challenge-q-prompt {
+    color: #7c8db0 !important;
+}
+/* 选项按钮 */
+.challenge-option {
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    background: linear-gradient(135deg, rgba(51,65,85,0.50), rgba(30,41,59,0.62)) !important;
+    border-radius: 13px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05) !important;
+    transition: all 0.22s cubic-bezier(0.25,0.46,0.45,0.94) !important;
+}
+.challenge-option:hover {
+    border-color: rgba(129,140,248,0.60) !important;
+    background: linear-gradient(135deg, rgba(79,70,229,0.24), rgba(49,46,129,0.32)) !important;
+    box-shadow: 0 0 22px rgba(99,102,241,0.20), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+    transform: translateX(4px);
+}
+.challenge-option.correct {
+    border-color: rgba(52,211,153,0.75) !important;
+    background: linear-gradient(135deg, rgba(16,185,129,0.26), rgba(6,95,70,0.36)) !important;
+    box-shadow: 0 0 24px rgba(16,185,129,0.26) !important;
+}
+.challenge-option.wrong {
+    border-color: rgba(248,113,113,0.75) !important;
+    background: linear-gradient(135deg, rgba(239,68,68,0.26), rgba(127,29,29,0.40)) !important;
+    box-shadow: 0 0 20px rgba(239,68,68,0.22) !important;
+}
+.challenge-option-letter {
+    background: linear-gradient(135deg, rgba(99,102,241,0.38), rgba(139,92,246,0.32)) !important;
+    border: 1px solid rgba(129,140,248,0.38) !important;
+    border-radius: 9px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    box-shadow: 0 0 12px rgba(99,102,241,0.22) !important;
+}
+/* 题号导航容器 */
+.ch-question-nav {
+    background: linear-gradient(160deg, rgba(30,41,59,0.5), rgba(15,23,42,0.6)) !important;
+    border: 1px solid rgba(255,255,255,0.06) !important;
+    border-radius: 14px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
+}
+/* 普通模式战斗头部徽章 */
+.ch-normal-battle-header {
+    background: linear-gradient(135deg, rgba(30,41,59,0.55), rgba(15,23,42,0.65)) !important;
+    border: 1px solid rgba(139,92,246,0.18) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05) !important;
+}
+.ch-normal-stage-badge {
+    background: linear-gradient(135deg, rgba(96,165,250,0.28), rgba(59,130,246,0.20)) !important;
+    color: #93c5fd !important;
+    border: 1px solid rgba(96,165,250,0.35);
+    border-radius: 999px !important;
+    box-shadow: 0 0 12px rgba(96,165,250,0.15);
+}
+.ch-normal-stage-label {
+    color: #a5b4fc !important;
+}
+/* 控制区（语速/循环） */
+.challenge-controls {
+    background: linear-gradient(160deg, rgba(30,41,59,0.5), rgba(15,23,42,0.62)) !important;
+    border: 1px solid rgba(255,255,255,0.05) !important;
+    border-radius: 14px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
+}
+
+/* ==============================================
+   【UI 视觉升级层 2】闯天关游戏化强化 (2026-09-23)
+   在升级层 1 基础上追加，进一步强化游戏氛围。
+   ============================================== */
+
+/* ---------- 难度选择卡片：场景强化 ---------- */
+.ch-mode-card-scene {
+    height: 230px !important;
+}
+.ch-mode-card-title,
+.ch-mode-card-subtitle,
+.ch-mode-card-stats {
+    position: relative;
+    z-index: 2;
+}
+/* 普通卡片顶部神圣光柱 */
+.ch-mode-heaven::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -40%;
+    width: 220px;
+    height: 200%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, rgba(129,140,248,0.22), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+    animation: fmi-holy-beam 5s ease-in-out infinite alternate;
+}
+/* 地狱卡片底部熔岩光 */
+.ch-mode-hell::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -30%;
+    width: 260px;
+    height: 160%;
+    transform: translateX(-50%);
+    background: linear-gradient(0deg, rgba(239,68,68,0.25), transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+    animation: fmi-lava-glow 5s ease-in-out infinite alternate;
+}
+@keyframes fmi-holy-beam {
+    from { opacity: 0.55; }
+    to { opacity: 1; }
+}
+@keyframes fmi-lava-glow {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+}
+
+/* ---------- 关卡卡片：霓虹数字 + 状态光效 ---------- */
+.stage-card .stage-card-number {
+    font-size: 1.9rem !important;
+    background: linear-gradient(160deg, #ffffff 10%, var(--stage-color, #60a5fa) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--stage-color, #60a5fa) 65%, transparent));
+}
+/* 锁定卡片数字去发光 */
+.stage-card.locked .stage-card-number {
+    -webkit-text-fill-color: #475569;
+    background: none;
+    filter: none;
+}
+/* 当前关：呼吸光晕 */
+.stage-card.current {
+    animation: fmi-stage-breath 2.2s ease-in-out infinite !important;
+}
+@keyframes fmi-stage-breath {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(129,140,248,0.25), 0 0 22px rgba(99,102,241,0.30), inset 0 1px 0 rgba(255,255,255,0.10) !important; }
+    50% { box-shadow: 0 0 0 2px rgba(129,140,248,0.50), 0 0 42px rgba(99,102,241,0.55), inset 0 1px 0 rgba(255,255,255,0.14) !important; }
+}
+/* 通关关卡：金色微光 */
+.stage-card.cleared .stage-card-number {
+    background: linear-gradient(160deg, #fef9c3 10%, #fbbf24 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 0 12px rgba(251,191,36,0.55));
+}
+.stage-card.cleared {
+    animation: fmi-cleared-glow 3s ease-in-out infinite;
+}
+@keyframes fmi-cleared-glow {
+    0%, 100% { box-shadow: 0 0 16px rgba(16,185,129,0.14), inset 0 1px 0 rgba(255,255,255,0.08) !important; }
+    50% { box-shadow: 0 0 26px rgba(16,185,129,0.26), inset 0 1px 0 rgba(255,255,255,0.10) !important; }
+}
+/* 锁定卡片：玻璃暗化（保留轮廓） */
+.stage-card.locked {
+    backdrop-filter: blur(3px) saturate(0.6);
+    opacity: 0.62 !important;
+}
+.stage-card.locked .stage-card-name,
+.stage-card.locked .stage-card-label {
+    color: #556177 !important;
+}
+
+/* ---------- 题号导航：胶囊发光 ---------- */
+.ch-nav-dot {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+    border: 1.5px solid rgba(255,255,255,0.10) !important;
+    background: linear-gradient(160deg, rgba(51,65,85,0.55), rgba(30,41,59,0.65)) !important;
+    color: #94a3b8 !important;
+    font-size: 0.8rem !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05) !important;
+    transition: all 0.2s cubic-bezier(0.25,0.46,0.45,0.94) !important;
+}
+.ch-nav-dot:hover:not(.ch-nav-dot-current) {
+    border-color: rgba(129,140,248,0.55) !important;
+    background: linear-gradient(160deg, rgba(79,70,229,0.25), rgba(49,46,129,0.35)) !important;
+    color: #c7d2fe !important;
+    transform: translateY(-2px);
+}
+.ch-nav-dot-current {
+    border-color: rgba(129,140,248,0.85) !important;
+    background: linear-gradient(160deg, #6366f1, #8b5cf6) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 18px rgba(129,140,248,0.55), inset 0 1px 0 rgba(255,255,255,0.22) !important;
+}
+.ch-nav-dot-answered {
+    border-color: rgba(52,211,153,0.6) !important;
+    background: linear-gradient(160deg, rgba(16,185,129,0.45), rgba(5,150,105,0.35)) !important;
+    color: #a7f3d0 !important;
+    box-shadow: 0 0 12px rgba(16,185,129,0.25) !important;
+}
+.ch-nav-dot-skipped {
+    border-color: rgba(245,158,11,0.6) !important;
+    background: linear-gradient(160deg, rgba(245,158,11,0.4), rgba(217,119,6,0.3)) !important;
+    color: #fde68a !important;
+    box-shadow: 0 0 12px rgba(245,158,11,0.22) !important;
+}
+
+/* ---------- 题目区顶部高光 ---------- */
+.challenge-question-area::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 12%; right: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(129,140,248,0.7), transparent);
+    pointer-events: none;
+}
+
+/* ---------- 闯天关标题发光 ---------- */
+.challenge-module h2,
+.challenge-module .ch-page-title {
+    background: linear-gradient(135deg, #f8fafc, #a5b4fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 10px rgba(99,102,241,0.4));
+}
+
+/* ==============================================
+   【UI 视觉升级层 3】关卡卡片 sc-* 实际类强化 (2026-09-23)
+   关卡卡片 DOM 实际使用 sc-number/sc-label/sc-bar/sc-castle-bg
+   等类，本层针对它们做霓虹与质感强化。
+   ============================================== */
+
+/* ---- 石墙背景：纹理更清晰、门拱光效更强 ---- */
+.sc-castle-bg::before {
+    opacity: 0.75 !important;
+}
+.sc-castle-bg::after {
+    width: 92% !important;
+    height: 72% !important;
+    background: radial-gradient(ellipse at center bottom,
+        color-mix(in srgb, var(--stage-color, #60a5fa) 32%, transparent) 0%,
+        transparent 70%) !important;
+}
+/* 城垛更亮 */
+.sc-battlement::before {
+    opacity: 0.6 !important;
+}
+
+/* ---- 关卡数字：霓虹渐变 ---- */
+.sc-number {
+    font-size: 2.15rem !important;
+    background: linear-gradient(160deg, #ffffff 12%, var(--stage-color, #60a5fa) 92%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 16px color-mix(in srgb, var(--stage-color, #60a5fa) 62%, transparent));
+}
+.sc-label {
+    color: #a5b4fc !important;
+    letter-spacing: 0.12em !important;
+    font-size: 0.62rem !important;
+}
+/* 锁定卡片数字去发光 */
+.stage-card.locked .sc-number {
+    background: none;
+    -webkit-text-fill-color: #4b5563;
+    filter: none;
+}
+.stage-card.locked .sc-label {
+    color: #556177 !important;
+}
+/* 通关卡片数字金色 */
+.stage-card.cleared .sc-number {
+    background: linear-gradient(160deg, #fef9c3 10%, #fbbf24 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 0 12px rgba(251,191,36,0.6));
+}
+
+/* ---- 进度条强化 ---- */
+.sc-bar {
+    height: 4px !important;
+    width: 60% !important;
+    border-radius: 999px !important;
+    background: rgba(0,0,0,0.35) !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+}
+.sc-bar-fill {
+    border-radius: 999px !important;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--stage-color, #60a5fa) 70%, transparent);
+}
+
+/* ---- 激活关卡：呼吸光晕强化 ---- */
+.stage-card.current {
+    border-color: rgba(129,140,248,0.85) !important;
+}
+
+/* ---- 难度卡片：门光晕常亮（不再仅 hover 可见） ---- */
+.ch-door-glow {
+    opacity: 0.45 !important;
+    transition: opacity 0.5s ease !important;
+}
+.ch-mode-card:hover .ch-door-glow {
+    opacity: 0.9 !important;
+}
+/* 门框加亮 */
+.ch-door-heaven .ch-door-arch {
+    border-color: rgba(251,191,36,0.55) !important;
+    box-shadow: 0 -4px 20px rgba(251,191,36,0.22) !important;
+}
+.ch-door-heaven .ch-door-body {
+    border-color: rgba(251,191,36,0.45) !important;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.4), 0 0 14px rgba(251,191,36,0.12) !important;
+}
+.ch-door-hell .ch-door-arch {
+    border-color: rgba(239,68,68,0.55) !important;
+    box-shadow: 0 -4px 20px rgba(239,68,68,0.22) !important;
+}
+.ch-door-hell .ch-door-body {
+    border-color: rgba(239,68,68,0.45) !important;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.4), 0 0 14px rgba(239,68,68,0.12) !important;
+}
+
+/* ---- 选关页头部栏 ---- */
+.stages-header-bar {
+    background: linear-gradient(160deg, rgba(30,41,59,0.55), rgba(15,23,42,0.65)) !important;
+    border: 1px solid rgba(139,92,246,0.16) !important;
+    border-radius: 14px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05) !important;
+}
+.stages-progress-track {
+    background: rgba(255,255,255,0.07) !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4) !important;
+}
+.stages-progress-fill {
+    box-shadow: 0 0 12px color-mix(in srgb, var(--stage-color, #60a5fa) 60%, transparent) !important;
+}
+
+/* ==============================================
+   【UI 视觉升级层 5】关卡卡片清爽化 (2026-09-24)
+   移除城垛小锯齿 / 黑色门拱等不易理解的装饰图形，
+   保留霓虹数字 + 名称 + 进度条 + 状态光效，卡片更简洁精致。
+   ============================================== */
+/* 移除顶部城垛小锯齿 */
+.sc-battlement {
+    display: none !important;
+}
+/* 移除底部黑色门拱图形 */
+.sc-arch {
+    display: none !important;
+}
+/* 石墙砖缝纹理淡化至几乎不可见（保留微质感） */
+.sc-castle-bg::before {
+    opacity: 0.12 !important;
+}
+/* 底部门拱光晕减淡（柔和色彩氛围） */
+.sc-castle-bg::after {
+    opacity: 0.7 !important;
+}
+/* ==============================================
+   【UI 视觉升级层 6】图标修复 (2026-09-24)
+   - 锁定卡片锁图标由 emoji(🔒) 改为 FontAwesome fa-lock，
+     修复 Windows 上 emoji 渲染成"未知方块"的丑图标问题
+   - 当前关播放角标改为圆形渐变发光徽章
+   ============================================== */
+.stage-card.locked::after {
+    content: '\f023';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.7rem;
+    color: #64748b;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    border-radius: 8px;
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    opacity: 0.95;
+    display: block;
+}
+.sc-badge-current {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    border: none !important;
+    border-radius: 999px !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    box-shadow: 0 0 12px rgba(129, 140, 248, 0.55) !important;
+    animation: sc-pulse 2s ease-in-out infinite !important;
+}
+.sc-badge-current i {
+    font-size: 0.7rem !important;
+    color: #fff !important;
+}
+/* 可挑战徽章：圆形发光（fa-bolt 图标） */
+.sc-badge-go {
+    background: linear-gradient(135deg, rgba(99,102,241,0.40), rgba(139,92,246,0.32)) !important;
+    color: #c7d2fe !important;
+    border: 1px solid rgba(129,140,248,0.40) !important;
+    border-radius: 999px !important;
+    width: 22px !important;
+    height: 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    font-size: 0.62rem !important;
+    box-shadow: 0 0 10px rgba(99,102,241,0.35) !important;
+}
+.sc-badge-go i {
+    font-size: 0.6rem !important;
+    color: #a5b4fc !important;
+}

@@ -941,7 +941,7 @@ const ChallengeModule = {
                         ? (isReadonly ? '<span class="sc-badge sc-badge-ro"><i class="fas fa-lock" style="color:#f59e0b;"></i></span>' : '<span class="sc-badge sc-badge-lock"><i class="fas fa-lock"></i></span>')
                         : isCleared ? '<span class="sc-badge sc-badge-stars">' + this._renderStars(stars) + '</span>'
                         : isCurrent ? '<span class="sc-badge sc-badge-current"><i class="fas fa-play-circle"></i></span>'
-                        : '<span class="sc-badge sc-badge-go">⚔</span>';
+                        : '<span class="sc-badge sc-badge-go"><i class="fas fa-bolt"></i></span>';
                     stageGrid += '<div class="stage-card ' + statusClass + (_equippedFrameSet.has('q' + String(stage.levelId)) ? ' frame-q' + String(stage.levelId) : '') + '" style="--stage-color:' + lvColor + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
                         + (_equippedFrameSet.has('q' + String(stage.levelId)) ? '<div class="frame-border"></div>' : '')
                         + '<div class="sc-castle-bg"></div>'
@@ -1754,11 +1754,12 @@ const ChallengeModule = {
         const _isHellStage = this.challengeMode === 'hell';
         const total = state.totalQuestions;
         const stageIndex = this.allStages.findIndex(s => s.id === state.stageId) + 1;
+        const stage = this.allStages.find(s => s.id === state.stageId);
+        const stageName = stage ? stage.name : ('\u7b2c' + stageIndex + '\u5173');
 
         // ===== ready 状态：显示"开始闯关"界面 =====
         if (state.phase === 'ready') {
-            const stage = this.allStages.find(s => s.id === state.stageId);
-            const stageName = stage ? stage.name : ('\u7b2c' + stageIndex + '\u5173');
+
 
             if (state.isBoss) {
                 // BOSS 关卡特殊准备界面（独立介绍+加载页）
