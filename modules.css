@@ -7920,3 +7920,74 @@
     font-size: 0.6rem !important;
     color: #a5b4fc !important;
 }
+/* ==============================================
+   【UI 视觉升级层 7】关卡图标重设计 (2026-09-24)
+   普通关卡数字升级为"发光圆形徽章"：
+   数字嵌入霓虹圆环底座，不同状态不同配色。
+   ============================================== */
+.sc-number {
+    width: 62px !important;
+    height: 62px !important;
+    border-radius: 50% !important;
+    background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.14), transparent 58%),
+        linear-gradient(160deg, color-mix(in srgb, var(--stage-color, #60a5fa) 24%, #16203a) 0%, #0b1120 82%) !important;
+    border: 2px solid color-mix(in srgb, var(--stage-color, #60a5fa) 48%, transparent) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.5rem !important;
+    font-weight: 900 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: currentColor;
+    background-clip: border-box !important;
+    margin: 2px 0 8px !important;
+    box-shadow:
+        0 0 18px color-mix(in srgb, var(--stage-color, #60a5fa) 26%, transparent),
+        inset 0 2px 4px rgba(0,0,0,0.45),
+        inset 0 -2px 4px rgba(255,255,255,0.06) !important;
+    text-shadow: 0 0 14px color-mix(in srgb, var(--stage-color, #60a5fa) 65%, transparent) !important;
+    line-height: 1 !important;
+    filter: none !important;
+}
+
+/* 当前关：徽章高亮 + 呼吸 */
+.stage-card.current .sc-number {
+    border-color: rgba(129,140,248,0.75) !important;
+    background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.16), transparent 58%),
+        linear-gradient(160deg, rgba(99,102,241,0.42), rgba(49,46,129,0.55) 82%) !important;
+    box-shadow:
+        0 0 24px rgba(99,102,241,0.5),
+        inset 0 2px 4px rgba(0,0,0,0.45),
+        inset 0 -2px 4px rgba(255,255,255,0.10) !important;
+    text-shadow: 0 0 16px rgba(165,180,252,0.9) !important;
+    animation: fmi-badge-breath 2.2s ease-in-out infinite;
+}
+@keyframes fmi-badge-breath {
+    0%, 100% { box-shadow: 0 0 16px rgba(99,102,241,0.35), inset 0 2px 4px rgba(0,0,0,0.45); }
+    50% { box-shadow: 0 0 30px rgba(99,102,241,0.65), inset 0 2px 4px rgba(0,0,0,0.45); }
+}
+
+/* 通关关：金色徽章 */
+.stage-card.cleared .sc-number {
+    border-color: rgba(251,191,36,0.55) !important;
+    background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.14), transparent 58%),
+        linear-gradient(160deg, rgba(251,191,36,0.28), rgba(69,42,10,0.6) 82%) !important;
+    box-shadow: 0 0 18px rgba(251,191,36,0.32), inset 0 2px 4px rgba(0,0,0,0.45) !important;
+    color: #fde68a !important;
+    text-shadow: 0 0 14px rgba(251,191,36,0.7) !important;
+}
+
+/* 锁定关：暗灰徽章 */
+.stage-card.locked .sc-number {
+    border-color: rgba(100,116,139,0.28) !important;
+    background: linear-gradient(160deg, #1c2536, #0d1322) !important;
+    box-shadow: none !important;
+    color: #64748b !important;
+    text-shadow: none !important;
+}
+.stage-card.locked .sc-label {
+    color: #556177 !important;
+}

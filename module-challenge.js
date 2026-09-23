@@ -890,9 +890,9 @@ const ChallengeModule = {
                     const bossHp = (stage.bossParams && stage.bossParams.bossHp) ? stage.bossParams.bossHp : 999;
                     const hpPct = 100;
                     const attacksHtml = (bd.attacks || []).map(function(a) { return '<span class="boss-stat-move">' + a + '</span>'; }).join('');
-                    const statusBadge = isLocked ? '<span class="boss-banner-status-badge boss-status-locked">🔒 ' + (isReadonly ? '未开放' : '击败前置关卡后解锁') + '</span>'
-                        : isCleared ? '<span class="boss-banner-status-badge boss-status-cleared">✓ 已击败</span>'
-                        : '<span class="boss-banner-status-badge boss-status-available">⚔ 可挑战</span>';
+                    const statusBadge = isLocked ? '<span class="boss-banner-status-badge boss-status-locked"><i class="fas fa-lock"></i> ' + (isReadonly ? '未开放' : '击败前置关卡后解锁') + '</span>'
+                        : isCleared ? '<span class="boss-banner-status-badge boss-status-cleared"><i class="fas fa-trophy"></i> 已击败</span>'
+                        : '<span class="boss-banner-status-badge boss-status-available"><i class="fas fa-bolt"></i> 可挑战</span>';
                     stageGrid += '<div class="stage-card boss-banner ' + statusClass + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? ' frame-q' + String(stage.bossLevel || '0') : '') + '" style="--boss-theme:' + bc + ';grid-column:1/-1;" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
                         + '<div class="boss-mist"></div>' + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? '<div class="frame-border"></div>' : '')
                         + '<div class="boss-banner-img">'
@@ -910,7 +910,7 @@ const ChallengeModule = {
                         + '<div class="boss-stat-section"><div class="boss-stat-title">难度</div><div class="boss-stat-difficulty">' + diffStars + '</div></div>'
                         + '<div class="boss-stat-section"><div class="boss-stat-title">生命</div><div class="boss-stat-hp-row"><div class="boss-stat-hp-bar"><div class="boss-stat-hp-fill" style="width:' + hpPct + '%"></div></div><span class="boss-stat-hp-text">' + bossHp + '</span></div></div>'
                         + '<div class="boss-stat-section"><div class="boss-stat-title">招式</div><div class="boss-stat-moves">' + attacksHtml + '</div></div>'
-                        + (bd.reward ? '<div class="boss-stat-section"><span class="boss-stat-reward">🏆 ' + bd.reward + '</span></div>' : '')
+                        + (bd.reward ? '<div class="boss-stat-section"><span class="boss-stat-reward"><i class="fas fa-trophy"></i> ' + bd.reward + '</span></div>' : '')
                         + '<div class="boss-banner-status">' + statusBadge + '</div>'
                         + '</div>'
                         + '</div>';
@@ -922,7 +922,7 @@ const ChallengeModule = {
                     const miniDiff = Math.max(1, (bd.difficulty || 3) - 1);
                     const diffStars = '★'.repeat(miniDiff) + '☆'.repeat(Math.max(0, 6 - miniDiff));
                     stageGrid += '<div class="stage-card boss-mini-card ' + statusClass + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? ' frame-q' + String(stage.bossLevel || '0') : '') + '" style="--boss-theme:' + bc + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
-                        + '<div class="boss-mini-badge">⚔️</div>' + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? '<div class="frame-border"></div>' : '')
+                        + '<div class="boss-mini-badge"><i class="fas ' + bd.icon + '"></i></div>' + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? '<div class="frame-border"></div>' : '')
                         + '<div class="boss-mini-img">'
                         + '<img src="' + bossImg + '" alt="' + (bd.name || '') + '" onerror="this.remove()">'
                         + '</div>'
@@ -930,7 +930,7 @@ const ChallengeModule = {
                         + '<div class="boss-mini-name">' + (bd.nameLocal || bd.name || '') + '</div>'
                         + '<div class="boss-mini-local">' + (bd.name || '') + '</div>'
                         + '<div class="boss-mini-difficulty">' + diffStars + '</div>'
-                        + '<div class="boss-mini-status ' + (isLocked ? 'boss-mini-locked' : isCleared ? 'boss-mini-cleared' : 'boss-mini-available') + '">' + (isLocked ? '🔒 ' + (isReadonly ? '未开放' : '未解锁') : isCleared ? '✓ 已击败' : '⚔ 可挑战') + '</div>'
+                        + '<div class="boss-mini-status ' + (isLocked ? 'boss-mini-locked' : isCleared ? 'boss-mini-cleared' : 'boss-mini-available') + '">' + (isLocked ? '<i class="fas fa-lock"></i> ' + (isReadonly ? '未开放' : '未解锁') : isCleared ? '<i class="fas fa-trophy"></i> 已击败' : '<i class="fas fa-bolt"></i> 可挑战') + '</div>'
                         + '</div>'
                         + '</div>';
                 } else {
@@ -4318,7 +4318,7 @@ const ChallengeModule = {
         overlay.style.setProperty('--boss-theme', bossTheme);
         overlay.setAttribute('data-stage-id', stageId);
         overlay.innerHTML = '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#94a3b8;font-size:1.2rem;text-align:center;">'
-            + '<div style="font-size:3rem;margin-bottom:16px;animation:encounter-fade-in 0.5s ease infinite alternate;">⚔</div>'
+            + '<div style="font-size:3rem;margin-bottom:16px;animation:encounter-fade-in 0.5s ease infinite alternate;"><i class="fas ' + bossDef.icon + '"></i></div>'
             + '<div>正在召唤BOSS...</div></div>';
         document.body.appendChild(overlay);
 
