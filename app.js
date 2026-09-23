@@ -1,15 +1,63 @@
 // 全局变量
 const app = document.getElementById('app');
 let db = {}; // 词库数据
-let favs = JSON.parse(localStorage.getItem('fmi_v1_favs') || '[]'); // 收藏
+// 安全解析 localStorage：历史版本可能写入过损坏/不兼容的数据，
+// 直接 JSON.parse 会在脚本加载时抛错导致整个应用白屏
+function safeJSONParse(str, fallback) {
+    try { return JSON.parse(str); } catch (e) { return fallback; }
+}
+let favs = safeJSONParse(localStorage.getItem('fmi_v1_favs'), []); // 收藏
 let curCat = "1", curIdx = 0, curLesson = "1"; // 当前分类/单词索引
-let todayRecord = JSON.parse(localStorage.getItem('fmi_today_record') || '[]'); // 今日记录
-let studyStats = JSON.parse(localStorage.getItem('fmi_study_stats') || '{"totalWords":0,"studySeconds":0,"todayWords":0,"startTime":null}');
-let dailyGoal = parseInt(localStorage.getItem('fmi_daily_goal') || '20');
-let _rate = parseFloat(localStorage.getItem('fmi_rate') || '0.8');
-let _loop = parseInt(localStorage.getItem('fmi_loop') || '1');
+let todayRecord = safeJSONParse(localStorage.getItem('fmi_today_record'), []); // 今日记录
+let studyStats = safeJSONParse(localStorage.getItem('fmi_study_stats'), { totalWords: 0, studySeconds: 0, todayWords: 0, startTime: null });
+let dailyGoal = (function() { try { return parseInt(localStorage.getItem('fmi_daily_goal') || '20'); } catch (e) { return 20; } })();
+let _rate = (function() { try { return parseFloat(localStorage.getItem('fmi_rate') || '0.8'); } catch (e) { return 0.8; } })();
+let _loop = (function() { try { return parseInt(localStorage.getItem('fmi_loop') || '1'); } catch (e) { return 1; } })();
 let _hideChinese = false;
 let loginStatus; // 全局登录状态
+// ========== 通用确认弹窗 ==========
+// 修复：此前全站 14 处调用 window._showCustomConfirm 但从未定义，
+// 导致自定义弹窗从未生效（一直退回原生 alert/confirm）
+window._showCustomConfirm = function(title, msg, confirmText, cancelText, onConfirm) {
+    if (typeof document === 'undefined') return;
+    var dialog = document.createElement('div');
+    dialog.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:10002;display:flex;align-items:center;justify-content:center;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:var(--glass,rgba(30,41,59,0.97));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 28px;max-width:380px;width:90%;text-align:center;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+    var titleEl = document.createElement('h3');
+    titleEl.style.cssText = 'color:var(--text-main,#e2e8f0);font-size:1.05rem;margin:0 0 10px 0;';
+    titleEl.textContent = title || '';
+    var msgEl = document.createElement('p');
+    msgEl.style.cssText = 'color:#94a3b8;font-size:0.9rem;line-height:1.6;margin:0 0 20px 0;white-space:pre-line;';
+    msgEl.textContent = msg || '';
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center;';
+    var confirmBtn = document.createElement('button');
+    confirmBtn.textContent = confirmText || '确认';
+    confirmBtn.style.cssText = 'flex:1;padding:9px 16px;background:var(--accent,#6366f1);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;';
+    var cancelBtn = null;
+    if (cancelText) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.textContent = cancelText;
+        cancelBtn.style.cssText = 'flex:1;padding:9px 16px;background:#475569;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;';
+        btnRow.appendChild(cancelBtn);
+    }
+    btnRow.appendChild(confirmBtn);
+    box.appendChild(titleEl);
+    box.appendChild(msgEl);
+    box.appendChild(btnRow);
+    dialog.appendChild(box);
+    document.body.appendChild(dialog);
+    function close(fn) {
+        var d = document.body.contains(dialog) ? dialog.parentNode : null;
+        if (dialog.parentNode) dialog.parentNode.removeChild(dialog);
+        if (typeof fn === 'function') fn();
+    }
+    confirmBtn.onclick = function() { close(onConfirm); };
+    if (cancelBtn) cancelBtn.onclick = function() { close(null); };
+    dialog.addEventListener('click', function(e) { if (e.target === dialog) close(null); });
+};
+
 const today = new Date().toLocaleDateString();
 // 全局白名单变量
 let whitelist = [];
@@ -50,10 +98,11 @@ function checkLoginStatus() {
         const todayStr = new Date().toLocaleDateString();
         const savedDate = localStorage.getItem('fmi_study_date');
         if (savedDate && savedDate !== todayStr) {
+            // 只清空“今日”维度的数据；fmi_all_words（累计已掌握词汇）必须保留，
+            // 否则每天首次打开页面会把用户积累的已掌握词汇全部清空
             localStorage.removeItem('fmi_today_record');
             localStorage.removeItem('fmi_study_stats');
             localStorage.removeItem('fmi_study_date');
-            localStorage.removeItem('fmi_all_words');
             todayRecord = [];
             studyStats = { totalWords: 0, studySeconds: 0, todayWords: 0, startTime: null };
             // 不重置 dailyGoal，用户设置应保留
@@ -2335,7 +2384,50 @@ async function restoreStudyFromServer() {
         const result = await API.loadStudy();
         if (!result || result.error || !result.found) return;
         
-        const today = new Date().toLocaleDateString();
+        // ========== 通用确认弹窗 ==========
+// 修复：此前全站 14 处调用 window._showCustomConfirm 但从未定义，
+// 导致自定义弹窗从未生效（一直退回原生 alert/confirm）
+window._showCustomConfirm = function(title, msg, confirmText, cancelText, onConfirm) {
+    if (typeof document === 'undefined') return;
+    var dialog = document.createElement('div');
+    dialog.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:10002;display:flex;align-items:center;justify-content:center;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:var(--glass,rgba(30,41,59,0.97));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 28px;max-width:380px;width:90%;text-align:center;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+    var titleEl = document.createElement('h3');
+    titleEl.style.cssText = 'color:var(--text-main,#e2e8f0);font-size:1.05rem;margin:0 0 10px 0;';
+    titleEl.textContent = title || '';
+    var msgEl = document.createElement('p');
+    msgEl.style.cssText = 'color:#94a3b8;font-size:0.9rem;line-height:1.6;margin:0 0 20px 0;white-space:pre-line;';
+    msgEl.textContent = msg || '';
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center;';
+    var confirmBtn = document.createElement('button');
+    confirmBtn.textContent = confirmText || '确认';
+    confirmBtn.style.cssText = 'flex:1;padding:9px 16px;background:var(--accent,#6366f1);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;';
+    var cancelBtn = null;
+    if (cancelText) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.textContent = cancelText;
+        cancelBtn.style.cssText = 'flex:1;padding:9px 16px;background:#475569;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;';
+        btnRow.appendChild(cancelBtn);
+    }
+    btnRow.appendChild(confirmBtn);
+    box.appendChild(titleEl);
+    box.appendChild(msgEl);
+    box.appendChild(btnRow);
+    dialog.appendChild(box);
+    document.body.appendChild(dialog);
+    function close(fn) {
+        var d = document.body.contains(dialog) ? dialog.parentNode : null;
+        if (dialog.parentNode) dialog.parentNode.removeChild(dialog);
+        if (typeof fn === 'function') fn();
+    }
+    confirmBtn.onclick = function() { close(onConfirm); };
+    if (cancelBtn) cancelBtn.onclick = function() { close(null); };
+    dialog.addEventListener('click', function(e) { if (e.target === dialog) close(null); });
+};
+
+const today = new Date().toLocaleDateString();
         const savedDate = localStorage.getItem('fmi_last_session_date');
         
         // 仅当跨设备或本地无数据时恢复（避免覆盖同一天本地的最新进度）
@@ -2933,9 +3025,50 @@ function collectLevelItems(level, items) {
             items.push({ indonesian: s.indonesian, chinese: s.chinese, type: 'sentence', levelId: level.id });
         }
         for (const d of (unit.dialogues || [])) {
-            items.push({ indonesian: d.indonesian, chinese: d.chinese, type: 'dialogue', levelId: level.id });
+            // 对话数据结构为 { title, title_id, lines:[{speaker,indonesian,chinese}] }
+            // 将每句对白拆成独立题目，避免出现 undefined
+            const dLines = d.lines || [];
+            if (dLines.length > 0) {
+                for (const line of dLines) {
+                    if (line.indonesian && line.chinese) {
+                        items.push({ indonesian: line.indonesian, chinese: line.chinese, type: 'dialogue', levelId: level.id });
+                    }
+                }
+            } else {
+                items.push({ indonesian: d.title_id || '', chinese: d.title || '', type: 'dialogue', levelId: level.id });
+            }
         }
     }
+}
+
+// 构建练习题库：课程数据 + 旧词库合并（学习页记录的生词/短语可能来自任一套数据）
+// 旧词库条目统一补 type='word'，并按 indonesian 去重（忽略首尾空格、大小写）
+function getPracticePool(catId) {
+    let pool = getPracticeItemsByLevel(catId);
+    if (pool.length === 0) {
+        try { pool = catId === 'all' ? getAllWords() : getWordsByCategory(catId); }
+        catch(e) { pool = getAllWords(); }
+    }
+    const seen = new Set();
+    pool.forEach(i => seen.add(String(i.indonesian || '').trim().toLowerCase()));
+    let legacy = [];
+    try { legacy = catId === 'all' ? getAllWords() : getWordsByCategory(catId); }
+    catch(e) { legacy = getAllWords(); }
+    for (const w of legacy) {
+        const k = String(w.indonesian || '').trim().toLowerCase();
+        if (k && !seen.has(k)) {
+            seen.add(k);
+            pool.push({ indonesian: w.indonesian, chinese: w.chinese, type: 'word', levelId: null });
+        }
+    }
+    return pool;
+}
+
+// 已掌握过滤：大小写不敏感、忽略首尾空格；生词/短句/对话均可匹配
+function filterMasteredItems(items, masteredList) {
+    if (!masteredList || masteredList.length === 0) return [];
+    const set = new Set(masteredList.map(w => String(w).trim().toLowerCase()));
+    return items.filter(i => set.has(String(i.indonesian || '').trim().toLowerCase()));
 }
 
 // 更新设置页底部的可用题目数提示
@@ -2945,15 +3078,10 @@ function updatePracticeWordCount() {
     try {
         const catId = document.getElementById('practice-cat-select').value;
         const masterdOnly = document.getElementById('practice-mastered-filter') && document.getElementById('practice-mastered-filter').checked;
-        let items = getPracticeItemsByLevel(catId);
-        if (items.length === 0) {
-            // 兜底：从旧 db 中获取
-            items = catId === 'all' ? getAllWords() : getWordsByCategory(catId);
-        }
-        // 已掌握过滤（仅匹配词汇类型）
+        let items = getPracticePool(catId);
+        // 已掌握过滤（学习页记录的生词/短语，词句对话均可匹配）
         if (masterdOnly) {
-            const mastered = getMasteredWords();
-            items = items.filter(i => i.type === 'word' && mastered.includes(i.indonesian));
+            items = filterMasteredItems(items, getMasteredWords());
         }
         const count = selectedPracticeCount === 0 ? items.length : Math.min(selectedPracticeCount, items.length);
         // 统计词/句/对话
@@ -2973,19 +3101,17 @@ function updatePracticeWordCount() {
 function startPractice() {
     const catId = document.getElementById('practice-cat-select').value;
     const masterdOnly = document.getElementById('practice-mastered-filter') && document.getElementById('practice-mastered-filter').checked;
-    let words = getPracticeItemsByLevel(catId);
-    if (words.length === 0) {
-        // 兜底
-        words = catId === 'all' ? getAllWords() : getWordsByCategory(catId);
-    }
-    // 已掌握过滤（仅匹配词汇类型，排除句子和对话）
+    let words = getPracticePool(catId);
+    // 已掌握过滤（学习页记录的生词/短语，词句对话均可匹配）
     if (masterdOnly) {
-        const mastered = getMasteredWords();
-        words = words.filter(i => i.type === 'word' && mastered.includes(i.indonesian));
+        words = filterMasteredItems(words, getMasteredWords());
     }
     if (words.length < 4) {
         if (window._showCustomConfirm) {
-            window._showCustomConfirm('题目不足', '当前范围内只有 ' + words.length + ' 道题，至少需要4道。请调整课程范围。', '我知道了', null, function(){});
+            var insufficientMsg = masterdOnly
+                ? '当前已掌握词汇中只有 ' + words.length + ' 道题可练，至少需要4道。请继续学习更多词汇，或取消勾选“仅包含已掌握词汇”。'
+                : '当前范围内只有 ' + words.length + ' 道题，至少需要4道。请调整课程范围。';
+            window._showCustomConfirm('题目不足', insufficientMsg, '我知道了', null, function(){});
         } else {
             alert('题目不足（当前 ' + words.length + ' 道），至少需要4道');
         }
@@ -3021,7 +3147,7 @@ function showQuestion() {
     fb.style.display = 'none';
     fb.className = 'practice-feedback';
     document.getElementById('p-next-btn').style.display = 'none';
-    const allW = getPracticeItemsByLevel(s.catId);
+    const allW = getPracticePool(s.catId);
     if (s.type === 'choice') {
         document.getElementById('p-question-label').textContent = '请选择正确的中文翻译';
         document.getElementById('p-question-word').textContent = q.indonesian;
@@ -3089,6 +3215,9 @@ function selectOption(el, correct, answer) {
     document.getElementById('p-wrong').textContent = practiceState.answeredCount - practiceState.score;
     document.getElementById('p-accuracy').textContent = Math.round((practiceState.score / practiceState.answeredCount) * 100) + '%';
 }
+
+// 兼容旧版按钮名称：提交按钮/回车绑定的是 submitFill，指向正式实现
+function submitFill() { submitFillAnswer(); }
 
 function submitFillAnswer() {
     if (practiceState.answered) return;
@@ -3327,7 +3456,7 @@ function initDashboardPage() {
                 }
                 for (const d of (unit.dialogues || [])) {
                     totalDialogues++;
-                    if (learnedSet.has(d.indonesian)) masteredDialogues++;
+                    if (learnedSet.has(d.title_id) || learnedSet.has(d.title)) masteredDialogues++;
                 }
             }
         }
@@ -4161,8 +4290,14 @@ function displayCourseItem(item) {
     const indoEl = document.getElementById('disp-indo');
     const zhEl = document.getElementById('disp-zh');
     if (idxEl) idxEl.textContent = String(courseBrowseIndex + 1).padStart(2, '0');
-    if (indoEl) indoEl.textContent = item.indonesian;
-    if (zhEl) zhEl.textContent = item.chinese;
+    if (item.lines) {
+        // 对话：无顶层 indonesian/chinese，显示标题
+        if (indoEl) indoEl.textContent = item.title_id || item.title || '';
+        if (zhEl) zhEl.textContent = item.title || '';
+    } else {
+        if (indoEl) indoEl.textContent = item.indonesian || '';
+        if (zhEl) zhEl.textContent = item.chinese || '';
+    }
     // 停止当前播放
     if (typeof stopSpeech === 'function') stopSpeech();
     // 更新收藏按钮状态
