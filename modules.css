@@ -7991,3 +7991,21 @@
 .stage-card.locked .sc-label {
     color: #556177 !important;
 }
+/* ==============================================
+   【UI 视觉升级层 8】BOSS图标FA适配 (2026-09-24)
+   小BOSS徽章/状态徽章/遭遇动画图标的 <i> 渲染细节
+   ============================================== */
+.boss-mini-badge i {
+    font-size: 0.95rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--boss-theme) 55%, transparent));
+}
+.boss-banner-status-badge i,
+.boss-mini-status i {
+    margin-right: 4px;
+    font-size: 0.8em;
+}
+.boss-encounter-overlay i {
+    color: var(--boss-theme, #7c3aed);
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--boss-theme, #7c3aed) 60%, transparent));
+}
