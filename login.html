@@ -294,6 +294,14 @@
             document.getElementById('reg-tip').style.display = 'none';
             // 注册限额检查
             var sysInfo = window._systemInfo || {};
+            // 管理员关闭自助注册时禁止前端注册（本地模式同样生效）
+            var _localCfg = JSON.parse(localStorage.getItem('fmi_admin_settings') || '{}');
+            var _regBlocked = sysInfo.allowRegister === false;
+            if (!_regBlocked && !('allowRegister' in sysInfo)) _regBlocked = _localCfg.allowRegister === false;
+            if (_regBlocked) {
+                showTip('reg-tip', '管理员已关闭自助注册，请联系管理员创建账号', 'error');
+                return;
+            }
             if (sysInfo.maxRegistered > 0) {
                 var current = sysInfo.registeredCount || 0;
                 if (current >= sysInfo.maxRegistered) {

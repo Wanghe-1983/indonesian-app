@@ -36,9 +36,31 @@
             const data = await res.json();
             return data;
         } catch(e) {
-            console.warn('[Admin] API请求失败:', path, e.message);
-            return null;
+            console.warn('[Admin] API请求失败,回退本地:', path, e.message);
+            return adminFallback(path, opts);
         }
+    }
+
+    // 本地回退: API 不可用时读写 localStorage, 与前端 fmi_admin_settings 闭环
+    const ADMIN_LOCAL_KEYS = { 'admin/settings':'fmi_admin_settings','admin/whitelist':'fmi_whitelist','admin/users':'fmi_users','admin/online':'fmi_online','admin/leaderboard-config':'fmi_leaderboard_config','admin/broadcast':'fmi_broadcast','admin/user-guide':'fmi_user_guide','admin/banner-config':'fmi_banner_config' };
+    function adminFallback(path, opts) {
+        const key = ADMIN_LOCAL_KEYS[path];
+        if (!key) return { success:false, error:'本地模式不支持该接口:' + path };
+        try {
+            if ((opts.method||'GET') === 'GET') {
+                const v = JSON.parse(localStorage.getItem(key) || 'null');
+                return (v && typeof v === 'object') ? v : {};
+            }
+            const bodyObj = opts.body ? JSON.parse(opts.body) : null;
+            if (!bodyObj) return { success:true, local:true };
+            if (key === 'fmi_admin_settings') {
+                const prev = JSON.parse(localStorage.getItem(key) || '{}');
+                localStorage.setItem(key, JSON.stringify(Object.assign({}, prev, bodyObj)));
+            } else {
+                localStorage.setItem(key, JSON.stringify(bodyObj));
+            }
+            return { success:true, local:true };
+        } catch(e2) { console.warn('[Admin] 本地保存失败:', key, e2.message); return { success:false, error:'本地保存失败' }; }
     }
 
     
