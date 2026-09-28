@@ -247,7 +247,7 @@ const StudyModule = {
         for (const section of studyContent) {
             const unit = section.unit;
             for (const type of section.types) {
-                const items = unit[type === 'dialogues' ? 'dialogues' : (type + 's')] || [];
+                const items = unit[type] || [];
                 for (const item of items) {
                     this.studyItems.push({ ...item, type, unitName: unit.name, unitId: unit.id, isReview: section.isReview });
                 }
@@ -277,6 +277,8 @@ const StudyModule = {
 
     _renderLearnCard(container) {
         const item = this.studyItems[this.studyIndex];
+        // 学习即记录：当前卡片自动计入"已掌握词汇"（fmi_all_words），供练习模块"仅包含已掌握词汇"出题
+        this._recordLearned(item);
         const total = this.studyItems.length;
         const current = this.studyIndex + 1;
         const isDialogue = item.type === 'dialogues';
@@ -471,5 +473,45 @@ const StudyModule = {
             CourseContent.unmarkMastered(this.selectedLevelId, this.selectedUnitId, type);
         }
         if (typeof syncStudyToCloud === 'function') syncStudyToCloud();
+    },
+
+    // 学习即记录：把学过的卡片计入"已掌握词汇"（fmi_all_words）与今日记录
+    // 与主界面练习页 getMasteredWords() 数据源一致，保证"仅包含已掌握词汇"可出题
+    _recordLearned(item) {
+        try {
+            if (!item || !item.indonesian) return;
+            // 对话卡片逐行记录（与练习模块对话拆题口径一致）
+            const records = [];
+            if (item.type === 'dialogues') {
+                for (const line of (item.lines || [])) {
+                    if (line.indonesian && line.chinese) records.push({ indonesian: line.indonesian, chinese: line.chinese });
+                }
+            } else {
+                records.push({ indonesian: item.indonesian, chinese: item.chinese || '' });
+            }
+            if (records.length === 0) return;
+
+            let allChanged = false;
+            for (const rec of records) {
+                // 今日记录（去重）
+                const today = JSON.parse(localStorage.getItem('fmi_today_record') || '[]');
+                if (!today.some(t => t.indonesian === rec.indonesian)) {
+                    today.push({ indonesian: rec.indonesian, chinese: rec.chinese });
+                    localStorage.setItem('fmi_today_record', JSON.stringify(today));
+                }
+                // 累计已掌握词汇（去重）
+                const all = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
+                if (!all.includes(rec.indonesian)) {
+                    all.push(rec.indonesian);
+                    localStorage.setItem('fmi_all_words', JSON.stringify(all));
+                    allChanged = true;
+                }
+            }
+            if (allChanged && typeof syncStudyToCloud === 'function') {
+                try { syncStudyToCloud(); } catch(e) {}
+            }
+        } catch(e) {
+            console.warn('记录学习进度失败:', e);
+        }
     },
 };

@@ -144,8 +144,8 @@ const CourseContent = {
         result.push({
             unit: currentUnit,
             types: ['words', 'sentences', 'dialogues'].filter(t => {
-                const arr = currentUnit[t + 's'] || (t === 'dialogues' ? currentUnit.dialogues : []);
-                return arr && arr.length > 0;
+                const arr = currentUnit[t] || [];
+                return arr.length > 0;
             }),
             isReview: false,
         });
