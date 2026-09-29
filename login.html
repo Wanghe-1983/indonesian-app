@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -354,6 +354,7 @@
                     if (visitorTimerInterval) { clearInterval(visitorTimerInterval); visitorTimerInterval = null; }
                     sessionStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: result.user, backend: true }));
                     sessionStorage.setItem('fmi_user', JSON.stringify(result.user || { username: result.user, role: 'user' }));
+                    sessionStorage.removeItem('fmi_login_announced');
                     setTimeout(function() { window.location.href = 'index.html'; }, 100);
                 } else if (result.error === 'network') {
                     fallbackLogin(username, password);
@@ -375,6 +376,7 @@
                 sessionStorage.removeItem('fmi_visitor_expire');
                 sessionStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: user, backend: false }));
                 sessionStorage.setItem('fmi_user', JSON.stringify({ username: user.username, name: user.name, role: user.role || (user.username === 'admin' ? 'admin' : 'user') }));
+                sessionStorage.removeItem('fmi_login_announced');
                 setTimeout(function() { window.location.href = 'index.html'; }, 100);
             } else { showTip('login-tip', '用户名或密码错误', 'error'); }
         }
@@ -399,6 +401,7 @@
                 sessionStorage.setItem('fmi_token', data.token || '');
                 sessionStorage.setItem('fmi_user', JSON.stringify(visitorUser));
                 sessionStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: visitorUser, backend: true }));
+                sessionStorage.removeItem('fmi_login_announced');
                 sessionStorage.setItem('fmi_visitor_login', '1');
                 sessionStorage.setItem('fmi_visitor_expire', String(visitorExpire));
                 startVisitorTimer(visitorExpire - Date.now());
@@ -411,6 +414,7 @@
                 sessionStorage.setItem('fmi_token', 'guest_local_' + Date.now());
                 sessionStorage.setItem('fmi_user', JSON.stringify(guestUser));
                 sessionStorage.setItem('fmi_login_status', JSON.stringify({ isLogin: true, user: guestUser, backend: false }));
+                sessionStorage.removeItem('fmi_login_announced');
                 sessionStorage.setItem('fmi_visitor_login', '1');
                 sessionStorage.setItem('fmi_visitor_expire', String(Date.now() + 10 * 60 * 1000));
                 startVisitorTimer(10 * 60 * 1000);
