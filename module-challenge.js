@@ -835,6 +835,9 @@ const ChallengeModule = {
                 // 边框：使用用户装备的边框ID列表
         const _equippedFrameSet = new Set(this._equippedFrameIds || []);
         // [DEBUG removed]', JSON.stringify(this._equippedFrameIds), '_equippedFrameSet size:', _equippedFrameSet.size);
+        // 关卡专属边框（每关最多装配一款，唯一性）：stageId -> frameKey
+        const _stageFrames = this._stageFrames || {};
+        const _frameKeyFor = (sid) => _stageFrames[sid] || null;
 
         let stageGrid = '';
         // [DEBUG removed] _equippedFrameIds:', JSON.stringify(this._equippedFrameIds), 'first stage levelId:', this.allStages[0]?.levelId);
@@ -893,8 +896,10 @@ const ChallengeModule = {
                     const statusBadge = isLocked ? '<span class="boss-banner-status-badge boss-status-locked"><i class="fas fa-lock"></i> ' + (isReadonly ? '未开放' : '击败前置关卡后解锁') + '</span>'
                         : isCleared ? '<span class="boss-banner-status-badge boss-status-cleared"><i class="fas fa-trophy"></i> 已击败</span>'
                         : '<span class="boss-banner-status-badge boss-status-available"><i class="fas fa-bolt"></i> 可挑战</span>';
-                    stageGrid += '<div class="stage-card boss-banner ' + statusClass + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? ' frame-q' + String(stage.bossLevel || '0') : '') + '" style="--boss-theme:' + bc + ';grid-column:1/-1;" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
-                        + '<div class="boss-mist"></div>' + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? '<div class="frame-border"></div>' : '')
+                    const _sfk = _frameKeyFor(stage.id);
+                    stageGrid += '<div class="stage-card boss-banner ' + statusClass + (_sfk ? ' frame-' + _sfk : '') + '" style="--boss-theme:' + bc + ';grid-column:1/-1;" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
+                        + '<div class="boss-mist"></div>' + (_sfk ? '<div class="frame-border"></div>' : '')
+                        + '<button class="stage-frame-btn' + (_sfk ? ' on' : '') + '" style="' + (_sfk ? 'color:' + (this._frameDefs['frame_' + _sfk] ? this._frameDefs['frame_' + _sfk].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="boss-banner-img">'
                         + '<div class="boss-badge-icon big-crown"><i class="fas fa-crown"></i></div>'
                         + '<img src="' + bossImg + '" alt="' + (bd.name || '') + '" onerror="this.remove()">'
@@ -921,8 +926,10 @@ const ChallengeModule = {
                     const bossImg = bd.miniImage || 'assets/boss/boss-mini-q' + (stage.bossLevel || '0') + '.png';
                     const miniDiff = Math.max(1, (bd.difficulty || 3) - 1);
                     const diffStars = '★'.repeat(miniDiff) + '☆'.repeat(Math.max(0, 6 - miniDiff));
-                    stageGrid += '<div class="stage-card boss-mini-card ' + statusClass + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? ' frame-q' + String(stage.bossLevel || '0') : '') + '" style="--boss-theme:' + bc + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
-                        + '<div class="boss-mini-badge"><i class="fas ' + bd.icon + '"></i></div>' + (_equippedFrameSet.has('q' + String(stage.bossLevel || '0')) ? '<div class="frame-border"></div>' : '')
+                    const _sfk2 = _frameKeyFor(stage.id);
+                    stageGrid += '<div class="stage-card boss-mini-card ' + statusClass + (_sfk2 ? ' frame-' + _sfk2 : '') + '" style="--boss-theme:' + bc + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
+                        + '<div class="boss-mini-badge"><i class="fas ' + bd.icon + '"></i></div>' + (_sfk2 ? '<div class="frame-border"></div>' : '')
+                        + '<button class="stage-frame-btn' + (_sfk2 ? ' on' : '') + '" style="' + (_sfk2 ? 'color:' + (this._frameDefs['frame_' + _sfk2] ? this._frameDefs['frame_' + _sfk2].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="boss-mini-img">'
                         + '<img src="' + bossImg + '" alt="' + (bd.name || '') + '" onerror="this.remove()">'
                         + '</div>'
@@ -942,8 +949,10 @@ const ChallengeModule = {
                         : isCleared ? '<span class="sc-badge sc-badge-stars">' + this._renderStars(stars) + '</span>'
                         : isCurrent ? '<span class="sc-badge sc-badge-current"><i class="fas fa-play-circle"></i></span>'
                         : '<span class="sc-badge sc-badge-go"><i class="fas fa-bolt"></i></span>';
-                    stageGrid += '<div class="stage-card ' + statusClass + (_equippedFrameSet.has('q' + String(stage.levelId)) ? ' frame-q' + String(stage.levelId) : '') + '" style="--stage-color:' + lvColor + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
-                        + (_equippedFrameSet.has('q' + String(stage.levelId)) ? '<div class="frame-border"></div>' : '')
+                    const _sfk3 = _frameKeyFor(stage.id);
+                    stageGrid += '<div class="stage-card ' + statusClass + (_sfk3 ? ' frame-' + _sfk3 : '') + '" style="--stage-color:' + lvColor + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
+                        + (_sfk3 ? '<div class="frame-border"></div>' : '')
+                        + '<button class="stage-frame-btn' + (_sfk3 ? ' on' : '') + '" style="' + (_sfk3 ? 'color:' + (this._frameDefs['frame_' + _sfk3] ? this._frameDefs['frame_' + _sfk3].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="sc-castle-bg"></div>'
                         + '<div class="sc-battlement"></div>'
                         + '<div class="sc-arch"></div>'
@@ -961,21 +970,27 @@ const ChallengeModule = {
         const clearedPct = stages.length > 0 ? Math.round(totalCleared / stages.length * 100) : 0;
         const barColor = isHellMode ? '#f87171' : '#60a5fa';
 
-        // 边框装备栏：显示已装备边框，随时进入收藏墙装备/卸下
-        const eqFrames = (this._equippedFrameIds || []).map(fid => this._frameDefs['frame_' + fid]).filter(Boolean);
+        // 关卡边框装备栏：显示已装配关卡数，随时进入收藏墙管理
+        const _assignedEntries = Object.entries(this._stageFrames || {});
+        const _assignedCount = _assignedEntries.length;
+        const _assignedBadges = [];
+        for (const e of _assignedEntries) {
+            const def = this._frameDefs['frame_' + e[1]];
+            if (def && !_assignedBadges.includes(def)) _assignedBadges.push(def);
+        }
         const frameToolbar = `
             <div class="frame-toolbar">
                 <div class="frame-toolbar-left">
                     <i class="fas fa-border-all" style="color:#818cf8;"></i>
                     <span class="frame-toolbar-title">关卡边框</span>
                     <div class="frame-toolbar-badges">
-                        ${eqFrames.length > 0
-                            ? eqFrames.map(f => `<span class="frame-tb-badge" style="background:${f.color}22;color:${f.color};border-color:${f.color}55;" onclick="ChallengeModule._equipFrame('${f.id}')" title="点击卸下『${f.name}』">${f.name}</span>`).join('')
-                            : '<span class="frame-tb-empty">未装备边框（点击管理边框装配）</span>'}
+                        ${_assignedCount > 0
+                            ? _assignedBadges.map(f => `<span class="frame-tb-badge" style="background:${f.color}22;color:${f.color};border-color:${f.color}55;" onclick="ChallengeModule._clearFrameAssignments('${f.id}')" title="卸下『${f.name}』的全部装配">${f.name} ×${_assignedEntries.filter(e2 => e2[1] === f.id).length}</span>`).join('')
+                            : '<span class="frame-tb-empty">未装配边框（点关卡卡右上角图标装配）</span>'}
                     </div>
                 </div>
                 <div class="frame-toolbar-actions">
-                    ${eqFrames.length > 0 ? `<button class="frame-tb-btn danger" onclick="ChallengeModule._equipFrame(null)"><i class="fas fa-times"></i> 卸下全部</button>` : ''}
+                    ${_assignedCount > 0 ? `<button class="frame-tb-btn danger" onclick="ChallengeModule._clearAllStageFrames()"><i class="fas fa-times"></i> 卸下全部</button>` : ''}
                     <button class="frame-tb-btn" onclick="ChallengeModule.showFrames()"><i class="fas fa-border-all"></i> 管理边框</button>
                 </div>
             </div>`;
@@ -1286,6 +1301,7 @@ const ChallengeModule = {
             this._equippedFrameIds = this._equippedFrameIds.filter(fid => validIds.includes(fid));
         }
         if (!this._equippedFrameIds) this._equippedFrameIds = [];
+        this._loadStageFrames();
     },
 
     /** 在称号墙中显示边框选择区域 */
@@ -1293,36 +1309,38 @@ const ChallengeModule = {
         const allFrames = this._frameDefs;
         const unlockedIds = this._getUnlockedFrames().map(f => f.id);
         const equippedIds = this._equippedFrameIds || [];
-        const hasAny = equippedIds.length > 0;
+        const assignedEntries = Object.entries(this._stageFrames || {});
+        const hasAny = assignedEntries.length > 0;
 
         let html = `
             <div class="frame-wall-section">
                 <div class="frame-wall-header">
                     <i class="fas fa-border-all"></i>
                     <span>关卡边框</span>
-                    <span style="margin-left:auto;font-size:0.7rem;color:#64748b;">已装备 ${equippedIds.length} 个</span>
-                    ${hasAny ? `<button class="frame-clear-all" onclick="ChallengeModule._equipFrame(null)" style="margin-left:8px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:2px 10px;font-size:0.65rem;cursor:pointer;"><i class="fas fa-times"></i> 清除全部</button>` : ''}
+                    <span style="margin-left:auto;font-size:0.7rem;color:#64748b;">已装配 ${assignedEntries.length} 关</span>
+                    ${hasAny ? `<button class="frame-clear-all" onclick="ChallengeModule._clearAllStageFrames()" style="margin-left:8px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:2px 10px;font-size:0.65rem;cursor:pointer;"><i class="fas fa-times"></i> 卸下全部</button>` : ''}
                 </div>
                 <div class="frame-wall-grid">
         `;
 
         for (const [key, frame] of Object.entries(allFrames)) {
             const isUnlocked = unlockedIds.includes(frame.id);
-            const isEquipped = equippedIds.includes(frame.id);
+            const assignedCount = assignedEntries.filter(e => e[1] === frame.id).length;
+            const isAssigned = assignedCount > 0;
             html += `
-                <div class="frame-wall-item ${isUnlocked ? '' : 'locked'} ${isEquipped ? 'equipped' : ''}" onclick="${isUnlocked ? `ChallengeModule._equipFrame('${frame.id}')` : ''}">
-                    <div class="frame-wall-preview" style="border:2px solid ${isUnlocked ? frame.color : 'rgba(148,163,184,0.2)'};background:${isUnlocked ? frame.gradient : 'rgba(148,163,184,0.05)'};${isEquipped ? 'box-shadow:0 0 12px ' + frame.color + '40;' : ''}">
+                <div class="frame-wall-item ${isUnlocked ? '' : 'locked'} ${isAssigned ? 'equipped' : ''}">
+                    <div class="frame-wall-preview" style="border:2px solid ${isUnlocked ? frame.color : 'rgba(148,163,184,0.2)'};background:${isUnlocked ? frame.gradient : 'rgba(148,163,184,0.05)'};${isAssigned ? 'box-shadow:0 0 12px ' + frame.color + '40;' : ''}">
                         ${isUnlocked
                             ? `<i class="fas fa-square" style="font-size:1.2rem;color:${frame.color};filter:drop-shadow(0 0 4px ${frame.color});"></i>`
                             : `<i class="fas fa-lock" style="font-size:1rem;color:#475569;"></i>`
                         }
-                        ${isEquipped ? '<div class="frame-check-badge"><i class="fas fa-check-circle"></i></div>' : ''}
+                        ${isAssigned ? '<div class="frame-check-badge"><i class="fas fa-check-circle"></i></div>' : ''}
                     </div>
                     <div class="frame-wall-name" style="color:${isUnlocked ? frame.color : '#475569'};">${isUnlocked ? frame.name : '???'}</div>
-                    <div class="frame-wall-desc">${isUnlocked ? frame.desc : '击败对应BOSS解锁'}</div>
+                    <div class="frame-wall-desc">${isUnlocked ? frame.desc + (isAssigned ? ' · 已装配 ' + assignedCount + ' 关' : '') : '击败对应BOSS解锁'}</div>
                     ${isUnlocked ? `
-                    <div class="frame-wall-action ${isEquipped ? 'equipped' : ''}">
-                        <i class="fas ${isEquipped ? 'fa-times-circle' : 'fa-plus-circle'}"></i> ${isEquipped ? '卸下' : '装备'}
+                    <div class="frame-wall-action ${isAssigned ? 'equipped' : ''}" ${isAssigned ? `onclick="ChallengeModule._clearFrameAssignments('${frame.id}')"` : ''}>
+                        <i class="fas ${isAssigned ? 'fa-times-circle' : 'fa-info-circle'}"></i> ${isAssigned ? '卸下装配' : '在关卡卡装配'}
                     </div>` : ''}
                 </div>
             `;
@@ -1337,6 +1355,129 @@ const ChallengeModule = {
     showFrames() {
         this.currentView = 'frames';
         this.render();
+    },
+
+    // ====== 关卡专属边框装配（每关最多一款，专配唯一性） ======
+    _loadStageFrames() {
+        try { this._stageFrames = JSON.parse(localStorage.getItem('challenge_stage_frames') || '{}') || {}; } catch(e) { this._stageFrames = {}; }
+        if (!this._stageFrames) this._stageFrames = {};
+        // 兼容迁移：旧全局装备 -> 落到对应 BOSS 专属关卡
+        try {
+            const old = localStorage.getItem('challenge_equipped_frames');
+            if (old) {
+                const ids = JSON.parse(old) || [];
+                let migrated = false;
+                (Array.isArray(ids) ? ids : []).forEach(fid => {
+                    const def = this._frameDefs['frame_' + fid];
+                    if (def) {
+                        const bossId = 'boss-' + def.bossLevel + '-big';
+                        if (!this._stageFrames[bossId]) { this._stageFrames[bossId] = fid; migrated = true; }
+                    }
+                });
+                if (migrated) this._saveStageFrames();
+                localStorage.removeItem('challenge_equipped_frames');
+            }
+        } catch(e) {}
+        // 校验装配值有效性
+        const validIds = Object.values(this._frameDefs).map(f => f.id);
+        for (const sid of Object.keys(this._stageFrames)) {
+            if (!validIds.includes(this._stageFrames[sid])) delete this._stageFrames[sid];
+        }
+    },
+    _saveStageFrames() {
+        try { localStorage.setItem('challenge_stage_frames', JSON.stringify(this._stageFrames || {})); } catch(e) {}
+    },
+    /** 打开关卡边框装配浮层 */
+    _openStageFramePicker(stageId, ev) {
+        const holder = document.getElementById('challenge-sub-content');
+        if (!holder) return;
+        const oldP = document.getElementById('stage-frame-picker'); if (oldP) oldP.remove();
+        const unlockedIds = this._getUnlockedFrames().map(f => f.id);
+        const current = (this._stageFrames || {})[stageId] || null;
+        let items = '';
+        for (const def of Object.values(this._frameDefs)) {
+            const isUnlocked = unlockedIds.includes(def.id);
+            const isCur = current === def.id;
+            items += `<div class="spf-item ${isUnlocked ? '' : 'locked'} ${isCur ? 'cur' : ''}" ${isUnlocked ? `onclick="ChallengeModule._assignStageFrame('${stageId}','${def.id}')"` : ''}>
+                <span class="spf-dot" style="background:${def.color};${isCur ? 'box-shadow:0 0 8px ' + def.color : ''}"></span>
+                <span class="spf-name">${isUnlocked ? def.name : '???'}</span>
+                <span class="spf-desc">${isUnlocked ? (isCur ? '已装配' : def.desc) : '击败BOSS解锁'}</span>
+                ${isUnlocked ? `<span class="spf-act ${isCur ? 'cur' : ''}">${isCur ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-plus"></i>'}</span>` : '<i class="fas fa-lock spf-lock"></i>'}
+            </div>`;
+        }
+        const box = document.createElement('div');
+        box.id = 'stage-frame-picker';
+        box.className = 'stage-frame-picker';
+        box.innerHTML = `<div class="spf-head"><span><i class="fas fa-border-all"></i> 装配关卡边框</span><span class="spf-close" onclick="document.getElementById('stage-frame-picker')&&document.getElementById('stage-frame-picker').remove()"><i class="fas fa-times"></i></span></div>
+            <div class="spf-hint">每关唯一装配 · 装配新边框自动替换旧款</div>
+            <div class="spf-list">${items}</div>
+            ${current ? `<div class="spf-clear" onclick="ChallengeModule._assignStageFrame('${stageId}',null)"><i class="fas fa-eraser"></i> 卸下当前边框</div>` : ''}`;
+        // 定位浮层
+        if (ev && ev.target && ev.target.closest) {
+            const btn = ev.target.closest('button');
+            const r = btn ? btn.getBoundingClientRect() : null;
+            const cr = holder.getBoundingClientRect();
+            if (r) {
+                box.style.left = Math.max(0, Math.min(r.left - cr.left, cr.width - 320)) + 'px';
+                box.style.top = Math.min(r.bottom - cr.top + 6, cr.height - 300) + 'px';
+            }
+        } else {
+            box.style.left = '40%';
+            box.style.top = '120px';
+        }
+        holder.appendChild(box);
+        setTimeout(() => {
+            const closeH = (e) => {
+                if (box.parentNode && !box.contains(e.target)) { box.remove(); document.removeEventListener('click', closeH, true); }
+            };
+            document.addEventListener('click', closeH, true);
+        }, 0);
+    },
+    /** 装配/替换/卸下某关卡的边框（唯一性：一关一款） */
+    _assignStageFrame(stageId, frameId) {
+        if (!this._stageFrames) this._stageFrames = {};
+        if (frameId) {
+            const def = this._frameDefs['frame_' + frameId];
+            if (!def) return;
+            if (!this._isAdmin()) {
+                const unlockedIds = this._getUnlockedFrames().map(f => f.id);
+                if (!unlockedIds.includes(frameId)) return;
+            }
+            this._stageFrames[stageId] = frameId;
+        } else {
+            delete this._stageFrames[stageId];
+        }
+        this._saveStageFrames();
+        const picker = document.getElementById('stage-frame-picker'); if (picker) picker.remove();
+        const container = document.getElementById('challenge-sub-content');
+        if (container) {
+            if (this.currentView === 'frames') this._renderFrameWall(container);
+            else this.renderStages(container);
+        }
+    },
+    /** 卸下某款边框的全部装配 */
+    _clearFrameAssignments(frameId) {
+        if (!this._stageFrames) return;
+        let changed = false;
+        for (const sid of Object.keys(this._stageFrames)) {
+            if (this._stageFrames[sid] === frameId) { delete this._stageFrames[sid]; changed = true; }
+        }
+        if (changed) this._saveStageFrames();
+        const container = document.getElementById('challenge-sub-content');
+        if (container) {
+            if (this.currentView === 'frames') this._renderFrameWall(container);
+            else this.renderStages(container);
+        }
+    },
+    /** 卸下全部关卡边框 */
+    _clearAllStageFrames() {
+        this._stageFrames = {};
+        this._saveStageFrames();
+        const container = document.getElementById('challenge-sub-content');
+        if (container) {
+            if (this.currentView === 'frames') this._renderFrameWall(container);
+            else this.renderStages(container);
+        }
     },
 
     _renderFrameWall(container) {

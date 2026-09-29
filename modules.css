@@ -8062,3 +8062,215 @@
     border-color: rgba(239,68,68,0.3);
 }
 .frame-tb-btn.danger:hover { background: rgba(239,68,68,0.25); }
+
+/* ====== 关卡卡边框角标按钮（装配入口） ====== */
+.stage-card .stage-frame-btn,
+.boss-banner .stage-frame-btn,
+.boss-mini-card .stage-frame-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 6;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: rgba(15,23,42,0.72);
+    border: 1px solid rgba(129,140,248,0.25);
+    color: #818cf8;
+    font-size: 0.6rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all 0.2s;
+}
+.stage-card .stage-frame-btn:hover,
+.boss-banner .stage-frame-btn:hover,
+.boss-mini-card .stage-frame-btn:hover {
+    opacity: 1;
+    transform: scale(1.12);
+}
+.stage-card .stage-frame-btn.on,
+.boss-banner .stage-frame-btn.on,
+.boss-mini-card .stage-frame-btn.on {
+    opacity: 1;
+    background: rgba(15,23,42,0.88);
+    box-shadow: 0 0 8px currentColor;
+}
+
+
+/* ====== 关卡边框装配浮层 ====== */
+.stage-frame-picker {
+    position: absolute;
+    z-index: 999;
+    width: 300px;
+    background: rgba(15,23,42,0.97);
+    border: 1px solid rgba(129,140,248,0.35);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    padding: 10px;
+}
+.spf-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    padding: 2px 2px 8px;
+}
+.spf-close { cursor: pointer; color: #64748b; font-size: 0.8rem; padding: 2px 6px; }
+.spf-close:hover { color: #f87171; }
+.spf-hint { font-size: 0.65rem; color: #64748b; padding: 0 2px 8px; }
+.spf-list { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; }
+.spf-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: rgba(51,65,85,0.35);
+    transition: all 0.15s;
+}
+.spf-item:hover { background: rgba(99,102,241,0.2); }
+.spf-item.locked { opacity: 0.45; cursor: not-allowed; }
+.spf-item.cur { background: rgba(99,102,241,0.25); outline: 1px solid rgba(129,140,248,0.5); }
+.spf-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.spf-name { font-size: 0.72rem; font-weight: 600; color: #e2e8f0; }
+.spf-desc { font-size: 0.62rem; color: #64748b; margin-left: auto; }
+.spf-act { font-size: 0.68rem; color: #a5b4fc; }
+.spf-lock { color: #475569; font-size: 0.7rem; margin-left: auto; }
+.spf-clear {
+    margin-top: 8px;
+    padding: 6px;
+    text-align: center;
+    font-size: 0.68rem;
+    color: #f87171;
+    background: rgba(239,68,68,0.1);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.spf-clear:hover { background: rgba(239,68,68,0.22); }
+
+
+/* ====== 各款边框独特造型（专配唯一性 v3.1） ====== */
+/* q0 翡翠流光：基础款 - 圆润实框 + 翡翠四角 + 旋转光带（保留默认实现） */
+.stage-card.frame-q0 .frame-border,
+.boss-banner.frame-q0 .frame-border,
+.boss-mini-card.frame-q0 .frame-border {
+    border-radius: 20px;
+}
+
+/* q1 紫晶藤蔓：内外双虚线藤环 + 呼吸光晕 */
+.stage-card.frame-q1 .frame-border,
+.boss-banner.frame-q1 .frame-border,
+.boss-mini-card.frame-q1 .frame-border {
+    border: 2px solid rgba(167,139,250,0.9);
+    box-shadow: 0 0 8px rgba(167,139,250,0.5), 0 0 20px rgba(167,139,250,0.22);
+}
+.stage-card.frame-q1 .frame-border::after,
+.boss-banner.frame-q1 .frame-border::after,
+.boss-mini-card.frame-q1 .frame-border::after {
+    inset: -3px;
+    border: 2px dashed rgba(167,139,250,0.5);
+    border-radius: 18px;
+    background: none;
+    filter: none;
+    opacity: 1;
+    animation: frame-rotate 20s linear infinite;
+}
+
+/* q2 琥珀金纹：齿轮齿环（虚线外齿环旋转）+ 金色四角 */
+.stage-card.frame-q2 .frame-border,
+.boss-banner.frame-q2 .frame-border,
+.boss-mini-card.frame-q2 .frame-border {
+    border: 2px solid rgba(251,191,36,0.9);
+    box-shadow: 0 0 8px rgba(251,191,36,0.5), 0 0 20px rgba(251,191,36,0.2);
+}
+.stage-card.frame-q2 .frame-border::before,
+.boss-banner.frame-q2 .frame-border::before,
+.boss-mini-card.frame-q2 .frame-border::before {
+    inset: -6px;
+    border: 2px dashed rgba(251,191,36,0.45);
+    animation: frame-rotate 14s linear infinite;
+    opacity: 0.9;
+}
+
+/* q3 橙焰巨锤：火焰呼吸脉动 */
+@keyframes frame-flame {
+    0%, 100% { box-shadow: 0 0 6px rgba(249,115,22,0.55), 0 0 14px rgba(249,115,22,0.3), 0 0 30px rgba(249,115,22,0.12); }
+    50% { box-shadow: 0 0 10px rgba(249,115,22,0.85), 0 0 28px rgba(249,115,22,0.55), 0 0 60px rgba(249,115,22,0.25); }
+}
+.stage-card.frame-q3 .frame-border,
+.boss-banner.frame-q3 .frame-border,
+.boss-mini-card.frame-q3 .frame-border {
+    border: 2px solid rgba(249,115,22,0.95);
+    animation: frame-flame 1.4s ease-in-out infinite;
+}
+
+/* q4 暗紫密谋：迷雾漂移 + 点状虚线框 */
+@keyframes frame-mist {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+.stage-card.frame-q4 .frame-border,
+.boss-banner.frame-q4 .frame-border,
+.boss-mini-card.frame-q4 .frame-border {
+    border: 2px dotted rgba(139,92,246,0.85);
+    box-shadow: 0 0 10px rgba(139,92,246,0.4), 0 0 24px rgba(139,92,246,0.18);
+    animation: frame-mist 4.5s ease-in-out infinite;
+}
+
+/* q5 赤红幻术：警戒闪烁双圈 */
+@keyframes frame-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+.stage-card.frame-q5 .frame-border,
+.boss-banner.frame-q5 .frame-border,
+.boss-mini-card.frame-q5 .frame-border {
+    border: 2px solid rgba(239,68,68,0.95);
+    outline: 1px dashed rgba(239,68,68,0.6);
+    outline-offset: 3px;
+    box-shadow: 0 0 8px rgba(239,68,68,0.5), 0 0 22px rgba(239,68,68,0.2);
+    animation: frame-blink 1s steps(2, jump-none) infinite;
+}
+
+/* q6 烈焰荆棘：尖刺外圈旋转 */
+.stage-card.frame-q6 .frame-border,
+.boss-banner.frame-q6 .frame-border,
+.boss-mini-card.frame-q6 .frame-border {
+    border: 2px solid rgba(220,38,38,0.95);
+    box-shadow: 0 0 8px rgba(220,38,38,0.55), 0 0 22px rgba(220,38,38,0.25);
+}
+.stage-card.frame-q6 .frame-border::before,
+.boss-banner.frame-q6 .frame-border::before,
+.boss-mini-card.frame-q6 .frame-border::before {
+    inset: -14px;
+    background: conic-gradient(from var(--frame-angle, 0deg), transparent 0% 78%, #dc2626 88%, transparent 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: frame-rotate 3.5s linear infinite;
+    opacity: 0.8;
+}
+
+/* q7 极光幻彩：多色极光流动 */
+@keyframes frame-aurora {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+.stage-card.frame-q7 .frame-border,
+.boss-banner.frame-q7 .frame-border,
+.boss-mini-card.frame-q7 .frame-border {
+    border: 2px solid transparent;
+    background: linear-gradient(90deg, #22c55e, #a78bfa, #fbbf24, #f97316, #8b5cf6, #ef4444, #7c3aed) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    box-shadow: 0 0 10px rgba(124,58,237,0.5);
+    animation: frame-aurora 6s linear infinite;
+}
