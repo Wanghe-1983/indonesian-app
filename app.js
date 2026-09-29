@@ -456,6 +456,15 @@ async function initUI() {
                     <div class="home-card-desc">闯关挑战 · 计时答题 · 排行榜</div>
                     <div class="home-card-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
+                <div class="home-card" onclick="switchMainPage('messages')">
+                    <div class="home-card-icon" style="background:linear-gradient(135deg,#f472b6,#e879f9);">
+                        <i class="fas fa-note-sticky"></i>
+                        <span style="position:absolute;top:6px;right:12px;font-size:0.75rem;color:#fff;opacity:0.9;"><i class="fas fa-thumbtack" style="transform:rotate(-25deg);"></i></span>
+                    </div>
+                    <div class="home-card-title">留言墙</div>
+                    <div class="home-card-desc">便利贴留言 · 给任何人或自己</div>
+                    <div class="home-card-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
             </div>
         </div>
     </div>
@@ -573,6 +582,7 @@ async function initUI() {
     <div id="page-study-practice" style="display:none;"></div>
     <div id="page-study-stats" style="display:none;"></div>
     <div id="page-challenge" style="display:none;"></div>
+    <div id="page-messages" style="display:none;"></div>
 
     <div class="copyright" id="copyright">
         仅供学习・禁止商用 © 2026｜
@@ -2443,6 +2453,7 @@ async function switchMainPage(page) {
     const pagePractice = document.getElementById('page-study-practice');
     const pageStats = document.getElementById('page-study-stats');
     const pageChallenge = document.getElementById('page-challenge');
+    const pageMessages = document.getElementById('page-messages');
     const ctrl = document.getElementById('learn-inline-controls');
     const toggleTab = document.querySelector('.toggle-tab');
     const mainHeader = document.querySelector('.main-container > header');
@@ -2456,6 +2467,7 @@ async function switchMainPage(page) {
     if (pagePractice) pagePractice.style.display = 'none';
     if (pageStats) pageStats.style.display = 'none';
     if (pageChallenge) pageChallenge.style.display = 'none';
+    if (pageMessages) pageMessages.style.display = 'none';
     if (ctrl) ctrl.style.display = 'none';
 
     if (page === 'home') {
@@ -2544,6 +2556,21 @@ async function switchMainPage(page) {
         // 延迟初始化
         initChallengePage();
         _finishPageTransition(pageChallenge);
+    } else if (page === 'messages') {
+        // 留言墙：隐藏侧边栏，导航栏改为返回+标题
+        if (mainContainer) mainContainer.classList.add('full-width');
+        if (navTabs) {
+            navTabs.style.display = '';
+            navTabs.style.justifyContent = 'flex-end';
+            navTabs.innerHTML = `<div class="subpage-nav"><div class="subpage-nav-center"><i class="fas fa-note-sticky"></i> 留言墙</div><button class="subpage-nav-side" onclick="switchMainPage('home')"><i class="fas fa-chevron-left"></i> <span style="font-size:0.82rem;">返回主页</span></button></div>`;
+        }
+        if (mainHeader) mainHeader.style.display = '';
+        if (pageMessages) pageMessages.style.display = '';
+        if (sidebar) sidebar.style.display = 'none';
+        if (toggleTab) toggleTab.style.display = 'none';
+        if (copyRight) copyRight.style.display = '';
+        initMessagesPage();
+        _finishPageTransition(pageMessages);
     }
 }
 
@@ -3793,33 +3820,195 @@ function copyRosterJSON() {
 
 // 页面加载完成后初始化
 
+// ========== 留言墙（本地存储 fmi_messages） ==========
+function getMsgUser() {
+    try {
+        const u = JSON.parse(sessionStorage.getItem('fmi_user') || '{}');
+        return { name: u.name || u.username || '游客', username: u.username || '', role: u.role || 'user' };
+    } catch(e) { return { name: '游客', username: '', role: 'user' }; }
+}
+
+function getMessages() {
+    try { return JSON.parse(localStorage.getItem('fmi_messages') || '[]'); } catch(e) { return []; }
+}
+
+function saveMessages(list) {
+    // 本地存储容量保护：最多保留 500 条，超出丢弃最早
+    if (list.length > 500) list = list.slice(0, 500);
+    localStorage.setItem('fmi_messages', JSON.stringify(list));
+}
+
+function initMessagesPage() {
+    const root = document.getElementById('page-messages');
+    if (!root) return;
+    if (root.dataset.inited) { renderMessages(); return; }
+    root.dataset.inited = '1';
+    root.innerHTML = `
+        <div class="msg-wall">
+            <div class="msg-wall-head">
+                <div class="msg-wall-title"><i class="fas fa-note-sticky"></i> 留言墙</div>
+                <div class="msg-wall-sub">给任何人留言，也可以给自己留言 · 贴一张便利贴吧</div>
+            </div>
+            <div class="msg-post-card">
+                <div class="msg-post-row">
+                    <input id="msg-to" class="msg-input" placeholder="写给谁（昵称 / 所有人）" maxlength="20">
+                    <input id="msg-from" class="msg-input" placeholder="署名（留空默认用你的昵称）" maxlength="20">
+                </div>
+                <textarea id="msg-content" class="msg-textarea" rows="2" maxlength="200" placeholder="写下想说的话..."></textarea>
+                <div class="msg-post-bar">
+                    <span class="msg-tip"><i class="fas fa-info-circle"></i> 本地保存 · 仅当前浏览器可见（每天数据自动留存）</span>
+                    <button class="msg-send-btn" onclick="postMessage()"><i class="fas fa-paper-plane"></i> 发布留言</button>
+                </div>
+            </div>
+            <div id="msg-list" class="msg-list"></div>
+        </div>`;
+    renderMessages();
+}
+
+function renderMessages() {
+    const list = getMessages();
+    const box = document.getElementById('msg-list');
+    if (!box) return;
+    if (!list.length) {
+        box.innerHTML = '<div class="msg-empty"><i class="fas fa-note-sticky"></i> 还没有留言，来贴第一张便利贴吧</div>';
+        return;
+    }
+    const me = getMsgUser();
+    const colors = ['msg-n-yellow', 'msg-n-pink', 'msg-n-blue', 'msg-n-green'];
+    box.innerHTML = list.map((m, i) => {
+        const c = colors[i % colors.length];
+        const isMine = m.username && me.username && m.username === me.username;
+        const canDel = isMine || me.role === 'admin';
+        return `<div class="msg-note ${c}">
+            <div class="msg-note-pin"><i class="fas fa-thumbtack"></i></div>
+            <div class="msg-note-to"><i class="fas fa-paper-plane"></i> 致 ${escHtml(m.to || '所有人')}</div>
+            <div class="msg-note-content">${escHtml(m.content || '')}</div>
+            <div class="msg-note-foot">
+                <span class="msg-note-from"><i class="fas fa-user"></i> ${escHtml(m.from || '匿名')}</span>
+                <span class="msg-note-time">${m.time || ''}</span>
+                ${canDel ? `<button class="msg-del-btn" onclick="deleteMessage(${m.id})" title="删除"><i class="fas fa-times"></i></button>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function postMessage() {
+    const to = document.getElementById('msg-to').value.trim();
+    const content = document.getElementById('msg-content').value.trim();
+    if (!content) { alert('请输入留言内容'); return; }
+    const me = getMsgUser();
+    const fromName = document.getElementById('msg-from').value.trim() || me.name || '匿名';
+    const list = getMessages();
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    list.unshift({
+        id: Date.now(),
+        from: fromName,
+        username: me.username || 'guest',
+        role: me.role || 'user',
+        to: to || '所有人',
+        content: content.slice(0, 200),
+        time: (now.getMonth() + 1) + '/' + now.getDate() + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes())
+    });
+    saveMessages(list);
+    document.getElementById('msg-to').value = '';
+    document.getElementById('msg-content').value = '';
+    document.getElementById('msg-from').value = '';
+    renderMessages();
+}
+
+function deleteMessage(id) {
+    const me = getMsgUser();
+    let list = getMessages();
+    const m = list.find(x => x.id === id);
+    if (!m) return;
+    if (!(m.username && me.username && m.username === me.username) && me.role !== 'admin') {
+        alert('只能删除自己的留言');
+        return;
+    }
+    list = list.filter(x => x.id !== id);
+    saveMessages(list);
+    renderMessages();
+}
+
 // ========== 前台广播功能 ==========
+// 获取当前佩戴称号名（用于登录播报）
+function getEquippedTitleName() {
+    try {
+        var id = localStorage.getItem('challenge_equipped_title') || '';
+        if (id && typeof ChallengeModule !== 'undefined' && ChallengeModule._titleDefs && ChallengeModule._titleDefs[id]) {
+            return ChallengeModule._titleDefs[id].name;
+        }
+    } catch(e) {}
+    return '';
+}
+
 async function loadBroadcasts() {
     try {
         // 先读取广播配置
         let bcConfig = { enabled: true, allowClose: false, interval: 8 };
+        let broadcasts = [];
+        let remoteOK = false;
+
+        // 优先服务端
         try {
             const cfgRes = await fetch((CONFIG.apiBase || location.origin) + '/api/broadcast/config');
             if (cfgRes.ok) bcConfig = { ...bcConfig, ...await cfgRes.json() };
+            const res = await fetch((CONFIG.apiBase || location.origin) + '/api/broadcast/active');
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.broadcasts && data.broadcasts.length > 0) { broadcasts = data.broadcasts; remoteOK = true; }
+            }
         } catch(e) {}
 
-        // 如果未启用广播，直接返回
+        // 本地回退（本地管理模式：读 fmi_broadcast）
+        if (!remoteOK) {
+            try {
+                const store = JSON.parse(localStorage.getItem('fmi_broadcast') || 'null');
+                if (store) {
+                    bcConfig = Object.assign({}, bcConfig, store.config || {});
+                    broadcasts = store.broadcasts || [];
+                }
+            } catch(e) {}
+        }
+
+        // 手动播报 flash（管理员即时播报，一次显示后清除）
+        try {
+            const flash = JSON.parse(localStorage.getItem('fmi_broadcast_flash') || 'null');
+            if (flash && flash.content) {
+                broadcasts = broadcasts.filter(b => !(b._flash && b._flash === flash.ts));
+                broadcasts.unshift({ id: 'flash-' + flash.ts, title: flash.title || '系统播报', content: flash.content, type: 'notice', isActive: true, _flash: flash.ts });
+                localStorage.removeItem('fmi_broadcast_flash');
+            }
+        } catch(e) {}
+
+        // 登录播报（默认功能：登录后推送 "欢迎词，佩戴称号，用户名 登录"）
+        try {
+            const ui = JSON.parse(sessionStorage.getItem('fmi_user') || '{}');
+            const hasLogin = !!(ui && (ui.username || ui.name));
+            const announced = sessionStorage.getItem('fmi_login_announced');
+            if (hasLogin && bcConfig.loginEnabled !== false && !announced) {
+                const welcome = (bcConfig.loginWelcome || '欢迎').trim() || '欢迎';
+                const titleName = getEquippedTitleName();
+                const who = ui.name || ui.username || '用户';
+                let msg = welcome + '，' + (titleName ? titleName + '，' : '') + who + ' 登录';
+                broadcasts.unshift({ id: 'login-' + Date.now(), title: '欢迎播报', content: msg, type: 'welcome', isActive: true });
+                sessionStorage.setItem('fmi_login_announced', '1');
+            }
+        } catch(e) {}
+
+        // 如果未启用广播（关闭小广播），直接返回
         if (!bcConfig.enabled) return;
 
-        const res = await fetch((CONFIG.apiBase || location.origin) + '/api/broadcast/active');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data || !data.broadcasts || data.broadcasts.length === 0) return;
-
-        const broadcasts = data.broadcasts.filter(b => {
-            if (!b.isActive) return false;
+        const valid = broadcasts.filter(b => {
+            if (b.isActive === false) return false;
             const now = new Date().toISOString().slice(0, 10);
             if (b.startDate && b.startDate > now) return false;
             if (b.endDate && b.endDate < now) return false;
             return true;
         });
 
-        if (broadcasts.length === 0) return;
+        if (valid.length === 0) return;
 
         const bar = document.getElementById('broadcast-bar');
         if (!bar) return;
@@ -3838,17 +4027,17 @@ async function loadBroadcasts() {
         }
 
         // 显示第一条广播
-        const bc = broadcasts[0];
+        const bc = valid[0];
         document.getElementById('broadcast-text').textContent = bc.content || '';
         document.getElementById('broadcast-title').textContent = bc.title || '';
         bar.style.display = '';
         // 如果有多条，自动轮播
-        if (broadcasts.length > 1) {
+        if (valid.length > 1) {
             const interval = (bcConfig.interval || 8) * 1000;
             let idx = 0;
             setInterval(() => {
-                idx = (idx + 1) % broadcasts.length;
-                const current = broadcasts[idx];
+                idx = (idx + 1) % valid.length;
+                const current = valid[idx];
                 const textEl = document.getElementById('broadcast-text');
                 const titleEl = document.getElementById('broadcast-title');
                 if (textEl && titleEl && bar.style.display !== 'none') {
@@ -3876,6 +4065,8 @@ window.onload = async function() {
     checkLoginStatus(); // 界面渲染完毕后，二次调用以安全写入用户名
     updateStats();
     loadBroadcasts();
+    // 广播轮询（管理员手动播报/新增广播 20s 自动刷新）
+    setInterval(function() { loadBroadcasts(); }, 20000);
 
     // 【v2.0 KV 后端对接】启动心跳、学习同步、在线人数显示
     if (API.isLoggedIn()) {

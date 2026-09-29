@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -44,6 +44,7 @@
     // 本地回退: API 不可用时读写 localStorage, 与前端 fmi_admin_settings 闭环
     const ADMIN_LOCAL_KEYS = { 'admin/settings':'fmi_admin_settings','admin/whitelist':'fmi_whitelist','admin/users':'fmi_users','admin/online':'fmi_online','admin/leaderboard-config':'fmi_leaderboard_config','admin/broadcast':'fmi_broadcast','admin/user-guide':'fmi_user_guide','admin/banner-config':'fmi_banner_config' };
     function adminFallback(path, opts) {
+        if (path && path.indexOf('broadcast') === 0) return broadcastFallback(path, opts);
         const key = ADMIN_LOCAL_KEYS[path];
         if (!key) return { success:false, error:'本地模式不支持该接口:' + path };
         try {
@@ -61,6 +62,56 @@
             }
             return { success:true, local:true };
         } catch(e2) { console.warn('[Admin] 本地保存失败:', key, e2.message); return { success:false, error:'本地保存失败' }; }
+    }
+
+    // 广播本地回退（fmi_broadcast = { broadcasts:[], config:{} } 统一结构）
+    function broadcastFallback(path, opts) {
+        try {
+            let store = null;
+            try { store = JSON.parse(localStorage.getItem('fmi_broadcast') || 'null'); } catch(e) {}
+            if (!store || typeof store !== 'object' || Array.isArray(store)) {
+                // 兼容旧格式（单条广播对象）
+                if (store && store.title && store.content) store = { broadcasts: [store], config: {} };
+                else store = { broadcasts: [], config: {} };
+            }
+            if (!Array.isArray(store.broadcasts)) store.broadcasts = [];
+            if (!store.config || typeof store.config !== 'object') store.config = {};
+
+            const method = opts.method || 'GET';
+            if (method === 'GET') {
+                if (path === 'broadcast/list') return { broadcasts: store.broadcasts };
+                if (path === 'broadcast/config') return store.config;
+                return { success:false, error:'本地模式不支持该接口:' + path };
+            }
+            const bodyObj = opts.body ? JSON.parse(opts.body) : null;
+            if (!bodyObj) return { success:true, local:true };
+            if (path === 'broadcast/save') {
+                if (bodyObj.id) {
+                    const idx = store.broadcasts.findIndex(b => b.id === bodyObj.id);
+                    if (idx >= 0) store.broadcasts[idx] = Object.assign({}, store.broadcasts[idx], bodyObj);
+                    else { bodyObj.id = Date.now(); store.broadcasts.push(bodyObj); }
+                } else {
+                    bodyObj.id = Date.now();
+                    store.broadcasts.unshift(bodyObj);
+                }
+                localStorage.setItem('fmi_broadcast', JSON.stringify(store));
+                return { success:true, local:true };
+            }
+            if (path === 'broadcast/delete') {
+                store.broadcasts = store.broadcasts.filter(b => b.id !== bodyObj.id);
+                localStorage.setItem('fmi_broadcast', JSON.stringify(store));
+                return { success:true, local:true };
+            }
+            if (path === 'broadcast/config') {
+                store.config = Object.assign({}, store.config, bodyObj);
+                localStorage.setItem('fmi_broadcast', JSON.stringify(store));
+                return { success:true, local:true };
+            }
+            return { success:false, error:'本地模式不支持该接口:' + path };
+        } catch(e2) {
+            console.warn('[Admin] 广播本地保存失败:', e2.message);
+            return { success:false, error:'广播本地保存失败' };
+        }
     }
 
     
@@ -789,6 +840,21 @@
 
                         <button class="hdr-btn primary" onclick="saveBroadcastConfig()" style="white-space:nowrap;"><i class="fas fa-save"></i> 保存配置</button>
                     </div>
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:12px;border-top:1px dashed rgba(255,255,255,0.08);">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.85rem;color:#94a3b8;">登录播报（有人登录自动推送）</label>
+                            <input type="checkbox" id="bc-login-enabled" style="width:18px;height:18px;accent-color:#f472b6;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.85rem;color:#94a3b8;">默认欢迎词</label>
+                            <input type="text" id="bc-login-welcome" value="欢迎" placeholder="如：欢迎" style="width:110px;padding:6px 10px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:220px;">
+                            <label style="font-size:0.85rem;color:#94a3b8;white-space:nowrap;">手动播报</label>
+                            <input type="text" id="bc-manual-content" placeholder="输入内容，立即推送到前端" style="flex:1;min-width:140px;padding:6px 10px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;outline:none;">
+                            <button class="hdr-btn primary" onclick="sendManualBroadcast()" style="white-space:nowrap;"><i class="fas fa-paper-plane"></i> 立即播报</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 添加广播 -->
@@ -802,6 +868,7 @@
                         <div style="flex:1;min-width:120px;">
                             <label style="font-size:0.8rem;color:#94a3b8;display:block;margin-bottom:4px;">类型</label>
                             <select id="bc-type" style="width:100%;padding:8px 12px;background:rgba(30,41,59,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;">
+                                <option value="welcome">欢迎播报</option>
                                 <option value="notice">公告通知</option>
                                 <option value="update">版本更新</option>
                                 <option value="event">活动消息</option>
@@ -2980,8 +3047,8 @@ function toggleQuestionTypeOptions(mode) {
                 return;
             }
             empty.style.display = 'none';
-            const typeLabels = { notice: '公告通知', update: '版本更新', event: '活动消息', champion: '打榜冠军' };
-            const typeColors = { notice: '#60a5fa', update: '#a78bfa', event: '#fbbf24', champion: '#f472b6' };
+            const typeLabels = { welcome: '欢迎播报', notice: '公告通知', update: '版本更新', event: '活动消息', champion: '打榜冠军' };
+            const typeColors = { welcome: '#34d399', notice: '#60a5fa', update: '#a78bfa', event: '#fbbf24', champion: '#f472b6' };
             container.innerHTML = '<table class="data-table"><thead><tr><th>标题</th><th>类型</th><th>状态</th><th>排序</th><th>日期范围</th><th>操作</th></tr></thead><tbody>' +
                 broadcasts.map(b => '<tr>' +
                     '<td style="font-weight:600;">' + esc(b.title || '') + '</td>' +
@@ -3085,6 +3152,8 @@ function toggleQuestionTypeOptions(mode) {
             document.getElementById('bc-interval').value = config.interval || 8;
             document.getElementById('bc-loop-count').value = config.loopCount || 0;
             document.getElementById('bc-allow-close').checked = !!config.allowClose;
+            document.getElementById('bc-login-enabled').checked = !!config.loginEnabled;
+            document.getElementById('bc-login-welcome').value = config.loginWelcome || '欢迎';
         } catch(e) {}
     }
 
@@ -3093,7 +3162,9 @@ function toggleQuestionTypeOptions(mode) {
             enabled: document.getElementById('bc-enabled').checked,
             interval: parseInt(document.getElementById('bc-interval').value) || 8,
             loopCount: parseInt(document.getElementById('bc-loop-count').value) || 0,
-            allowClose: document.getElementById('bc-allow-close').checked
+            allowClose: document.getElementById('bc-allow-close').checked,
+            loginEnabled: document.getElementById('bc-login-enabled').checked,
+            loginWelcome: (document.getElementById('bc-login-welcome').value || '欢迎').trim() || '欢迎'
         };
         const result = await adminFetch('broadcast/config', { method: 'PUT', body: JSON.stringify(config) });
         if (result && result.success) {
@@ -3101,6 +3172,15 @@ function toggleQuestionTypeOptions(mode) {
         } else {
             showAdminToast(result?.error || '保存失败', 'error');
         }
+    }
+
+    // 手动播报：内容写入 fmi_broadcast_flash，前端轮询即时显示
+    async function sendManualBroadcast() {
+        const content = document.getElementById('bc-manual-content').value.trim();
+        if (!content) { showAdminToast('请输入播报内容', 'error'); return; }
+        localStorage.setItem('fmi_broadcast_flash', JSON.stringify({ title: '系统播报', content, ts: Date.now() }));
+        document.getElementById('bc-manual-content').value = '';
+        showAdminToast('播报已发送，前端即时显示', 'success');
     }
 
     window.switchTab = function(tab, el) {

@@ -8626,3 +8626,128 @@
 }
 .hc-boss-tag.pending { color: #64748b; }
 .hc-boss-item.done .hc-boss-tag { color: #22c55e; }
+
+/* ====== 留言墙（便利贴 + 图钉风格） ====== */
+.msg-wall {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 18px 16px 30px;
+}
+.msg-wall-head { text-align: center; padding: 8px 0 16px; }
+.msg-wall-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #f9a8d4;
+    letter-spacing: 1px;
+}
+.msg-wall-title i { margin-right: 6px; }
+.msg-wall-sub { font-size: 0.72rem; color: #64748b; margin-top: 5px; }
+.msg-post-card {
+    background: rgba(30,41,59,0.5);
+    border: 1px solid rgba(244,114,182,0.2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.msg-post-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.msg-input {
+    flex: 1;
+    min-width: 160px;
+    padding: 8px 12px;
+    background: rgba(15,23,42,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    outline: none;
+}
+.msg-input:focus, .msg-textarea:focus { border-color: rgba(244,114,182,0.5); }
+.msg-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(15,23,42,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    outline: none;
+    resize: vertical;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+.msg-post-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 10px; flex-wrap: wrap; }
+.msg-tip { font-size: 0.66rem; color: #64748b; }
+.msg-send-btn {
+    padding: 8px 20px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ec4899, #d946ef);
+    border: none;
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(236,72,153,0.35);
+    transition: all 0.2s;
+}
+.msg-send-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(236,72,153,0.5); }
+.msg-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+}
+.msg-note {
+    position: relative;
+    border-radius: 4px 16px 4px 4px;
+    padding: 20px 14px 12px;
+    min-height: 120px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.msg-note:hover { transform: translateY(-3px) rotate(0.5deg); box-shadow: 0 10px 26px rgba(0,0,0,0.4); }
+.msg-note-pin {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-12deg);
+    color: rgba(71,85,105,0.9);
+    font-size: 1.05rem;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4));
+}
+.msg-n-yellow { background: linear-gradient(160deg, #fef3c7, #fde68a); color: #78350f; }
+.msg-n-pink   { background: linear-gradient(160deg, #fbcfe8, #f9a8d4); color: #831843; }
+.msg-n-blue   { background: linear-gradient(160deg, #c7d2fe, #a5b4fc); color: #1e1b4b; }
+.msg-n-green  { background: linear-gradient(160deg, #bbf7d0, #86efac); color: #14532d; }
+.msg-note-to { font-size: 0.66rem; font-weight: 700; opacity: 0.75; }
+.msg-note-content { font-size: 0.85rem; line-height: 1.5; word-break: break-word; flex: 1; }
+.msg-note-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.66rem;
+    opacity: 0.8;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(0,0,0,0.15);
+}
+.msg-note-from { font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-del-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.7rem;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    padding: 2px 4px;
+}
+.msg-del-btn:hover { opacity: 1; color: #dc2626; }
+.msg-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #64748b;
+    padding: 50px 0;
+    font-size: 0.85rem;
+}
+.msg-empty i { display: block; font-size: 2.2rem; margin-bottom: 10px; color: #475569; }
