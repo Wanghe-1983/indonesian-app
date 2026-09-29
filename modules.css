@@ -8434,3 +8434,195 @@
     border: 1px solid rgba(251,191,36,0.45);
     box-shadow: 0 0 4px rgba(251,191,36,0.5);
 }
+
+/* ====== 地狱排行榜（多分支） ====== */
+.hell-rank-head {
+    text-align: center;
+    padding: 14px 16px 10px;
+}
+.hell-rank-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f87171;
+    letter-spacing: 1px;
+}
+.hell-rank-title i { margin-right: 6px; }
+.hell-rank-sub {
+    font-size: 0.68rem;
+    color: #64748b;
+    margin-top: 4px;
+}
+.rank-branch-tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 6px 8px 14px;
+}
+.rank-branch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(51,65,85,0.35);
+    border: 1px solid rgba(148,163,184,0.2);
+    color: #94a3b8;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.rank-branch-btn:hover { color: #e2e8f0; border-color: rgba(148,163,184,0.4); }
+.rank-branch-btn.active {
+    background: linear-gradient(135deg, rgba(239,68,68,0.25), rgba(153,27,27,0.15));
+    color: #fca5a5;
+    border-color: rgba(248,113,113,0.5);
+    box-shadow: 0 0 10px rgba(239,68,68,0.2);
+}
+/* 首杀榜条目 */
+.rank-first-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: 0 0 6px;
+    background: rgba(30,41,59,0.45);
+    border: 1px solid rgba(148,163,184,0.12);
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+.rank-first-item:hover { background: rgba(30,41,59,0.7); transform: translateX(2px); }
+.rank-first-item.champion {
+    background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(139,92,246,0.06));
+    border-color: rgba(139,92,246,0.35);
+    box-shadow: 0 0 16px rgba(139,92,246,0.15);
+}
+.rank-first-item.locked { opacity: 0.55; }
+.rf-rank {
+    width: 30px;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #fbbf24;
+}
+.rank-first-item.locked .rf-rank { color: #475569; }
+.rf-title {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.rf-boss {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.rank-first-item.champion .rf-boss {
+    background: linear-gradient(90deg, #c084fc, #f0abfc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.rf-tag {
+    flex-shrink: 0;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(251,191,36,0.12);
+    border: 1px solid rgba(251,191,36,0.3);
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.rf-tag.pending {
+    color: #64748b;
+    background: rgba(100,116,139,0.1);
+    border-color: rgba(100,116,139,0.25);
+}
+.rf-user {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    white-space: nowrap;
+}
+.rf-user i { color: #818cf8; margin-right: 4px; }
+.rf-stat {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+/* 全通榜卡片 */
+.hell-clear-card {
+    background: rgba(15,23,42,0.6);
+    border: 1px solid rgba(148,163,184,0.15);
+    border-radius: 16px;
+    padding: 16px;
+    margin: 0 2px;
+}
+.hc-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #e2e8f0;
+    padding-bottom: 10px;
+}
+.hc-head i { color: #f87171; }
+.hc-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.hc-progress-bar {
+    flex: 1;
+    height: 10px;
+    background: rgba(51,65,85,0.5);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.hc-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f87171, #ef4444);
+    border-radius: 999px;
+    transition: width 0.4s;
+}
+.hc-progress-text { font-size: 0.7rem; color: #94a3b8; white-space: nowrap; }
+.hc-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.hc-stat {
+    text-align: center;
+    background: rgba(51,65,85,0.3);
+    border-radius: 10px;
+    padding: 10px 4px;
+}
+.hc-num { display: block; font-size: 1rem; font-weight: 800; color: #f87171; }
+.hc-label { font-size: 0.62rem; color: #64748b; }
+.hc-boss-list { display: flex; flex-direction: column; gap: 5px; }
+.hc-boss-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(51,65,85,0.2);
+    font-size: 0.72rem;
+    color: #cbd5e1;
+}
+.hc-boss-tag {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-weight: 700;
+}
+.hc-boss-tag.pending { color: #64748b; }
+.hc-boss-item.done .hc-boss-tag { color: #22c55e; }

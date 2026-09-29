@@ -550,6 +550,20 @@ const ChallengeModule = {
 
     },
 
+    /** 取 BOSS 中文名（name 形如 'Kalabendu 混沌王'，取末段） */
+    _bossCnNameOf(bd, lv) {
+        if (bd && bd.name) {
+            const parts = String(bd.name).split(/\s+/).filter(Boolean);
+            if (parts.length) return parts[parts.length - 1];
+        }
+        const def = this._bossDefs && this._bossDefs[String(lv)];
+        if (def && def.name) {
+            const parts = String(def.name).split(/\s+/).filter(Boolean);
+            if (parts.length) return parts[parts.length - 1];
+        }
+        return 'BOSS-' + lv;
+    },
+
     // 用户角色形象定义（按等级成长）
     _heroDefs: {
         '0': { name: '竹甲勇士', icon: 'fa-person-hiking', color: '#84cc16', desc: '竹甲木矛的初心勇者', image: 'assets/hero/hero-q0.png' },
@@ -2897,6 +2911,43 @@ const ChallengeModule = {
         localStorage.setItem('fmi_challenge_progress', JSON.stringify(progress));
         this.serverProgress = progress;
 
+        // ===== 地狱模式本地排行榜记录（高分/速通 + BOSS首杀） =====
+        if (this.challengeMode === 'hell' && stars >= 1) {
+            try {
+                const uinfo = JSON.parse(sessionStorage.getItem('fmi_user') || '{}');
+                const uname = uinfo.username || 'guest';
+                const unick = uinfo.name || uname;
+                // 高分/速通记录（每用户每关保留最优）
+                const hr = JSON.parse(localStorage.getItem('fmi_hell_rank') || '{}');
+                if (!hr[stageId]) hr[stageId] = {};
+                const prevR = hr[stageId][uname];
+                if (!prevR || score > prevR.score || (score === prevR.score && timeSpent < prevR.time)) {
+                    hr[stageId][uname] = { name: unick, score: Math.round(score * 10) / 10, time: timeSpent, accuracy: Math.round(accuracy * 10) / 10, stars, updatedAt: Date.now() };
+                    localStorage.setItem('fmi_hell_rank', JSON.stringify(hr));
+                }
+                // BOSS 大BOSS首杀（地狱模式, 击败即入首杀榜, 每个BOSS仅首杀一条）
+                const stageDef = (this.allStages || []).find(s => s.id === stageId);
+                if (stageDef && stageDef._isBoss && stageDef.bossType !== 'mini') {
+                    const bf = JSON.parse(localStorage.getItem('fmi_boss_firsts') || '{}');
+                    if (!bf[stageId]) {
+                        const bd = stageDef.bossDef || {};
+                        bf[stageId] = {
+                            username: uname,
+                            name: unick,
+                            bossName: this._bossCnNameOf(bd, stageDef.bossLevel),
+                            bossLevel: stageDef.bossLevel,
+                            score: Math.round(score * 10) / 10,
+                            time: timeSpent,
+                            accuracy: Math.round(accuracy * 10) / 10,
+                            stars,
+                            clearedAt: Date.now()
+                        };
+                        localStorage.setItem('fmi_boss_firsts', JSON.stringify(bf));
+                    }
+                }
+            } catch (e) {}
+        }
+
         // 提交到服务端
         try {
             await API.request('challenge/submit', {
@@ -2993,6 +3044,12 @@ const ChallengeModule = {
     async renderRank(container) {
         container.innerHTML = '<div style="text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>';
 
+        // 地狱模式：本地多分支排行榜（首杀/高分/速通/全通）
+        if (this.challengeMode === 'hell') {
+            this._renderHellRank(container);
+            return;
+        }
+
         // 周冠军广播
         let championHTML = '';
         try {
@@ -3049,6 +3106,202 @@ const ChallengeModule = {
                 </div>
             </div>
         `;
+    },
+
+    // ===== 地狱排行榜（本地多分支） =====
+    _renderHellRank(container) {
+        const rankData = JSON.parse(localStorage.getItem('fmi_hell_rank') || '{}');
+        const bossFirsts = JSON.parse(localStorage.getItem('fmi_boss_firsts') || '{}');
+        const progress = JSON.parse(localStorage.getItem('fmi_challenge_progress') || '{}');
+        const hellStages = CourseContent.getAllStages('hell') || [];
+        const hellBosses = hellStages.filter(s => s._isBoss && s.bossType !== 'mini');
+
+        // 高分/速通聚合
+        const entries = [];
+        for (const [sid, users] of Object.entries(rankData)) {
+            const stageDef = hellStages.find(s => s.id === sid);
+            const stageName = stageDef ? (stageDef.bossDef ? this._bossCnNameOf(stageDef.bossDef, stageDef.bossLevel) : (stageDef.name || sid)) : sid;
+            for (const [uname, rec] of Object.entries(users)) {
+                entries.push({ sid, uname, name: rec.name || uname, score: rec.score, time: rec.time, accuracy: rec.accuracy, stars: rec.stars, stageName });
+            }
+        }
+        const scoreList = entries.slice().sort((a, b) => b.score - a.score);
+        const speedList = entries.slice().sort((a, b) => a.time - b.time);
+
+        // 首杀榜：8个BOSS按层级排列
+        const bossRows = [];
+        for (let lv = 0; lv <= 7; lv++) {
+            const rec = Object.values(bossFirsts).find(r => String(r.bossLevel) === String(lv));
+            const bossDef = this._bossDefs[String(lv)];
+            bossRows.push({ lv, name: this._bossCnNameOf(bossDef, lv), rec });
+        }
+
+        // 全通榜：当前用户地狱进度
+        const uinfo = JSON.parse(sessionStorage.getItem('fmi_user') || '{}');
+        const uname = uinfo.username || 'guest';
+        const hellIds = new Set(hellStages.map(s => s.id));
+        const clearedHell = Object.keys(progress).filter(sid => hellIds.has(sid) && progress[sid].cleared).length;
+        const hellTotal = hellIds.size;
+        const hellScore = Object.keys(progress).filter(sid => hellIds.has(sid)).reduce((sum, sid) => sum + (progress[sid].bestScore || 0), 0);
+        const hellStars = Object.keys(progress).filter(sid => hellIds.has(sid)).reduce((sum, sid) => sum + (progress[sid].stars || 0), 0);
+        const clearedPct = hellTotal > 0 ? Math.round(clearedHell / hellTotal * 100) : 0;
+
+        container.innerHTML = `
+            <div class="rank-page hell-rank-page">
+                <div class="hell-rank-head">
+                    <div class="hell-rank-title"><i class="fas fa-skull-crossbones"></i> 地狱排行榜</div>
+                    <div class="hell-rank-sub">击败大 BOSS 解锁首杀称号入榜</div>
+                </div>
+                <div class="rank-branch-tabs">
+                    <button class="rank-branch-btn active" data-branch="first" onclick="ChallengeModule.switchHellRank('first', this)"><i class="fas fa-trophy"></i> 首杀榜</button>
+                    <button class="rank-branch-btn" data-branch="score" onclick="ChallengeModule.switchHellRank('score', this)"><i class="fas fa-fire"></i> 高分榜</button>
+                    <button class="rank-branch-btn" data-branch="speed" onclick="ChallengeModule.switchHellRank('speed', this)"><i class="fas fa-bolt"></i> 速通榜</button>
+                    <button class="rank-branch-btn" data-branch="clear" onclick="ChallengeModule.switchHellRank('clear', this)"><i class="fas fa-flag-checkered"></i> 全通榜</button>
+                </div>
+                <div id="hell-rank-body">${this._hellRankBody('first', bossRows, scoreList, speedList, clearedHell, hellTotal, hellScore, hellStars, clearedPct, uname)}</div>
+            </div>
+        `;
+    },
+
+    _hellRankBody(branch, bossRows, scoreList, speedList, clearedHell, hellTotal, hellScore, hellStars, clearedPct, uname) {
+        if (branch === 'first') {
+            if (bossRows.every(r => !r.rec)) {
+                return '<div style="text-align:center;color:var(--text-muted);padding:40px;"><i class="fas fa-crown" style="display:block;font-size:2rem;margin-bottom:10px;color:#475569;"></i>暂无首杀记录<br><span style="font-size:0.7rem;">在地狱模式击败大 BOSS 即可解锁首杀称号入榜</span></div>';
+            }
+            return `
+                <div class="rank-list">
+                    <div class="rank-header first-header">
+                        <div class="rank-position">层级</div>
+                        <div class="rank-name">首杀称号</div>
+                        <div class="rank-company">挑战者</div>
+                        <div class="rank-score">用时 / 评分</div>
+                    </div>
+                    ${bossRows.map(r => {
+                        if (!r.rec) {
+                            return `<div class="rank-first-item locked">
+                                <div class="rf-rank">${String(r.lv + 1).padStart(2, '0')}</div>
+                                <div class="rf-title"><span class="rf-boss">${r.name}</span><span class="rf-tag pending">待挑战</span></div>
+                                <div class="rf-user">-</div>
+                                <div class="rf-stat">--</div>
+                            </div>`;
+                        }
+                        const isMe = r.rec.username === uname;
+                        const mm = Math.floor(r.rec.time / 60);
+                        const ss = r.rec.time % 60;
+                        return `<div class="rank-first-item ${isMe ? 'rank-me' : ''} ${r.lv === 7 ? 'champion' : ''}">
+                            <div class="rf-rank">${String(r.lv + 1).padStart(2, '0')}</div>
+                            <div class="rf-title"><span class="rf-boss">${r.rec.bossName}首杀</span><span class="rf-tag"><i class="fas fa-crown"></i> 首杀</span></div>
+                            <div class="rf-user"><i class="fas fa-user"></i> ${r.rec.name}</div>
+                            <div class="rf-stat">用时 ${mm}分${ss}秒 · 评分 ${r.rec.score}</div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+        }
+        if (branch === 'score') {
+            const list = scoreList.slice(0, 50);
+            if (!list.length) return '<div style="text-align:center;color:var(--text-muted);padding:40px;">暂无高分记录，快去地狱闯关吧</div>';
+            return `
+                <div class="rank-list">
+                    <div class="rank-header">
+                        <div class="rank-position">排名</div>
+                        <div class="rank-name">昵称</div>
+                        <div class="rank-company">关卡</div>
+                        <div class="rank-score">评分</div>
+                    </div>
+                    ${list.map((r, i) => {
+                        const rankClass = i < 3 ? `rank-${i + 1}` : '';
+                        const isMe = r.uname === uname;
+                        return `<div class="rank-item ${isMe ? 'rank-me' : ''} ${rankClass}">
+                            <div class="rank-position ${i < 3 ? 'rank-top' : ''}">${i < 3 ? '<i class="fas fa-crown"></i>' : (i + 1)}</div>
+                            <div class="rank-name">${r.name}</div>
+                            <div class="rank-company" style="font-size:0.65rem;">${r.stageName}</div>
+                            <div class="rank-score">${r.score.toFixed(1)}<span style="display:block;font-size:0.6rem;color:#64748b;">${Math.floor(r.time / 60)}分${r.time % 60}秒</span></div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+        }
+        if (branch === 'speed') {
+            const list = speedList.slice(0, 50);
+            if (!list.length) return '<div style="text-align:center;color:var(--text-muted);padding:40px;">暂无速通记录，快去地狱闯关吧</div>';
+            return `
+                <div class="rank-list">
+                    <div class="rank-header">
+                        <div class="rank-position">排名</div>
+                        <div class="rank-name">昵称</div>
+                        <div class="rank-company">关卡</div>
+                        <div class="rank-score">用时</div>
+                    </div>
+                    ${list.map((r, i) => {
+                        const rankClass = i < 3 ? `rank-${i + 1}` : '';
+                        const isMe = r.uname === uname;
+                        return `<div class="rank-item ${isMe ? 'rank-me' : ''} ${rankClass}">
+                            <div class="rank-position ${i < 3 ? 'rank-top' : ''}">${i < 3 ? '<i class="fas fa-crown"></i>' : (i + 1)}</div>
+                            <div class="rank-name">${r.name}</div>
+                            <div class="rank-company" style="font-size:0.65rem;">${r.stageName}</div>
+                            <div class="rank-score" style="color:#fbbf24;">${Math.floor(r.time / 60)}分${r.time % 60}秒<span style="display:block;font-size:0.6rem;color:#64748b;">评分 ${r.score.toFixed(1)}</span></div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+        }
+        // 全通榜
+        const bfList = bossRows.filter(r => r.rec);
+        return `
+            <div class="hell-clear-card">
+                <div class="hc-head"><i class="fas fa-user-shield"></i> 我的地狱征程</div>
+                <div class="hc-progress"><div class="hc-progress-bar"><div class="hc-progress-fill" style="width:${clearedPct}%;"></div></div><span class="hc-progress-text">${clearedHell} / ${hellTotal} 关</span></div>
+                <div class="hc-stats">
+                    <div class="hc-stat"><span class="hc-num">${clearedHell}</span><span class="hc-label">通关关卡</span></div>
+                    <div class="hc-stat"><span class="hc-num">${Math.round(hellScore)}</span><span class="hc-label">累计积分</span></div>
+                    <div class="hc-stat"><span class="hc-num">${hellStars}</span><span class="hc-label">累计星级</span></div>
+                    <div class="hc-stat"><span class="hc-num">${bfList.length}</span><span class="hc-label">BOSS击杀</span></div>
+                </div>
+                <div class="hc-boss-list">
+                    ${bossRows.map(r => {
+                        if (r.rec) {
+                            return `<div class="hc-boss-item done"><i class="fas fa-check-circle" style="color:#22c55e;"></i><span>${r.name}</span><span class="hc-boss-tag">已首杀</span></div>`;
+                        }
+                        return `<div class="hc-boss-item"><i class="fas fa-circle" style="color:#334155;"></i><span>${r.name}</span><span class="hc-boss-tag pending">未击败</span></div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+    },
+
+    async switchHellRank(branch, btn) {
+        document.querySelectorAll('.rank-branch-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        const container = document.getElementById('challenge-sub-content');
+        if (!container) return;
+        const rankData = JSON.parse(localStorage.getItem('fmi_hell_rank') || '{}');
+        const bossFirsts = JSON.parse(localStorage.getItem('fmi_boss_firsts') || '{}');
+        const progress = JSON.parse(localStorage.getItem('fmi_challenge_progress') || '{}');
+        const hellStages = CourseContent.getAllStages('hell') || [];
+        const hellBosses = hellStages.filter(s => s._isBoss && s.bossType !== 'mini');
+        const entries = [];
+        for (const [sid, users] of Object.entries(rankData)) {
+            const stageDef = hellStages.find(s => s.id === sid);
+            const stageName = stageDef ? (stageDef.bossDef ? this._bossCnNameOf(stageDef.bossDef, stageDef.bossLevel) : (stageDef.name || sid)) : sid;
+            for (const [uname, rec] of Object.entries(users)) {
+                entries.push({ sid, uname, name: rec.name || uname, score: rec.score, time: rec.time, accuracy: rec.accuracy, stars: rec.stars, stageName });
+            }
+        }
+        const scoreList = entries.slice().sort((a, b) => b.score - a.score);
+        const speedList = entries.slice().sort((a, b) => a.time - b.time);
+        const bossRows = [];
+        for (let lv = 0; lv <= 7; lv++) {
+            const rec = Object.values(bossFirsts).find(r => String(r.bossLevel) === String(lv));
+            const bossDef = this._bossDefs[String(lv)];
+            bossRows.push({ lv, name: this._bossCnNameOf(bossDef, lv), rec });
+        }
+        const uinfo = JSON.parse(sessionStorage.getItem('fmi_user') || '{}');
+        const uname = uinfo.username || 'guest';
+        const hellIds = new Set(hellStages.map(s => s.id));
+        const clearedHell = Object.keys(progress).filter(sid => hellIds.has(sid) && progress[sid].cleared).length;
+        const hellTotal = hellIds.size;
+        const hellScore = Object.keys(progress).filter(sid => hellIds.has(sid)).reduce((sum, sid) => sum + (progress[sid].bestScore || 0), 0);
+        const hellStars = Object.keys(progress).filter(sid => hellIds.has(sid)).reduce((sum, sid) => sum + (progress[sid].stars || 0), 0);
+        const clearedPct = hellTotal > 0 ? Math.round(clearedHell / hellTotal * 100) : 0;
+        const body = container.querySelector('#hell-rank-body');
+        if (body) body.innerHTML = this._hellRankBody(branch, bossRows, scoreList, speedList, clearedHell, hellTotal, hellScore, hellStars, clearedPct, uname);
     },
 
     async switchPeriod(period, btn) {
