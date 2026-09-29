@@ -969,6 +969,9 @@ const ChallengeModule = {
 
         const clearedPct = stages.length > 0 ? Math.round(totalCleared / stages.length * 100) : 0;
         const barColor = isHellMode ? '#f87171' : '#60a5fa';
+        // 记录当前课程组（批量装配的"当前课程"范围）
+        const _batchStage = (nextAvailable >= 0 && stages[nextAvailable]) ? stages[nextAvailable] : stages[0];
+        this._currentLevelForBatch = _batchStage ? String(_batchStage.levelId) : '0';
 
         // 关卡边框装备栏：显示已装配关卡数，随时进入收藏墙管理
         const _assignedEntries = Object.entries(this._stageFrames || {});
@@ -990,6 +993,7 @@ const ChallengeModule = {
                     </div>
                 </div>
                 <div class="frame-toolbar-actions">
+                    <button class="frame-tb-btn" onclick="ChallengeModule._openBatchAssign()" title="一键给一批关卡装配边框"><i class="fas fa-layer-group"></i> 批量装配</button>
                     ${_assignedCount > 0 ? `<button class="frame-tb-btn danger" onclick="ChallengeModule._clearAllStageFrames()"><i class="fas fa-times"></i> 卸下全部</button>` : ''}
                     <button class="frame-tb-btn" onclick="ChallengeModule.showFrames()"><i class="fas fa-border-all"></i> 管理边框</button>
                 </div>
@@ -1478,6 +1482,94 @@ const ChallengeModule = {
             if (this.currentView === 'frames') this._renderFrameWall(container);
             else this.renderStages(container);
         }
+    },
+
+    // ====== 批量装配边框 ======
+    _openBatchAssign() {
+        const oldP = document.getElementById('batch-panel'); if (oldP) oldP.remove();
+        this._batchFrameId = null;
+        this._batchScope = 'level';
+        const unlockedIds = this._getUnlockedFrames().map(f => f.id);
+        let chips = '';
+        for (const def of Object.values(this._frameDefs)) {
+            const unlocked = unlockedIds.includes(def.id);
+            chips += `<span class="batch-frame-chip ${unlocked ? '' : 'locked'}" data-fid="${def.id}" style="${unlocked ? 'color:' + def.color + ';' : ''}" onclick="ChallengeModule._batchPickFrame('${def.id}')"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${unlocked ? def.color : '#475569'};"></span> ${unlocked ? def.name : '???'}</span>`;
+        }
+        const levelName = (this._levelNames && this._levelNames[this._currentLevelForBatch]) ? this._levelNames[this._currentLevelForBatch] : ('Level ' + this._currentLevelForBatch);
+        const scopes = [
+            ['level', '<i class="fas fa-book"></i> 当前课程（' + levelName + '）'],
+            ['all', '<i class="fas fa-globe"></i> 全部关卡（' + (this.allStages ? this.allStages.length : 0) + ' 关）'],
+            ['boss', '<i class="fas fa-dragon"></i> 仅 BOSS 关卡'],
+            ['unassigned', '<i class="fas fa-circle-plus"></i> 仅未装配边框的关卡']
+        ];
+        let scopeHtml = '';
+        scopes.forEach(s => {
+            scopeHtml += `<div class="batch-scope-item ${s[0] === 'level' ? 'sel' : ''}" data-scope="${s[0]}" onclick="ChallengeModule._batchPickScope('${s[0]}')">${s[1]}</div>`;
+        });
+        const overlay = document.createElement('div');
+        overlay.id = 'batch-panel';
+        overlay.className = 'batch-panel-overlay';
+        overlay.innerHTML = `<div class="batch-panel">
+            <div class="batch-panel-head"><span><i class="fas fa-layer-group"></i> 批量装配边框</span><span class="batch-panel-close" onclick="ChallengeModule._closeBatchAssign()"><i class="fas fa-times"></i></span></div>
+            <div class="batch-sec-title">选择边框（每关一款 · 装配新边框自动替换旧款）</div>
+            <div class="batch-frame-row">${chips}</div>
+            <div class="batch-sec-title">装配范围</div>
+            <div class="batch-scope-row">${scopeHtml}</div>
+            <div class="batch-panel-actions">
+                <button class="batch-btn apply" onclick="ChallengeModule._batchAssignFrames()"><i class="fas fa-check"></i> 应用装配</button>
+                <button class="batch-btn cancel" onclick="ChallengeModule._closeBatchAssign()">取消</button>
+            </div>
+            <div class="batch-tip">提示：范围内已装配的关卡会被替换为该款；选"仅未装配边框的关卡"不会覆盖已有边框。</div>
+        </div>`;
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) ChallengeModule._closeBatchAssign(); });
+        document.body.appendChild(overlay);
+        this._batchRenderSel();
+    },
+    _closeBatchAssign() {
+        const p = document.getElementById('batch-panel'); if (p) p.remove();
+    },
+    _batchRenderSel() {
+        const frameEls = document.querySelectorAll('.batch-frame-chip');
+        frameEls.forEach(el => {
+            el.classList.toggle('sel', el.getAttribute('data-fid') === this._batchFrameId && !el.classList.contains('locked'));
+        });
+        const scopeEls = document.querySelectorAll('.batch-scope-item');
+        scopeEls.forEach(el => {
+            el.classList.toggle('sel', el.getAttribute('data-scope') === this._batchScope);
+        });
+    },
+    _batchPickFrame(frameId) {
+        const unlockedIds = this._getUnlockedFrames().map(f => f.id);
+        if (!unlockedIds.includes(frameId)) return;
+        this._batchFrameId = frameId;
+        this._batchRenderSel();
+    },
+    _batchPickScope(scope) {
+        this._batchScope = scope;
+        this._batchRenderSel();
+    },
+    _batchAssignFrames() {
+        const frameId = this._batchFrameId;
+        const scope = this._batchScope;
+        if (!frameId || !scope) return;
+        if (!this._stageFrames) this._stageFrames = {};
+        const stages = this.allStages || [];
+        let targets = [];
+        if (scope === 'all') {
+            targets = stages.map(s => s.id);
+        } else if (scope === 'boss') {
+            targets = stages.filter(s => s._isBoss).map(s => s.id);
+        } else if (scope === 'unassigned') {
+            targets = stages.filter(s => !this._stageFrames[s.id]).map(s => s.id);
+        } else if (scope === 'level') {
+            const lid = String(this._currentLevelForBatch || '0');
+            targets = stages.filter(s => String(s.levelId) === lid).map(s => s.id);
+        }
+        targets.forEach(id => { this._stageFrames[id] = frameId; });
+        this._saveStageFrames();
+        this._closeBatchAssign();
+        const container = document.getElementById('challenge-sub-content');
+        if (container) this.renderStages(container);
     },
 
     _renderFrameWall(container) {
@@ -4019,14 +4111,14 @@ const ChallengeModule = {
     },
     // ========== 边框装饰定义 ==========
     _frameDefs: {
-        'frame_q0': { id: 'q0', bossLevel: 0, name: '翡翠流光', desc: '击败查基尔后解锁', color: '#22c55e', glow: '#22c55e66', gradient: 'linear-gradient(135deg, #22c55e, #10b981, #22c55e)', effect: 'shine' },
-        'frame_q1': { id: 'q1', bossLevel: 1, name: '紫晶藤蔓', desc: '击败特龙后解锁', color: '#a78bfa', glow: '#a78bfa66', gradient: 'linear-gradient(135deg, #a78bfa, #7c3aed, #a78bfa)', effect: 'pulse' },
-        'frame_q2': { id: 'q2', bossLevel: 2, name: '琥珀金纹', desc: '击败杜尤达纳后解锁', color: '#fbbf24', glow: '#fbbf2466', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24)', effect: 'shine' },
+        'frame_q0': { id: 'q0', bossLevel: 0, name: '翡翠流光', desc: '击败查基尔后解锁', color: '#10b981', glow: '#10b98166', gradient: 'linear-gradient(135deg, #10b981, #34d399, #10b981)', effect: 'shine' },
+        'frame_q1': { id: 'q1', bossLevel: 1, name: '紫晶藤蔓', desc: '击败特龙后解锁', color: '#a855f7', glow: '#a855f766', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed, #a855f7)', effect: 'pulse' },
+        'frame_q2': { id: 'q2', bossLevel: 2, name: '琥珀金纹', desc: '击败杜尤达纳后解锁', color: '#f59e0b', glow: '#f59e0b66', gradient: 'linear-gradient(135deg, #f59e0b, #d97706, #f59e0b)', effect: 'shine' },
         'frame_q3': { id: 'q3', bossLevel: 3, name: '橙焰巨锤', desc: '击败库巴卡那后解锁', color: '#f97316', glow: '#f9731666', gradient: 'linear-gradient(135deg, #f97316, #ea580c, #f97316)', effect: 'flame' },
-        'frame_q4': { id: 'q4', bossLevel: 4, name: '暗紫密谋', desc: '击败森古尼后解锁', color: '#8b5cf6', glow: '#8b5cf666', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9, #8b5cf6)', effect: 'flow' },
+        'frame_q4': { id: 'q4', bossLevel: 4, name: '暗紫密谋', desc: '击败森古尼后解锁', color: '#3b82f6', glow: '#3b82f666', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb, #3b82f6)', effect: 'flow' },
         'frame_q5': { id: 'q5', bossLevel: 5, name: '赤红幻术', desc: '击败因陀罗吉后解锁', color: '#ef4444', glow: '#ef444466', gradient: 'linear-gradient(135deg, #ef4444, #dc2626, #ef4444)', effect: 'phantom' },
-        'frame_q6': { id: 'q6', bossLevel: 6, name: '烈焰荆棘', desc: '击败堕神后解锁', color: '#dc2626', glow: '#dc262666', gradient: 'linear-gradient(135deg, #dc2626, #991b1b, #dc2626)', effect: 'flame' },
-        'frame_q7': { id: 'q7', bossLevel: 7, name: '极光幻彩', desc: '击败混沌王后解锁', color: '#7c3aed', glow: '#7c3aed66', gradient: 'linear-gradient(135deg, #22c55e, #a78bfa, #fbbf24, #f97316, #8b5cf6, #ef4444, #dc2626, #7c3aed)', effect: 'aurora' },
+        'frame_q6': { id: 'q6', bossLevel: 6, name: '烈焰荆棘', desc: '击败堕神后解锁', color: '#f43f5e', glow: '#f43f5e66', gradient: 'linear-gradient(135deg, #f43f5e, #be123c, #f43f5e)', effect: 'flame' },
+        'frame_q7': { id: 'q7', bossLevel: 7, name: '极光幻彩', desc: '击败混沌王后解锁', color: '#7c3aed', glow: '#7c3aed66', gradient: 'linear-gradient(135deg, #10b981, #a855f7, #f59e0b, #f97316, #3b82f6, #ef4444, #f43f5e, #7c3aed)', effect: 'aurora' },
     },
     _equippedFrameIds: [], // 当前装备的边框（可多选）
 
