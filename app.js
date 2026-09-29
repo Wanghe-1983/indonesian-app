@@ -3838,6 +3838,18 @@ function saveMessages(list) {
     localStorage.setItem('fmi_messages', JSON.stringify(list));
 }
 
+// 获取留言列表：远程优先（所有人共享），失败回退本地
+async function listMessages() {
+    try {
+        const res = await API.request('messages/list');
+        if (res && !res.error && Array.isArray(res.messages)) {
+            localStorage.setItem('fmi_messages', JSON.stringify(res.messages));
+            return res.messages;
+        }
+    } catch(e) {}
+    return getMessages();
+}
+
 function initMessagesPage() {
     const root = document.getElementById('page-messages');
     if (!root) return;
@@ -3856,7 +3868,8 @@ function initMessagesPage() {
                 </div>
                 <textarea id="msg-content" class="msg-textarea" rows="2" maxlength="200" placeholder="写下想说的话..."></textarea>
                 <div class="msg-post-bar">
-                    <span class="msg-tip"><i class="fas fa-info-circle"></i> 本地保存 · 仅当前浏览器可见（每天数据自动留存）</span>
+                    <label class="msg-public-lb"><input type="checkbox" id="msg-public" checked> <i class="fas fa-globe"></i> 公开留言（所有人可见）</label>
+                    <span class="msg-tip"><i class="fas fa-info-circle"></i> 联网时自动同步到云端 · 离线仅本机保存</span>
                     <button class="msg-send-btn" onclick="postMessage()"><i class="fas fa-paper-plane"></i> 发布留言</button>
                 </div>
             </div>
@@ -3865,8 +3878,8 @@ function initMessagesPage() {
     renderMessages();
 }
 
-function renderMessages() {
-    const list = getMessages();
+async function renderMessages() {
+    const list = await listMessages();
     const box = document.getElementById('msg-list');
     if (!box) return;
     if (!list.length) {
@@ -3875,13 +3888,17 @@ function renderMessages() {
     }
     const me = getMsgUser();
     const colors = ['msg-n-yellow', 'msg-n-pink', 'msg-n-blue', 'msg-n-green'];
-    box.innerHTML = list.map((m, i) => {
+    // 最新在前（倒序）+ 瀑布流轻微错落旋转
+    const sorted = list.slice().sort((a, b) => (b.createdAt || b.id || 0) - (a.createdAt || a.id || 0));
+    box.innerHTML = sorted.map((m, i) => {
         const c = colors[i % colors.length];
         const isMine = m.username && me.username && m.username === me.username;
         const canDel = isMine || me.role === 'admin';
-        return `<div class="msg-note ${c}">
+        const rot = ((i % 3) - 1) * 1.5;
+        const priv = m.public === false;
+        return `<div class="msg-note ${c}" style="transform:rotate(${rot}deg);">
             <div class="msg-note-pin"><i class="fas fa-thumbtack"></i></div>
-            <div class="msg-note-to"><i class="fas fa-paper-plane"></i> 致 ${escHtml(m.to || '所有人')}</div>
+            <div class="msg-note-to"><i class="fas ${priv ? 'fa-lock' : 'fa-paper-plane'}"></i> ${priv ? '私密留言' : '致 ' + escHtml(m.to || '所有人')}</div>
             <div class="msg-note-content">${escHtml(m.content || '')}</div>
             <div class="msg-note-foot">
                 <span class="msg-note-from"><i class="fas fa-user"></i> ${escHtml(m.from || '匿名')}</span>
@@ -3892,32 +3909,45 @@ function renderMessages() {
     }).join('');
 }
 
-function postMessage() {
+async function postMessage() {
     const to = document.getElementById('msg-to').value.trim();
     const content = document.getElementById('msg-content').value.trim();
     if (!content) { alert('请输入留言内容'); return; }
     const me = getMsgUser();
     const fromName = document.getElementById('msg-from').value.trim() || me.name || '匿名';
-    const list = getMessages();
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
-    list.unshift({
+    const msg = {
         id: Date.now(),
         from: fromName,
         username: me.username || 'guest',
         role: me.role || 'user',
         to: to || '所有人',
         content: content.slice(0, 200),
-        time: (now.getMonth() + 1) + '/' + now.getDate() + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes())
-    });
+        time: (now.getMonth() + 1) + '/' + now.getDate() + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()),
+        public: document.getElementById('msg-public') ? document.getElementById('msg-public').checked : true,
+        createdAt: Date.now()
+    };
+    // 远程优先（部署云端后所有人可见）
+    let remoteOK = false;
+    try {
+        const res = await API.request('messages/save', { method: 'POST', body: JSON.stringify(msg) });
+        if (res && !res.error) remoteOK = true;
+    } catch(e) {}
+    // 本地同步（离线缓存 + 本地模式数据源）
+    const list = getMessages().filter(x => x.id !== msg.id);
+    list.unshift(msg);
     saveMessages(list);
+    if (!remoteOK && !(msg.public === false)) {
+        // 离线提示
+    }
     document.getElementById('msg-to').value = '';
     document.getElementById('msg-content').value = '';
     document.getElementById('msg-from').value = '';
     renderMessages();
 }
 
-function deleteMessage(id) {
+async function deleteMessage(id) {
     const me = getMsgUser();
     let list = getMessages();
     const m = list.find(x => x.id === id);
@@ -3926,6 +3956,8 @@ function deleteMessage(id) {
         alert('只能删除自己的留言');
         return;
     }
+    // 远程删除（部署云端后同步）
+    try { await API.request('messages/delete', { method: 'POST', body: JSON.stringify({ id }) }); } catch(e) {}
     list = list.filter(x => x.id !== id);
     saveMessages(list);
     renderMessages();

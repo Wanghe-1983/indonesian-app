@@ -8627,6 +8627,26 @@
 .hc-boss-tag.pending { color: #64748b; }
 .hc-boss-item.done .hc-boss-tag { color: #22c55e; }
 
+.msg-list {
+    columns: 3;
+    column-gap: 16px;
+}
+.msg-note {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    transition: transform 0.2s;
+}
+.msg-note:hover { transform: translateY(-3px) rotate(0deg) !important; }
+.msg-public-lb {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    color: #cbd5e1;
+    cursor: pointer;
+}
+.msg-public-lb input { accent-color: #34d399; width: 14px; height: 14px; }
+
 /* ====== 留言墙（便利贴 + 图钉风格） ====== */
 .msg-wall {
     max-width: 900px;
@@ -8692,10 +8712,11 @@
 }
 .msg-send-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(236,72,153,0.5); }
 .msg-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 16px;
+    columns: 3;
+    column-gap: 16px;
 }
+@media (max-width: 900px) { .msg-list { columns: 2; } }
+@media (max-width: 600px) { .msg-list { columns: 1; } }
 .msg-note {
     position: relative;
     border-radius: 4px 16px 4px 4px;
@@ -8706,8 +8727,10 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    break-inside: avoid;
+    margin-bottom: 16px;
 }
-.msg-note:hover { transform: translateY(-3px) rotate(0.5deg); box-shadow: 0 10px 26px rgba(0,0,0,0.4); }
+.msg-note:hover { transform: translateY(-3px) rotate(0deg) !important; box-shadow: 0 10px 26px rgba(0,0,0,0.4); }
 .msg-note-pin {
     position: absolute;
     top: -8px;

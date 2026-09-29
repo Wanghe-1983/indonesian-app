@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 印尼语学习助手 - Cloudflare Pages Functions 后端路由
  * KV（配置）+ D1（用户数据）混合架构
  */
@@ -54,6 +54,11 @@ export async function onRequest(context) {
         'broadcast/delete':             { post: handleBroadcastDelete },
         'broadcast/active':             { get: handleBroadcastActive },
         'broadcast/config':             { get: handleBroadcastGetConfig, put: handleBroadcastPutConfig },
+
+        // ========== 留言墙（KV 存储，公开/私密） ==========
+        'messages/list':                { get: handleMessagesList },
+        'messages/save':                { post: handleMessagesSave },
+        'messages/delete':              { post: handleMessagesDelete },
     };
 
         // 数据库迁移（确保新增列存在，已存在则忽略）
@@ -1020,4 +1025,54 @@ async function handleBroadcastPutConfig(context) {
     const config = await context.request.json();
     await context.env.INDO_LEARN_KV.put('broadcast_config', JSON.stringify(config));
     return jsonOK({ message: '广播配置已保存' });
+}
+
+// ========== 留言墙（所有人可见；私密留言仅本人可见） ==========
+async function handleMessagesList(context) {
+    const username = (context && context.username) || '';
+    const raw = await context.env.INDO_LEARN_KV.get('fmi_messages');
+    let list = [];
+    if (raw) { try { list = JSON.parse(raw); } catch(e) {} }
+    if (!Array.isArray(list)) list = [];
+    // 公开留言全部可见；私密留言仅本人（管理员可见全部）
+    return json({ messages: list.filter(m => m.public !== false || m.username === username || username === 'admin') });
+}
+
+async function handleMessagesSave(context) {
+    const { env, username } = await requireAuth(context);
+    const body = await context.request.json();
+    const raw = await env.INDO_LEARN_KV.get('fmi_messages');
+    let list = [];
+    if (raw) { try { list = JSON.parse(raw); } catch(e) {} }
+    if (!Array.isArray(list)) list = [];
+    list.unshift({
+        id: body.id || Date.now(),
+        from: (body.from || username || '匿名').slice(0, 20),
+        username: username || 'guest',
+        role: body.role || 'user',
+        to: (body.to || '所有人').slice(0, 20),
+        content: (body.content || '').slice(0, 200),
+        time: body.time || '',
+        public: body.public !== false,
+        createdAt: Date.now()
+    });
+    if (list.length > 500) list.length = 500;
+    await env.INDO_LEARN_KV.put('fmi_messages', JSON.stringify(list));
+    return jsonOK({ message: '留言已发布' });
+}
+
+async function handleMessagesDelete(context) {
+    const { env, username } = await requireAuth(context);
+    const { id } = await context.request.json();
+    const raw = await env.INDO_LEARN_KV.get('fmi_messages');
+    let list = [];
+    if (raw) { try { list = JSON.parse(raw); } catch(e) {} }
+    if (!Array.isArray(list)) list = [];
+    const m = list.find(x => x.id === id);
+    if (m && (m.username === username || username === 'admin')) {
+        list = list.filter(x => x.id !== id);
+        await env.INDO_LEARN_KV.put('fmi_messages', JSON.stringify(list));
+        return jsonOK({ message: '留言已删除' });
+    }
+    return json({ error: '无权删除该留言' }, 403);
 }
