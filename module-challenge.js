@@ -2943,6 +2943,8 @@ const ChallengeModule = {
                             clearedAt: Date.now()
                         };
                         localStorage.setItem('fmi_boss_firsts', JSON.stringify(bf));
+                        // 首杀解锁对应称号（立即装配可选）
+                        try { this._checkAndSyncTitles(); } catch (e2) {}
                     }
                 }
             } catch (e) {}
@@ -4346,6 +4348,16 @@ const ChallengeModule = {
         hell_star_7:   { id: 'hell_star_7',   name: '万魔之王', icon: 'fa-dragon', category: 'hell', desc: '地狱 BIPA 7 全部三星（终极荣耀）', levelId: '7' },
         hell_clear_all:{ id: 'hell_clear_all',name: '地狱征服者', icon: 'fa-fire-flame-simple', category: 'hell', desc: '地狱通关全部 BIPA 0-7', levelId: 'all' },
 
+        // ====== BOSS 首杀称号（击败大BOSS解锁，可装配到用户名前） ======
+        boss_first_q0: { id: 'boss_first_q0', name: '查基尔首杀', icon: 'fa-crown', category: 'boss', color: '#22c55e', desc: '地狱模式首杀 BOSS 查基尔', levelId: '0' },
+        boss_first_q1: { id: 'boss_first_q1', name: '特龙首杀', icon: 'fa-crown', category: 'boss', color: '#a78bfa', desc: '地狱模式首杀 BOSS 特龙', levelId: '1' },
+        boss_first_q2: { id: 'boss_first_q2', name: '杜尤达纳首杀', icon: 'fa-crown', category: 'boss', color: '#fbbf24', desc: '地狱模式首杀 BOSS 杜尤达纳', levelId: '2' },
+        boss_first_q3: { id: 'boss_first_q3', name: '库巴卡那首杀', icon: 'fa-crown', category: 'boss', color: '#f97316', desc: '地狱模式首杀 BOSS 库巴卡那', levelId: '3' },
+        boss_first_q4: { id: 'boss_first_q4', name: '森古尼首杀', icon: 'fa-crown', category: 'boss', color: '#8b5cf6', desc: '地狱模式首杀 BOSS 森古尼', levelId: '4' },
+        boss_first_q5: { id: 'boss_first_q5', name: '因陀罗吉首杀', icon: 'fa-crown', category: 'boss', color: '#ef4444', desc: '地狱模式首杀 BOSS 因陀罗吉', levelId: '5' },
+        boss_first_q6: { id: 'boss_first_q6', name: '堕神首杀', icon: 'fa-crown', category: 'boss', color: '#dc2626', desc: '地狱模式首杀 BOSS 堕神', levelId: '6' },
+        boss_first_q7: { id: 'boss_first_q7', name: '混沌王首杀', icon: 'fa-crown', category: 'boss', color: '#7c3aed', desc: '地狱模式首杀终极 BOSS 混沌王（最高荣誉）', levelId: '7' },
+
         // ====== BOSS 相关称号 ======
         boss_first:    { id: 'boss_first',    name: '首席屠龙者', icon: 'fa-shield-halved', category: 'boss', desc: '首次击败任意 BOSS' },
         boss_hunter_5: { id: 'boss_hunter_5', name: '猎魔先锋', icon: 'fa-crosshairs', category: 'boss', desc: '累计击败 5 个 BOSS' },
@@ -4538,6 +4550,15 @@ const ChallengeModule = {
         }
         if (hellAllCleared) newTitles.push('hell_clear_all');
 
+        // === BOSS 首杀称号（地狱模式大BOSS首杀, 数据源 fmi_boss_firsts） ===
+        const bossFirsts = JSON.parse(localStorage.getItem('fmi_boss_firsts') || '{}');
+        for (const rec of Object.values(bossFirsts)) {
+            if (rec && rec.bossLevel !== undefined) {
+                const blv = String(rec.bossLevel);
+                if (blv >= '0' && blv <= '7') newTitles.push('boss_first_q' + blv);
+            }
+        }
+
         // === BOSS 相关称号 ===
         const bossStats = JSON.parse(localStorage.getItem('fmi_boss_stats') || '{"defeated":0,"perfect":false,"bosses":{}}');
         if (bossStats.defeated >= 1) newTitles.push('boss_first');
@@ -4630,6 +4651,7 @@ const ChallengeModule = {
         const categoryLabel = {
             normal: '普通模式',
             hell: '地狱模式',
+            boss: 'BOSS击杀',
             general: '通用',
         }[titleDef.category] || '';
 
@@ -4771,7 +4793,7 @@ const ChallengeModule = {
             bestTitleId = this._equippedTitleId;
         } else {
             const priority = [
-                'hell_star_7', 'hell_clear_7', 'hell_star_6', 'hell_clear_6',
+                'boss_first_q7', 'hell_star_7', 'hell_clear_7', 'hell_star_6', 'hell_clear_6',
                 'hell_star_5', 'hell_clear_5', 'hell_star_4', 'hell_clear_4',
                 'boss_final', 'boss_hunter_15', 'boss_perfect',
                 'hell_star_3', 'hell_clear_3', 'hell_star_2', 'hell_clear_2',

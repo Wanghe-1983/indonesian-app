@@ -1,4 +1,4 @@
-// 全局变量
+﻿// 全局变量
 const app = document.getElementById('app');
 let db = {}; // 词库数据
 // 安全解析 localStorage：历史版本可能写入过损坏/不兼容的数据，
@@ -1989,7 +1989,7 @@ function getEquippedTitleHTML() {
         if (typeof ChallengeModule !== 'undefined' && ChallengeModule._titleDefs && ChallengeModule._titleDefs[equippedId]) {
             var def = ChallengeModule._titleDefs[equippedId];
             var catColors = { normal: '#60a5fa', hell: '#f87171', boss: '#a78bfa', condition: '#34d399', general: '#fbbf24' };
-            var color = catColors[def.category] || '#fbbf24';
+            var color = def.color || catColors[def.category] || '#fbbf24';
             return '<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 8px;margin-right:4px;background:' + color + '18;color:' + color + ';border:1px solid ' + color + '33;border-radius:10px;font-size:0.65rem;font-weight:600;vertical-align:middle;"><i class="fas ' + def.icon + '" style="font-size:0.55rem;"></i>' + def.name + '</span>';
         }
     } catch(e) {}
