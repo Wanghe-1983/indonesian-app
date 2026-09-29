@@ -897,8 +897,10 @@ const ChallengeModule = {
                         : isCleared ? '<span class="boss-banner-status-badge boss-status-cleared"><i class="fas fa-trophy"></i> 已击败</span>'
                         : '<span class="boss-banner-status-badge boss-status-available"><i class="fas fa-bolt"></i> 可挑战</span>';
                     const _sfk = _frameKeyFor(stage.id);
+                    const _sfkDefB = _sfk ? this._frameDefs['frame_' + _sfk] : null;
+                    const _bossMark = _sfkDefB ? '<div class="frame-boss-mark" title="' + _sfkDefB.desc + '"><img src="assets/boss/boss-big-q' + _sfkDefB.bossLevel + '.png" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-flex\';"><i class="fas fa-dragon" style="display:none;"></i><span class="fbm-crown"><i class="fas fa-crown"></i></span></div>' : '';
                     stageGrid += '<div class="stage-card boss-banner ' + statusClass + (_sfk ? ' frame-' + _sfk : '') + '" style="--boss-theme:' + bc + ';grid-column:1/-1;" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
-                        + '<div class="boss-mist"></div>' + (_sfk ? '<div class="frame-border"></div>' : '')
+                        + '<div class="boss-mist"></div>' + (_sfk ? '<div class="frame-border"></div>' + _bossMark : '')
                         + '<button class="stage-frame-btn' + (_sfk ? ' on' : '') + '" style="' + (_sfk ? 'color:' + (this._frameDefs['frame_' + _sfk] ? this._frameDefs['frame_' + _sfk].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="boss-banner-img">'
                         + '<div class="boss-badge-icon big-crown"><i class="fas fa-crown"></i></div>'
@@ -927,8 +929,10 @@ const ChallengeModule = {
                     const miniDiff = Math.max(1, (bd.difficulty || 3) - 1);
                     const diffStars = '★'.repeat(miniDiff) + '☆'.repeat(Math.max(0, 6 - miniDiff));
                     const _sfk2 = _frameKeyFor(stage.id);
+                    const _sfkDef2B = _sfk2 ? this._frameDefs['frame_' + _sfk2] : null;
+                    const _bossMark2 = _sfkDef2B ? '<div class="frame-boss-mark" title="' + _sfkDef2B.desc + '"><img src="assets/boss/boss-big-q' + _sfkDef2B.bossLevel + '.png" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-flex\';"><i class="fas fa-dragon" style="display:none;"></i><span class="fbm-crown"><i class="fas fa-crown"></i></span></div>' : '';
                     stageGrid += '<div class="stage-card boss-mini-card ' + statusClass + (_sfk2 ? ' frame-' + _sfk2 : '') + '" style="--boss-theme:' + bc + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
-                        + '<div class="boss-mini-badge"><i class="fas ' + bd.icon + '"></i></div>' + (_sfk2 ? '<div class="frame-border"></div>' : '')
+                        + '<div class="boss-mini-badge"><i class="fas ' + bd.icon + '"></i></div>' + (_sfk2 ? '<div class="frame-border"></div>' + _bossMark2 : '')
                         + '<button class="stage-frame-btn' + (_sfk2 ? ' on' : '') + '" style="' + (_sfk2 ? 'color:' + (this._frameDefs['frame_' + _sfk2] ? this._frameDefs['frame_' + _sfk2].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="boss-mini-img">'
                         + '<img src="' + bossImg + '" alt="' + (bd.name || '') + '" onerror="this.remove()">'
@@ -950,8 +954,10 @@ const ChallengeModule = {
                         : isCurrent ? '<span class="sc-badge sc-badge-current"><i class="fas fa-play-circle"></i></span>'
                         : '<span class="sc-badge sc-badge-go"><i class="fas fa-bolt"></i></span>';
                     const _sfk3 = _frameKeyFor(stage.id);
+                    const _sfkDef3B = _sfk3 ? this._frameDefs['frame_' + _sfk3] : null;
+                    const _bossMark3 = _sfkDef3B ? '<div class="frame-boss-mark" title="' + _sfkDef3B.desc + '"><img src="assets/boss/boss-big-q' + _sfkDef3B.bossLevel + '.png" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-flex\';"><i class="fas fa-dragon" style="display:none;"></i><span class="fbm-crown"><i class="fas fa-crown"></i></span></div>' : '';
                     stageGrid += '<div class="stage-card ' + statusClass + (_sfk3 ? ' frame-' + _sfk3 : '') + '" style="--stage-color:' + lvColor + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
-                        + (_sfk3 ? '<div class="frame-border"></div>' : '')
+                        + (_sfk3 ? '<div class="frame-border"></div>' + _bossMark3 : '')
                         + '<button class="stage-frame-btn' + (_sfk3 ? ' on' : '') + '" style="' + (_sfk3 ? 'color:' + (this._frameDefs['frame_' + _sfk3] ? this._frameDefs['frame_' + _sfk3].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="sc-castle-bg"></div>'
                         + '<div class="sc-battlement"></div>'
