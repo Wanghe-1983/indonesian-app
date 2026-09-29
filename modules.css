@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    modules.css - 勤学苦练 + 闯天关 模块样式
    ============================================ */
 
@@ -111,7 +111,7 @@
 .mastery-progress-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
 }
 
 .mastery-label {
@@ -5080,171 +5080,150 @@
 
 
 /* ========== 关卡边框装饰系统 v2 ========== */
-/* 每个 BOSS 关卡掉落对应边框，击败后自动装备到该等级所有关卡卡片上 */
-/* 基于 _frameDefs 定义，8级BOSS对应8种边框 (frame-q0 ~ frame-q7) */
+/* 每个 BOSS 关卡掉落对应边框，可随时装备/卸下 */
+/* v3 重构：边框 = 装配在关卡卡片外沿的相框式装饰（卡内保持干净，不再是卡内填充） */
 
-/* 通用边框层 - 增强版 */
+/* 通用边框层 - 卡外装饰框 */
 .stage-card .frame-border,
 .boss-banner .frame-border,
 .boss-mini-card .frame-border {
     position: absolute;
-    inset: -3px;
-    border-radius: 18px;
+    inset: -7px;
+    border-radius: 20px;
     pointer-events: none;
-    z-index: 1;
+    z-index: 2;
     transition: all 0.3s ease;
 }
-/* 边框内的旋转光束装饰（伪元素） */
+/* 外框旋转光束（沿边框外缘旋转） */
 .stage-card .frame-border::before,
 .boss-banner .frame-border::before,
 .boss-mini-card .frame-border::before {
     content: '';
     position: absolute;
-    inset: -1px;
-    border-radius: 18px;
+    inset: -3px;
+    border-radius: 20px;
     padding: 3px;
     background: conic-gradient(from var(--frame-angle, 0deg), transparent 0%, transparent 60%, var(--frame-color, #22c55e) 80%, transparent 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     animation: frame-rotate var(--frame-speed, 3s) linear infinite;
-    opacity: 0.7;
+    opacity: 0.65;
 }
 .stage-card:hover .frame-border::before,
 .boss-banner:hover .frame-border::before,
 .boss-mini-card:hover .frame-border::before { opacity: 1; }
+/* 四角装饰：相框角扣（四角 L 形亮角，强化装配感） */
 .stage-card .frame-border::after,
 .boss-banner .frame-border::after,
 .boss-mini-card .frame-border::after {
     content: '';
     position: absolute;
-    inset: 2px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--frame-color, #22c55e) 0%, transparent 30%, transparent 70%, var(--frame-color, #22c55e) 100%);
-    opacity: 0.12;
+    inset: -10px;
+    border-radius: 24px;
+    pointer-events: none;
+    background:
+        linear-gradient(var(--frame-color, #22c55e), var(--frame-color, #22c55e)) top 0 left 0 / 20px 3px no-repeat,
+        linear-gradient(var(--frame-color, #22c55e), var(--frame-color, #22c55e)) top 0 left 0 / 3px 20px no-repeat,
+        linear-gradient(var(--frame-color, #22c55e), var(--frame-color, #22c55e)) top 0 right 0 / 20px 3px no-repeat,
+        linear-gradient(var(--frame-color, #22c55e), var(--frame-color, #22c55e)) top 0 right 0 / 3px 20px no-repeat,
+        linear-gradient(var(--frame-color, #22c55e), var(--frame-color, #22c55e)) bottom 0 left 0 / 20px 3px no-repeat,
+        linear-gradient(var(--frame-color, #22c55e), var(--frame-color, #22c55e)) bottom 0 left 0 / 3px 20px no-repeat,
+        linear-gradient(var(--frame-color, #22c55e), var(--frame-color, #22c55e)) bottom 0 right 0 / 20px 3px no-repeat,
+        linear-gradient(var(--frame-color, #22c55e), var(--frame-color, #22c55e)) bottom 0 right 0 / 3px 20px no-repeat;
+    filter: drop-shadow(0 0 5px var(--frame-color, #22c55e));
+    opacity: 0.9;
 }
 @property --frame-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
 @keyframes frame-rotate { to { --frame-angle: 360deg; } }
 
-/* ====== frame-q0: 翡翠流光 ====== */
+/* ====== frame-q0 ====== */
 .stage-card.frame-q0, .boss-banner.frame-q0, .boss-mini-card.frame-q0 { --frame-color: #22c55e; --frame-speed: 4s; }
 .stage-card.frame-q0 .frame-border, .boss-banner.frame-q0 .frame-border, .boss-mini-card.frame-q0 .frame-border {
-    border: 2.5px solid rgba(34, 197, 94, 0.7);
-    box-shadow: 0 0 8px rgba(34,197,94,0.4), 0 0 20px rgba(34,197,94,0.2), 0 0 40px rgba(34,197,94,0.1), inset 0 0 15px rgba(34,197,94,0.08);
-    background: linear-gradient(105deg, transparent 30%, rgba(34,197,94,0.15) 42%, rgba(255,255,255,0.25) 50%, rgba(34,197,94,0.15) 58%, transparent 70%);
-    background-size: 250% 100%;
-    animation: frame-shine-q0 2.5s ease-in-out infinite;
+    border: 2.5px solid rgba(34,197,94,0.85);
+    box-shadow: 0 0 6px rgba(34,197,94,0.5), 0 0 16px rgba(34,197,94,0.28), 0 0 40px rgba(34,197,94,0.12), 0 0 0 3px rgba(34,197,94,0.1);
 }
 .stage-card.frame-q0:hover .frame-border, .boss-banner.frame-q0:hover .frame-border, .boss-mini-card.frame-q0:hover .frame-border {
-    border-color: rgba(34,197,94,0.95);
-    box-shadow: 0 0 12px rgba(34,197,94,0.6), 0 0 30px rgba(34,197,94,0.35), 0 0 60px rgba(34,197,94,0.15), inset 0 0 25px rgba(34,197,94,0.12);
+    border-color: rgba(34,197,94,1);
+    box-shadow: 0 0 10px rgba(34,197,94,0.7), 0 0 26px rgba(34,197,94,0.4), 0 0 65px rgba(34,197,94,0.18), 0 0 0 5px rgba(34,197,94,0.14);
 }
-@keyframes frame-shine-q0 { 0% { background-position: 250% 0; } 100% { background-position: -250% 0; } }
 
-/* ====== frame-q1: 紫晶藤蔓 ====== */
+/* ====== frame-q1 ====== */
 .stage-card.frame-q1, .boss-banner.frame-q1, .boss-mini-card.frame-q1 { --frame-color: #a78bfa; --frame-speed: 3s; }
 .stage-card.frame-q1 .frame-border, .boss-banner.frame-q1 .frame-border, .boss-mini-card.frame-q1 .frame-border {
-    border: 2.5px solid rgba(167,139,250,0.7);
-    box-shadow: 0 0 8px rgba(167,139,250,0.4), 0 0 20px rgba(167,139,250,0.2), 0 0 40px rgba(167,139,250,0.1), inset 0 0 15px rgba(167,139,250,0.08);
-    background: linear-gradient(105deg, transparent 30%, rgba(167,139,250,0.18) 42%, rgba(255,255,255,0.25) 50%, rgba(167,139,250,0.18) 58%, transparent 70%);
-    background-size: 250% 100%;
-    animation: frame-shine-q1 2.8s ease-in-out infinite;
+    border: 2.5px solid rgba(167,139,250,0.85);
+    box-shadow: 0 0 6px rgba(167,139,250,0.5), 0 0 16px rgba(167,139,250,0.28), 0 0 40px rgba(167,139,250,0.12), 0 0 0 3px rgba(167,139,250,0.1);
 }
 .stage-card.frame-q1:hover .frame-border, .boss-banner.frame-q1:hover .frame-border, .boss-mini-card.frame-q1:hover .frame-border {
-    border-color: rgba(167,139,250,0.95);
-    box-shadow: 0 0 16px rgba(167,139,250,0.6), 0 0 35px rgba(167,139,250,0.3), 0 0 60px rgba(167,139,250,0.15), inset 0 0 25px rgba(167,139,250,0.12);
+    border-color: rgba(167,139,250,1);
+    box-shadow: 0 0 10px rgba(167,139,250,0.7), 0 0 26px rgba(167,139,250,0.4), 0 0 65px rgba(167,139,250,0.18), 0 0 0 5px rgba(167,139,250,0.14);
 }
-@keyframes frame-shine-q1 { 0% { background-position: 250% 0; } 100% { background-position: -250% 0; } }
 
-/* ====== frame-q2: 琥珀金纹 ====== */
+/* ====== frame-q2 ====== */
 .stage-card.frame-q2, .boss-banner.frame-q2, .boss-mini-card.frame-q2 { --frame-color: #fbbf24; --frame-speed: 5s; }
 .stage-card.frame-q2 .frame-border, .boss-banner.frame-q2 .frame-border, .boss-mini-card.frame-q2 .frame-border {
-    border: 2.5px solid rgba(251,191,36,0.7);
-    box-shadow: 0 0 8px rgba(251,191,36,0.4), 0 0 20px rgba(251,191,36,0.2), 0 0 40px rgba(251,191,36,0.1), inset 0 0 15px rgba(251,191,36,0.08);
-    background: linear-gradient(105deg, transparent 25%, rgba(251,191,36,0.2) 40%, rgba(255,255,255,0.35) 50%, rgba(251,191,36,0.2) 60%, transparent 75%);
-    background-size: 300% 100%;
-    animation: frame-shine-q2 3s ease-in-out infinite;
+    border: 2.5px solid rgba(251,191,36,0.85);
+    box-shadow: 0 0 6px rgba(251,191,36,0.5), 0 0 16px rgba(251,191,36,0.28), 0 0 40px rgba(251,191,36,0.12), 0 0 0 3px rgba(251,191,36,0.1);
 }
 .stage-card.frame-q2:hover .frame-border, .boss-banner.frame-q2:hover .frame-border, .boss-mini-card.frame-q2:hover .frame-border {
-    border-color: rgba(251,191,36,0.95);
-    box-shadow: 0 0 14px rgba(251,191,36,0.6), 0 0 35px rgba(251,191,36,0.35), 0 0 60px rgba(251,191,36,0.15), inset 0 0 25px rgba(251,191,36,0.12);
+    border-color: rgba(251,191,36,1);
+    box-shadow: 0 0 10px rgba(251,191,36,0.7), 0 0 26px rgba(251,191,36,0.4), 0 0 65px rgba(251,191,36,0.18), 0 0 0 5px rgba(251,191,36,0.14);
 }
-@keyframes frame-shine-q2 { 0% { background-position: 300% 0; } 100% { background-position: -300% 0; } }
 
-/* ====== frame-q3: 橙焰巨锤 ====== */
+/* ====== frame-q3 ====== */
 .stage-card.frame-q3, .boss-banner.frame-q3, .boss-mini-card.frame-q3 { --frame-color: #f97316; --frame-speed: 1.8s; }
 .stage-card.frame-q3 .frame-border, .boss-banner.frame-q3 .frame-border, .boss-mini-card.frame-q3 .frame-border {
-    border: 3px solid rgba(249,115,22,0.75);
-    box-shadow: 0 0 10px rgba(249,115,22,0.5), 0 0 25px rgba(234,88,12,0.3), 0 0 50px rgba(234,88,12,0.12), inset 0 0 18px rgba(249,115,22,0.1);
-    background: linear-gradient(105deg, transparent 25%, rgba(249,115,22,0.22) 40%, rgba(255,255,255,0.3) 50%, rgba(249,115,22,0.22) 60%, transparent 75%);
-    background-size: 300% 100%;
-    animation: frame-shine-q3 2s ease-in-out infinite;
+    border: 3px solid rgba(249,115,22,0.85);
+    box-shadow: 0 0 6px rgba(249,115,22,0.5), 0 0 16px rgba(249,115,22,0.28), 0 0 40px rgba(249,115,22,0.12), 0 0 0 3px rgba(249,115,22,0.1);
 }
 .stage-card.frame-q3:hover .frame-border, .boss-banner.frame-q3:hover .frame-border, .boss-mini-card.frame-q3:hover .frame-border {
-    border-color: rgba(249,115,22,0.95);
-    box-shadow: 0 0 18px rgba(249,115,22,0.7), 0 0 45px rgba(234,88,12,0.4), 0 0 80px rgba(234,88,12,0.18), inset 0 0 28px rgba(249,115,22,0.15);
+    border-color: rgba(249,115,22,1);
+    box-shadow: 0 0 10px rgba(249,115,22,0.7), 0 0 26px rgba(249,115,22,0.4), 0 0 65px rgba(249,115,22,0.18), 0 0 0 5px rgba(249,115,22,0.14);
 }
-@keyframes frame-shine-q3 { 0% { background-position: 300% 0; } 100% { background-position: -300% 0; } }
 
-/* ====== frame-q4: 暗紫密谋 ====== */
+/* ====== frame-q4 ====== */
 .stage-card.frame-q4, .boss-banner.frame-q4, .boss-mini-card.frame-q4 { --frame-color: #8b5cf6; --frame-speed: 6s; }
 .stage-card.frame-q4 .frame-border, .boss-banner.frame-q4 .frame-border, .boss-mini-card.frame-q4 .frame-border {
-    border: 2.5px solid rgba(139,92,246,0.7);
-    box-shadow: 0 0 10px rgba(139,92,246,0.4), 0 0 25px rgba(139,92,246,0.2), 0 0 45px rgba(139,92,246,0.1), inset 0 0 15px rgba(139,92,246,0.08);
-    background: linear-gradient(105deg, transparent 30%, rgba(139,92,246,0.18) 42%, rgba(255,255,255,0.25) 50%, rgba(139,92,246,0.18) 58%, transparent 70%);
-    background-size: 250% 100%;
-    animation: frame-shine-q4 3.5s ease-in-out infinite;
+    border: 2.5px solid rgba(139,92,246,0.85);
+    box-shadow: 0 0 6px rgba(139,92,246,0.5), 0 0 16px rgba(139,92,246,0.28), 0 0 40px rgba(139,92,246,0.12), 0 0 0 3px rgba(139,92,246,0.1);
 }
 .stage-card.frame-q4:hover .frame-border, .boss-banner.frame-q4:hover .frame-border, .boss-mini-card.frame-q4:hover .frame-border {
-    border-color: rgba(139,92,246,0.95);
-    box-shadow: 0 0 18px rgba(139,92,246,0.65), 0 0 40px rgba(139,92,246,0.35), 0 0 70px rgba(139,92,246,0.15), inset 0 0 25px rgba(139,92,246,0.12);
+    border-color: rgba(139,92,246,1);
+    box-shadow: 0 0 10px rgba(139,92,246,0.7), 0 0 26px rgba(139,92,246,0.4), 0 0 65px rgba(139,92,246,0.18), 0 0 0 5px rgba(139,92,246,0.14);
 }
-@keyframes frame-shine-q4 { 0% { background-position: 250% 0; } 100% { background-position: -250% 0; } }
 
-/* ====== frame-q5: 赤红幻术 ====== */
+/* ====== frame-q5 ====== */
 .stage-card.frame-q5, .boss-banner.frame-q5, .boss-mini-card.frame-q5 { --frame-color: #ef4444; --frame-speed: 2.2s; }
 .stage-card.frame-q5 .frame-border, .boss-banner.frame-q5 .frame-border, .boss-mini-card.frame-q5 .frame-border {
-    border: 2.5px solid rgba(239,68,68,0.7);
-    box-shadow: 0 0 10px rgba(239,68,68,0.45), 0 0 25px rgba(239,68,68,0.25), 0 0 50px rgba(239,68,68,0.1), inset 0 0 15px rgba(239,68,68,0.08);
-    background: linear-gradient(105deg, transparent 30%, rgba(239,68,68,0.18) 42%, rgba(255,255,255,0.25) 50%, rgba(239,68,68,0.18) 58%, transparent 70%);
-    background-size: 250% 100%;
-    animation: frame-shine-q5 2.2s ease-in-out infinite;
+    border: 2.5px solid rgba(239,68,68,0.85);
+    box-shadow: 0 0 6px rgba(239,68,68,0.5), 0 0 16px rgba(239,68,68,0.28), 0 0 40px rgba(239,68,68,0.12), 0 0 0 3px rgba(239,68,68,0.1);
 }
 .stage-card.frame-q5:hover .frame-border, .boss-banner.frame-q5:hover .frame-border, .boss-mini-card.frame-q5:hover .frame-border {
-    border-color: rgba(239,68,68,0.95);
-    box-shadow: 0 0 20px rgba(239,68,68,0.7), 0 0 45px rgba(239,68,68,0.4), 0 0 80px rgba(239,68,68,0.18), inset 0 0 30px rgba(239,68,68,0.15);
+    border-color: rgba(239,68,68,1);
+    box-shadow: 0 0 10px rgba(239,68,68,0.7), 0 0 26px rgba(239,68,68,0.4), 0 0 65px rgba(239,68,68,0.18), 0 0 0 5px rgba(239,68,68,0.14);
 }
-@keyframes frame-shine-q5 { 0% { background-position: 250% 0; } 100% { background-position: -250% 0; } }
 
-/* ====== frame-q6: 烈焰荆棘 ====== */
+/* ====== frame-q6 ====== */
 .stage-card.frame-q6, .boss-banner.frame-q6, .boss-mini-card.frame-q6 { --frame-color: #dc2626; --frame-speed: 1.2s; }
 .stage-card.frame-q6 .frame-border, .boss-banner.frame-q6 .frame-border, .boss-mini-card.frame-q6 .frame-border {
-    border: 3px solid rgba(220,38,38,0.8);
-    box-shadow: 0 0 12px rgba(220,38,38,0.55), 0 0 28px rgba(153,27,27,0.3), 0 0 55px rgba(153,27,27,0.15), inset 0 0 18px rgba(220,38,38,0.1);
-    background: linear-gradient(105deg, transparent 25%, rgba(220,38,38,0.22) 40%, rgba(255,200,150,0.3) 50%, rgba(220,38,38,0.22) 60%, transparent 75%);
-    background-size: 300% 100%;
-    animation: frame-shine-q6 1.8s ease-in-out infinite;
+    border: 3px solid rgba(220,38,38,0.85);
+    box-shadow: 0 0 6px rgba(220,38,38,0.5), 0 0 16px rgba(220,38,38,0.28), 0 0 40px rgba(220,38,38,0.12), 0 0 0 3px rgba(220,38,38,0.1);
 }
 .stage-card.frame-q6:hover .frame-border, .boss-banner.frame-q6:hover .frame-border, .boss-mini-card.frame-q6:hover .frame-border {
-    border-color: rgba(220,38,38,0.95);
-    box-shadow: 0 0 24px rgba(220,38,38,0.8), 0 0 55px rgba(153,27,27,0.5), 0 0 90px rgba(153,27,27,0.25), inset 0 0 32px rgba(220,38,38,0.2);
+    border-color: rgba(220,38,38,1);
+    box-shadow: 0 0 10px rgba(220,38,38,0.7), 0 0 26px rgba(220,38,38,0.4), 0 0 65px rgba(220,38,38,0.18), 0 0 0 5px rgba(220,38,38,0.14);
 }
-@keyframes frame-shine-q6 { 0% { background-position: 300% 0; } 100% { background-position: -300% 0; } }
 
-/* ====== frame-q7: 极光幻彩 ====== */
+/* ====== frame-q7 ====== */
 .stage-card.frame-q7, .boss-banner.frame-q7, .boss-mini-card.frame-q7 { --frame-color: #7c3aed; --frame-speed: 2s; }
 .stage-card.frame-q7 .frame-border, .boss-banner.frame-q7 .frame-border, .boss-mini-card.frame-q7 .frame-border {
-    border: 3px solid rgba(124,58,237,0.75);
-    box-shadow: 0 0 12px rgba(124,58,237,0.5), 0 0 30px rgba(124,58,237,0.25), 0 0 55px rgba(124,58,237,0.12), inset 0 0 18px rgba(124,58,237,0.1);
-    background: linear-gradient(105deg, transparent 20%, rgba(34,197,94,0.15) 30%, rgba(167,139,250,0.2) 42%, rgba(255,255,255,0.35) 50%, rgba(251,191,36,0.2) 58%, rgba(249,115,22,0.15) 70%, transparent 80%);
-    background-size: 350% 100%;
-    animation: frame-shine-q7 3s ease-in-out infinite;
+    border: 3px solid rgba(124,58,237,0.85);
+    box-shadow: 0 0 6px rgba(124,58,237,0.5), 0 0 16px rgba(124,58,237,0.28), 0 0 40px rgba(124,58,237,0.12), 0 0 0 3px rgba(124,58,237,0.1);
 }
 .stage-card.frame-q7:hover .frame-border, .boss-banner.frame-q7:hover .frame-border, .boss-mini-card.frame-q7:hover .frame-border {
-    border-color: rgba(124,58,237,0.95);
-    box-shadow: 0 0 20px rgba(124,58,237,0.7), 0 0 50px rgba(124,58,237,0.35), 0 0 80px rgba(124,58,237,0.15), inset 0 0 28px rgba(124,58,237,0.15);
+    border-color: rgba(124,58,237,1);
+    box-shadow: 0 0 10px rgba(124,58,237,0.7), 0 0 26px rgba(124,58,237,0.4), 0 0 65px rgba(124,58,237,0.18), 0 0 0 5px rgba(124,58,237,0.14);
 }
-@keyframes frame-shine-q7 { 0% { background-position: 350% 0; } 100% { background-position: -350% 0; } }
 
 /* 已通关普通关卡可叠加低透明度边框（降低视觉干扰） */
 .stage-card.cleared.frame-q0 .frame-border { opacity: 0.85; }
@@ -5256,6 +5235,7 @@
 .stage-card.cleared.frame-q6 .frame-border { opacity: 0.85; }
 .stage-card.cleared.frame-q7 .frame-border { opacity: 0.85; }
 .stage-card.cleared:hover .frame-border { opacity: 1; }
+
 /* ========== BOSS 战对峙动画 ========== */
 /* 用户攻击冲刺 */
 @keyframes hero-attack {
@@ -8009,3 +7989,76 @@
     color: var(--boss-theme, #7c3aed);
     filter: drop-shadow(0 0 10px color-mix(in srgb, var(--boss-theme, #7c3aed) 60%, transparent));
 }
+
+/* ====== 选关页边框装备栏（随时装备/卸下） ====== */
+.frame-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    margin: 0 4px 10px;
+    background: rgba(30,41,59,0.5);
+    border: 1px solid rgba(129,140,248,0.22);
+    border-radius: 14px;
+}
+.frame-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.frame-toolbar-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+.frame-toolbar-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.frame-tb-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.frame-tb-badge:hover { filter: brightness(1.25); transform: translateY(-1px); }
+.frame-tb-empty {
+    font-size: 0.72rem;
+    color: #64748b;
+}
+.frame-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.frame-tb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: rgba(99,102,241,0.15);
+    color: #a5b4fc;
+    border: 1px solid rgba(99,102,241,0.3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.frame-tb-btn:hover { background: rgba(99,102,241,0.28); }
+.frame-tb-btn.danger {
+    background: rgba(239,68,68,0.12);
+    color: #f87171;
+    border-color: rgba(239,68,68,0.3);
+}
+.frame-tb-btn.danger:hover { background: rgba(239,68,68,0.25); }

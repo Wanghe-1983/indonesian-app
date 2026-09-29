@@ -1,4 +1,4 @@
-/**
+﻿/**
  * module-challenge.js
  * 闯天关模块 - 包含关卡地图、答题界面、排行榜
  * 子Tab: 闯关(Challenge) / 排行榜(Rank)
@@ -960,8 +960,29 @@ const ChallengeModule = {
 
         const clearedPct = stages.length > 0 ? Math.round(totalCleared / stages.length * 100) : 0;
         const barColor = isHellMode ? '#f87171' : '#60a5fa';
+
+        // 边框装备栏：显示已装备边框，随时进入收藏墙装备/卸下
+        const eqFrames = (this._equippedFrameIds || []).map(fid => this._frameDefs['frame_' + fid]).filter(Boolean);
+        const frameToolbar = `
+            <div class="frame-toolbar">
+                <div class="frame-toolbar-left">
+                    <i class="fas fa-border-all" style="color:#818cf8;"></i>
+                    <span class="frame-toolbar-title">关卡边框</span>
+                    <div class="frame-toolbar-badges">
+                        ${eqFrames.length > 0
+                            ? eqFrames.map(f => `<span class="frame-tb-badge" style="background:${f.color}22;color:${f.color};border-color:${f.color}55;" onclick="ChallengeModule._equipFrame('${f.id}')" title="点击卸下『${f.name}』">${f.name}</span>`).join('')
+                            : '<span class="frame-tb-empty">未装备边框（点击管理边框装配）</span>'}
+                    </div>
+                </div>
+                <div class="frame-toolbar-actions">
+                    ${eqFrames.length > 0 ? `<button class="frame-tb-btn danger" onclick="ChallengeModule._equipFrame(null)"><i class="fas fa-times"></i> 卸下全部</button>` : ''}
+                    <button class="frame-tb-btn" onclick="ChallengeModule.showFrames()"><i class="fas fa-border-all"></i> 管理边框</button>
+                </div>
+            </div>`;
+
         container.innerHTML = `
             <div class="stages-page">
+                ${frameToolbar}
                 <div class="stages-header-bar">
                     <div class="stages-header-left">
                         <span class="stages-header-icon" style="color:${barColor};">
@@ -1312,6 +1333,12 @@ const ChallengeModule = {
     },
 
     /** 独立的关卡边框墙页面 */
+    /** 进入边框收藏墙（随时装备/卸下） */
+    showFrames() {
+        this.currentView = 'frames';
+        this.render();
+    },
+
     _renderFrameWall(container) {
         const html = `
             <div class="ch-header">
