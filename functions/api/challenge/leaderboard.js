@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 闯天关 - 排行榜 API
  * GET /api/challenge/leaderboard?period=weekly|monthly|alltime
  * GET /api/challenge/leaderboard/my?period=weekly
@@ -6,16 +6,23 @@
  */
 
 export async function onRequestGet(context) {
-    const { request, env } = context;
-    const url = new URL(request.url);
-    const path = url.pathname.replace('/api/', '');
+    try {
+        const { request, env } = context;
+        const url = new URL(request.url);
+        const path = url.pathname.replace('/api/', '');
 
-    if (path === 'challenge/leaderboard/my') {
-        return handleMyRank(context, url);
-    } else if (path === 'challenge/leaderboard/champion') {
-        return handleChampion(context);
-    } else {
-        return handleLeaderboard(context, url);
+        if (path === 'challenge/leaderboard/my') {
+            return await handleMyRank(context, url);
+        } else if (path === 'challenge/leaderboard/champion') {
+            return await handleChampion(context);
+        } else {
+            return await handleLeaderboard(context, url);
+        }
+    } catch (err) {
+        console.error('leaderboard API Error:', err);
+        return new Response(JSON.stringify({ error: err.message, stack: (err.stack || '').slice(0, 300) }), {
+            status: 500, headers: { 'Content-Type': 'application/json' }
+        });
     }
 }
 
@@ -186,7 +193,18 @@ function getWeekKey() {
 }
 
 async function ensureTables(env) {
-    // challenge_progress 由 progress.js 创建，这里只创建排行榜专用表
+    // 排行榜查询依赖 challenge_progress / challenge_weekly / challenge_records
+    // 这里全部 ensure，避免单独查询时报表不存在
+    await env.INDO_LEARN_DB.prepare(`CREATE TABLE IF NOT EXISTS challenge_progress (
+        username TEXT NOT NULL, stage_id TEXT NOT NULL, mode TEXT NOT NULL DEFAULT 'normal',
+        first_score REAL DEFAULT 0, best_score REAL DEFAULT 0, best_accuracy REAL DEFAULT 0,
+        best_time INTEGER DEFAULT 0, stars INTEGER DEFAULT 0, attempts INTEGER DEFAULT 0,
+        cleared INTEGER DEFAULT 0, updated_at TEXT DEFAULT (datetime('now')),
+        PRIMARY KEY (username, stage_id, mode)
+    )`).run();
+    try { await env.INDO_LEARN_DB.prepare(`ALTER TABLE challenge_progress ADD COLUMN mode TEXT NOT NULL DEFAULT 'normal'`).run(); } catch(e) {}
+    // users.company_name 兼容（旧表可能没有）
+    try { await env.INDO_LEARN_DB.prepare(`ALTER TABLE users ADD COLUMN company_name TEXT`).run(); } catch(e) {}
     await env.INDO_LEARN_DB.prepare(`CREATE TABLE IF NOT EXISTS challenge_weekly (
         id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, name TEXT NOT NULL DEFAULT '',
         week_key TEXT NOT NULL, total_score REAL NOT NULL DEFAULT 0, stages_cleared INTEGER NOT NULL DEFAULT 0,

@@ -1,4 +1,4 @@
-const SCHEMA = `
+﻿const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
     password TEXT NOT NULL,
@@ -81,6 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_broadcasts_active ON broadcasts(is_active, displa
 const ALTERS = [
     'ALTER TABLE employees ADD COLUMN created_at TEXT',
     'ALTER TABLE users ADD COLUMN last_heartbeat TEXT',
+    'ALTER TABLE users ADD COLUMN company_name TEXT',
     'ALTER TABLE leaderboard_entries ADD COLUMN name TEXT',
     'ALTER TABLE leaderboard_entries ADD COLUMN period TEXT',
     'ALTER TABLE broadcasts ADD COLUMN type TEXT DEFAULT \'notice\'',
@@ -92,6 +93,7 @@ const ALTERS = [
 // 补全新增列的默认值
 const UPDATES = [
     "UPDATE employees SET created_at = datetime('now') WHERE created_at IS NULL",
+    "UPDATE users SET company_name = '' WHERE company_name IS NULL",
     "UPDATE leaderboard_entries SET name = '' WHERE name IS NULL",
     "UPDATE leaderboard_entries SET period = 'weekly' WHERE period IS NULL",
 ];
