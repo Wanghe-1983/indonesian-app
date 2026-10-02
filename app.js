@@ -422,14 +422,14 @@ async function initUI() {
     <!-- 主页 -->
     <div id="page-home">
         <div class="home-container">
-                        <div id="broadcast-bar" style="display:none;margin:10px 0;padding:12px 18px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(168,85,247,0.12));border:1px solid rgba(99,102,241,0.2);border-radius:12px;overflow:hidden;position:relative;">
-        <div style="display:flex;align-items:center;gap:10px;">
-            <span style="color:#a78bfa;font-size:0.8rem;flex-shrink:0;"><i class="fas fa-bullhorn"></i></span>
-            <div style="flex:1;min-width:0;overflow:hidden;">
-                <div id="broadcast-text" style="font-size:0.88rem;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-                <div id="broadcast-title" style="font-size:0.75rem;color:#64748b;margin-top:2px;"></div>
+                        <div id="broadcast-bar" style="display:none;margin:14px 0;padding:16px 22px;background:linear-gradient(135deg,rgba(99,102,241,0.16),rgba(168,85,247,0.16));border:1px solid rgba(139,92,246,0.35);border-radius:14px;position:relative;box-shadow:0 4px 20px rgba(99,102,241,0.18);">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span style="color:#c4b5fd;font-size:1.1rem;flex-shrink:0;margin-top:3px;"><i class="fas fa-bullhorn"></i></span>
+            <div style="flex:1;min-width:0;">
+                <div id="broadcast-title" style="font-size:0.85rem;font-weight:600;color:#c4b5fd;margin-bottom:4px;"></div>
+                <div id="broadcast-text" style="font-size:0.98rem;color:#f1f5f9;line-height:1.65;word-break:break-word;"></div>
             </div>
-
+            <button id="broadcast-close-btn" title="关闭" style="background:rgba(255,255,255,0.08);border:none;color:#cbd5e1;cursor:pointer;font-size:0.78rem;flex-shrink:0;padding:6px 9px;border-radius:8px;line-height:1;transition:background .2s;"><i class="fas fa-times"></i></button>
         </div>
     </div>
             <div class="home-user-bar" id="home-user-bar">
@@ -3977,15 +3977,55 @@ function getEquippedTitleName() {
 
 async function loadBroadcasts() {
     try {
-        // 先读取广播配置
-        let bcConfig = { enabled: true, allowClose: false, interval: 8 };
+        var bar = document.getElementById('broadcast-bar');
+        if (!bar) return;
+
+        // 全局状态
+        if (!window._bcState) {
+            window._bcState = { welcome: null, welcomeClosed: false, normal: [], idx: 0, timer: null };
+        }
+        var st = window._bcState;
+
+        // 绑定关闭按钮（只绑一次）
+        var closeBtn = document.getElementById('broadcast-close-btn');
+        if (closeBtn && !closeBtn._bound) {
+            closeBtn._bound = true;
+            closeBtn.onclick = function() {
+                if (st.welcome && !st.welcomeClosed) {
+                    st.welcomeClosed = true;   // 关欢迎词 → 切普通广播
+                } else {
+                    sessionStorage.setItem('fmi_bar_dismissed', '1');  // 普通广播：本次会话不再弹
+                }
+                _bcRender();
+            };
+        }
+
+        // ---- 同步阶段：立即构造并渲染欢迎词（不等网络 fetch）----
+        var bcConfig = { enabled: true, allowClose: true, interval: 8, loginEnabled: true, loginWelcome: '欢迎' };
+        try {
+            const ui = JSON.parse(sessionStorage.getItem('fmi_user') || '{}');
+            const hasLogin = !!(ui && (ui.username || ui.name));
+            const announced = sessionStorage.getItem('fmi_login_announced');
+            if (hasLogin && !announced) {
+                const welcome = (bcConfig.loginWelcome || '欢迎').trim() || '欢迎';
+                const titleName = getEquippedTitleName();
+                const who = ui.name || ui.username || '用户';
+                let msg = welcome + '，' + (titleName ? titleName + '，' : '') + who + ' 登录';
+                st.welcome = { id: 'login-' + Date.now(), title: '欢迎播报', content: msg, type: 'welcome' };
+                sessionStorage.setItem('fmi_login_announced', '1');
+                st.welcomeClosed = false;
+            }
+        } catch(e) {}
+
+        // 立即渲染一次（欢迎词优先显示）
+        _bcRender();
+
+        // ---- 网络阶段：拉取广播配置 + 普通广播列表 ----
         let broadcasts = [];
         let remoteOK = false;
-
-        // 优先服务端
         try {
             const cfgRes = await fetch((CONFIG.apiBase || location.origin) + '/api/broadcast/config');
-            if (cfgRes.ok) bcConfig = { ...bcConfig, ...await cfgRes.json() };
+            if (cfgRes.ok) bcConfig = Object.assign({}, bcConfig, await cfgRes.json());
             const res = await fetch((CONFIG.apiBase || location.origin) + '/api/broadcast/active');
             if (res.ok) {
                 const data = await res.json();
@@ -3993,7 +4033,7 @@ async function loadBroadcasts() {
             }
         } catch(e) {}
 
-        // 本地回退（本地管理模式：读 fmi_broadcast）
+        // 本地回退
         if (!remoteOK) {
             try {
                 const store = JSON.parse(localStorage.getItem('fmi_broadcast') || 'null');
@@ -4004,7 +4044,7 @@ async function loadBroadcasts() {
             } catch(e) {}
         }
 
-        // 手动播报 flash（管理员即时播报，一次显示后清除）
+        // 手动播报 flash
         try {
             const flash = JSON.parse(localStorage.getItem('fmi_broadcast_flash') || 'null');
             if (flash && flash.content) {
@@ -4014,72 +4054,76 @@ async function loadBroadcasts() {
             }
         } catch(e) {}
 
-        // 登录播报（默认功能：登录后推送 "欢迎词，佩戴称号，用户名 登录"）
-        try {
-            const ui = JSON.parse(sessionStorage.getItem('fmi_user') || '{}');
-            const hasLogin = !!(ui && (ui.username || ui.name));
-            const announced = sessionStorage.getItem('fmi_login_announced');
-            if (hasLogin && bcConfig.loginEnabled !== false && !announced) {
-                const welcome = (bcConfig.loginWelcome || '欢迎').trim() || '欢迎';
-                const titleName = getEquippedTitleName();
-                const who = ui.name || ui.username || '用户';
-                let msg = welcome + '，' + (titleName ? titleName + '，' : '') + who + ' 登录';
-                broadcasts.unshift({ id: 'login-' + Date.now(), title: '欢迎播报', content: msg, type: 'welcome', isActive: true });
-                sessionStorage.setItem('fmi_login_announced', '1');
-            }
-        } catch(e) {}
+        // 若管理员在后台关闭了登录播报，丢弃欢迎词
+        if (bcConfig.loginEnabled === false) st.welcome = null;
 
-        // 如果未启用广播（关闭小广播），直接返回
-        if (!bcConfig.enabled) return;
+        // 未启用广播：除欢迎词外不显示普通广播
+        if (!bcConfig.enabled) {
+            st.normal = [];
+            _bcRender();
+            return;
+        }
 
-        const valid = broadcasts.filter(b => {
+        // 过滤有效普通广播（排除 welcome 类型，welcome 由 st.welcome 单独管理）
+        st.normal = broadcasts.filter(b => {
+            if (b.type === 'welcome') return false;
             if (b.isActive === false) return false;
             const now = new Date().toISOString().slice(0, 10);
             if (b.startDate && b.startDate > now) return false;
             if (b.endDate && b.endDate < now) return false;
             return true;
         });
+        st.idx = 0;
+        window._bcConfig = bcConfig;
 
-        if (valid.length === 0) return;
-
-        const bar = document.getElementById('broadcast-bar');
-        if (!bar) return;
-
-        // 根据配置动态创建/移除关闭按钮
-        let closeBtn = document.getElementById('broadcast-close-btn');
-        if (bcConfig.allowClose && !closeBtn) {
-            closeBtn = document.createElement('button');
-            closeBtn.id = 'broadcast-close-btn';
-            closeBtn.style.cssText = 'background:none;border:none;color:#64748b;cursor:pointer;font-size:0.8rem;flex-shrink:0;padding:4px;';
-            closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-            closeBtn.onclick = function() { bar.style.display = 'none'; };
-            bar.querySelector('div').appendChild(closeBtn);
-        } else if (!bcConfig.allowClose && closeBtn) {
-            closeBtn.remove();
-        }
-
-        // 显示第一条广播
-        const bc = valid[0];
-        document.getElementById('broadcast-text').textContent = bc.content || '';
-        document.getElementById('broadcast-title').textContent = bc.title || '';
-        bar.style.display = '';
-        // 如果有多条，自动轮播
-        if (valid.length > 1) {
-            const interval = (bcConfig.interval || 8) * 1000;
-            let idx = 0;
-            setInterval(() => {
-                idx = (idx + 1) % valid.length;
-                const current = valid[idx];
-                const textEl = document.getElementById('broadcast-text');
-                const titleEl = document.getElementById('broadcast-title');
-                if (textEl && titleEl && bar.style.display !== 'none') {
-                    textEl.textContent = current.content || '';
-                    titleEl.textContent = current.title || '';
-                }
-            }, interval);
-        }
+        _bcRender();
+        _bcStartTimer();
     } catch(e) {}
 }
+
+// 渲染当前应显示的广播
+function _bcRender() {
+    var bar = document.getElementById('broadcast-bar');
+    if (!bar) return;
+    var t = document.getElementById('broadcast-title');
+    var c = document.getElementById('broadcast-text');
+    var st = window._bcState;
+    if (!st) return;
+
+    // 1) 欢迎词优先、常驻、不被覆盖
+    if (st.welcome && !st.welcomeClosed) {
+        if (t) t.textContent = st.welcome.title || '';
+        if (c) c.textContent = st.welcome.content || '';
+        bar.style.display = '';
+        return;
+    }
+    // 2) 普通广播
+    if (st.normal && st.normal.length > 0) {
+        if (sessionStorage.getItem('fmi_bar_dismissed')) { bar.style.display = 'none'; return; }
+        var b = st.normal[st.idx % st.normal.length];
+        if (t) t.textContent = b.title || '';
+        if (c) c.textContent = b.content || '';
+        bar.style.display = '';
+        return;
+    }
+    // 3) 无内容：隐藏
+    bar.style.display = 'none';
+}
+
+// 普通广播轮播（欢迎词不参与轮播）
+function _bcStartTimer() {
+    if (window._bcState && window._bcState.timer) clearInterval(window._bcState.timer);
+    window._bcState.timer = setInterval(function() {
+        var st = window._bcState;
+        if (!st) return;
+        if (st.welcome && !st.welcomeClosed) return;  // 欢迎词常驻
+        if (st.normal && st.normal.length > 1) {
+            st.idx++;
+            _bcRender();
+        }
+    }, (window._bcConfig && window._bcConfig.interval || 8) * 1000);
+}
+
 // 预加载浏览器语音列表（speechSynthesis.getVoices 首次可能返回空数组）
 if (window.speechSynthesis) {
     speechSynthesis.getVoices();
