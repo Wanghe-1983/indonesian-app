@@ -1,5 +1,13 @@
-const CACHE_NAME = 'indonesian-cache-v13';
-const ASSETS = ['./','./index.html','./login.html','./admin.html','./indonesian_learning_data.json','./manifest.json','./Wang_he.jpg'];
+const CACHE_NAME = 'indonesian-cache-v14';
+const ASSETS = [
+    './','./index.html','./login.html','./admin.html',
+    './indonesian_learning_data.json','./manifest.json','./Wang_he.jpg',
+    './vendor/fontawesome/css/all.min.css',
+    './vendor/fontawesome/webfonts/fa-solid-900.woff2',
+    './vendor/fontawesome/webfonts/fa-regular-400.woff2',
+    './vendor/fontawesome/webfonts/fa-brands-400.woff2',
+    './vendor/html2canvas/html2canvas.min.js'
+];
 
 self.addEventListener('install', e => {
     e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS).catch(()=>{})).then(() => {}))  // 不跳过等待，避免浏览器原生confirm弹窗;
