@@ -554,9 +554,20 @@ async function initUI() {
                         <button class="hide-toggle-btn" id="hide-btn" onclick="toggleHide()" title="点击切换显示/隐藏中文翻译" style="width:44px;height:44px;font-size:1.2rem;border:none;background:none;cursor:pointer;">
                             <span id="hide-icon" class="hide-icon-show"><i class="fas fa-eye"></i></span>
                         </button>
-                        
+
                     </div>
                     <div class="vslider-range"><span></span><span></span></div>
+                </div>
+                <div class="vslider-box">
+                    <div class="vslider-label"><i class="fas fa-check-double"></i> 切词记录</div>
+                    <div class="vslider-track-wrap" style="flex:1;min-width:0;">
+                        <select id="mastered-mode-select" onchange="setMasteredMode(this.value)" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.85rem;outline:none;cursor:pointer;">
+                            <option value="ask">询问后记录（推荐）</option>
+                            <option value="auto">自动记为已掌握</option>
+                            <option value="off">不记录</option>
+                        </select>
+                    </div>
+                    <div class="vslider-range"><span>右箭头切词时</span></div>
                 </div>
             </div>
             </div><!-- end ctrl-body -->
@@ -945,6 +956,7 @@ async function loadDB() {
         }
         renderTodayRecord();
         updateStats();
+        if (typeof initMasteredModeSelect === 'function') initMasteredModeSelect();
 
         console.log('词库加载成功！共', Object.keys(db).length, '个分类');
     } catch (e) {
@@ -1892,15 +1904,19 @@ function navWord(dir) {
     if (newIdx > maxIdx) newIdx = 0;
     const currentWord = db[curCat].lessons[curLesson].words[curIdx];
     const alreadyLearned = todayRecord.some(item => item.indonesian === currentWord.indonesian);
-    if (!alreadyLearned) {
+    const mode = getMasteredMode();
+    if (alreadyLearned || mode === 'off') {
+        doNavWord(newIdx);
+    } else if (dir > 0 && mode === 'auto') {
+        addToTodayRecord(currentWord);
+        doNavWord(newIdx);
+    } else {
         showLearnConfirm(currentWord, () => {
             addToTodayRecord(currentWord);
             doNavWord(newIdx);
         }, () => {
             doNavWord(newIdx);
         });
-    } else {
-        doNavWord(newIdx);
     }
 }
 
@@ -4385,28 +4401,57 @@ function displayCourseItem(item) {
     updateFavBtnForCourse();
 }
 
+// 切词记录模式：ask=询问(auto默认)/auto=自动记为已掌握/off=不记录
+function getMasteredMode() {
+    try { return localStorage.getItem('fmi_mastered_mode') || 'ask'; } catch(e) { return 'ask'; }
+}
+function setMasteredMode(mode) {
+    try { localStorage.setItem('fmi_mastered_mode', mode); } catch(e) {}
+}
+function initMasteredModeSelect() {
+    const sel = document.getElementById('mastered-mode-select');
+    if (sel) sel.value = getMasteredMode();
+}
+
 function navCourseWord(dir) {
     if (courseBrowseItems.length === 0) return;
     const wasSpeaking = typeof isSpeaking === 'function' && isSpeaking();
     if (wasSpeaking && typeof stopSpeech === 'function') stopSpeech();
-    // 前进时记录"即将离开"的当前词（首次进入不自动记为已掌握）
+    // 前进时处理"即将离开"的当前词（按用户设置：自动/询问/不记录）
     if (dir > 0) {
-        try {
+        const mode = getMasteredMode();
+        if (mode !== 'off') {
             const leaving = courseBrowseItems[courseBrowseIndex];
-            if (leaving) {
-                if (leaving.indonesian) {
-                    addToTodayRecord({ indonesian: leaving.indonesian, chinese: leaving.chinese || '' });
-                } else if (leaving.lines && Array.isArray(leaving.lines)) {
-                    for (const line of leaving.lines) {
-                        if (line && line.indonesian && line.chinese) {
-                            addToTodayRecord({ indonesian: line.indonesian, chinese: line.chinese });
+            const doRecord = () => {
+                try {
+                    if (leaving) {
+                        if (leaving.indonesian) {
+                            addToTodayRecord({ indonesian: leaving.indonesian, chinese: leaving.chinese || '' });
+                        } else if (leaving.lines && Array.isArray(leaving.lines)) {
+                            for (const line of leaving.lines) {
+                                if (line && line.indonesian && line.chinese) {
+                                    addToTodayRecord({ indonesian: line.indonesian, chinese: line.chinese });
+                                }
+                            }
                         }
+                        renderTodayRecord();
                     }
-                }
-                renderTodayRecord();
+                } catch(e) { console.warn('记录离开词失败:', e); }
+            };
+            if (mode === 'auto') {
+                doRecord();
+            } else if (mode === 'ask' && leaving && leaving.indonesian) {
+                // 弹确认框；用户选"已掌握"才记录，然后继续切词
+                showLearnConfirm(leaving, () => { doRecord(); advanceCourseWord(dir); }, () => { advanceCourseWord(dir); });
+                return;
+            } else if (mode === 'ask') {
+                // 对话类不弹确认，直接过
             }
-        } catch(e) { console.warn('记录离开词失败:', e); }
+        }
     }
+    advanceCourseWord(dir);
+}
+function advanceCourseWord(dir) {
     courseBrowseIndex += dir;
     if (courseBrowseIndex < 0) courseBrowseIndex = courseBrowseItems.length - 1;
     if (courseBrowseIndex >= courseBrowseItems.length) courseBrowseIndex = 0;
