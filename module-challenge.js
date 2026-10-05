@@ -7,7 +7,7 @@
 const ChallengeModule = {
     currentView: 'home', // home | modes | stages | rank-modes | rank | titles
     challengeMode: 'normal', // normal | hell
-    heroGender: 'male', // male | female - 地狱模式角色性别
+    heroGender: (function(){ try { return localStorage.getItem('fmi_hero_gender') || null; } catch(e){ return null; } })(), // male | female - 地狱模式角色性别（首次为 null，触发选择）
     allStages: [],
     serverProgress: {}, // 从D1加载
     currentStageId: null,
@@ -377,26 +377,34 @@ const ChallengeModule = {
                     <div style="font-size:1.3rem;font-weight:700;color:#f87171;margin-bottom:8px;">地狱模式 - 选择角色</div>
                     <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:24px;">选择你的英雄踏上地狱征程</div>
                     <div style="display:flex;gap:16px;justify-content:center;">
-                        <div onclick="ChallengeModule._confirmGender('male')" style="cursor:pointer;flex:1;background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.08));border:2px solid rgba(59,130,246,0.4);border-radius:16px;padding:20px 12px;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(59,130,246,0.8)';this.style.background='linear-gradient(135deg,rgba(59,130,246,0.25),rgba(37,99,235,0.12))';" onmouseout="this.style.borderColor='rgba(59,130,246,0.4)';this.style.background='linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.08))';">
-                            <div style="font-size:3rem;margin-bottom:8px;"><i class="fas fa-shield-halved" style="color:#60a5fa;"></i></div>
+                        <div onclick="ChallengeModule._confirmGender('male');document.querySelectorAll('.ch-gender-modal').forEach(m=>m.remove());" style="cursor:pointer;flex:1;background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.08));border:2px solid rgba(59,130,246,0.4);border-radius:16px;padding:20px 12px;transition:all 0.2s;">
+                            <img src="assets/hero/hero-q0.png" onerror="this.style.display='none'" style="width:96px;height:96px;object-fit:contain;margin:0 auto 10px;display:block;background:radial-gradient(circle,rgba(99,102,241,0.25),transparent 70%);border-radius:50%;">
                             <div style="font-weight:700;color:#60a5fa;font-size:1rem;">男性护法</div>
                             <div style="font-size:0.72rem;color:#94a3b8;margin-top:4px;">竹甲勇士 → 佛教护法</div>
                         </div>
-                        <div onclick="ChallengeModule._confirmGender('female')" style="cursor:pointer;flex:1;background:linear-gradient(135deg,rgba(236,72,153,0.15),rgba(219,39,119,0.08));border:2px solid rgba(236,72,153,0.4);border-radius:16px;padding:20px 12px;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(236,72,153,0.8)';this.style.background='linear-gradient(135deg,rgba(236,72,153,0.25),rgba(219,39,119,0.12))';" onmouseout="this.style.borderColor='rgba(236,72,153,0.4)';this.style.background='linear-gradient(135deg,rgba(236,72,153,0.15),rgba(219,39,119,0.08))';">
-                            <div style="font-size:3rem;margin-bottom:8px;"><i class="fas fa-leaf" style="color:#f472b6;"></i></div>
+                        <div onclick="ChallengeModule._confirmGender('female');document.querySelectorAll('.ch-gender-modal').forEach(m=>m.remove());" style="cursor:pointer;flex:1;background:linear-gradient(135deg,rgba(236,72,153,0.15),rgba(219,39,119,0.08));border:2px solid rgba(236,72,153,0.4);border-radius:16px;padding:20px 12px;transition:all 0.2s;">
+                            <img src="assets/hero/heroine-q0.png" onerror="this.style.display='none'" style="width:96px;height:96px;object-fit:contain;margin:0 auto 10px;display:block;background:radial-gradient(circle,rgba(236,72,153,0.25),transparent 70%);border-radius:50%;">
                             <div style="font-weight:700;color:#f472b6;font-size:1rem;">女祭司</div>
                             <div style="font-size:0.72rem;color:#94a3b8;margin-top:4px;">白袍祭司 → 神袍圣女</div>
                         </div>
                     </div>
+                    <div style="font-size:0.72rem;color:#64748b;margin-top:16px;">形象仅影响外观，不影响闯关进度；可随时在右上角菜单切换</div>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
     },
 
+    /** 从用户菜单调起角色选择弹窗（随时切换，不影响进度） */
+    openGenderPicker() {
+        document.querySelectorAll('.ch-gender-modal').forEach(m => m.remove());
+        this._showGenderSelect();
+    },
+
     /** 确认性别选择 */
     _confirmGender(gender) {
         this.heroGender = gender;
+        try { localStorage.setItem('fmi_hero_gender', gender); } catch(e) {}
         // 移除弹窗
         const modal = document.querySelector('.ch-gender-modal');
         if (modal) modal.remove();

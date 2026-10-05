@@ -127,6 +127,9 @@ function checkLoginStatus() {
                             <div onclick="showProfileDialog();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.background='transparent'">
                                 <i class="fas fa-user-pen" style="color:#a5b4fc;width:16px;text-align:center;"></i> 个人设置
                             </div>
+                            <div onclick="if(typeof ChallengeModule!=='undefined'&&ChallengeModule.openGenderPicker){ChallengeModule.openGenderPicker();}toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.background='transparent'">
+                                <i class="fas fa-shield-halved" style="color:#60a5fa;width:16px;text-align:center;"></i> 切换角色形象
+                            </div>
                             <div style="height:1px;background:rgba(255,255,255,0.05);margin:4px 8px;"></div>
                             <div onclick="logout()" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(248,113,113,0.1)'" onmouseout="this.style.background='transparent'">
                                 <i class="fas fa-sign-out-alt" style="color:#f87171;width:16px;text-align:center;"></i> 退出登录
