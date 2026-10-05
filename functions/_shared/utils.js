@@ -645,8 +645,19 @@ async function handleStudySync(context) {
         study_stats TEXT NOT NULL DEFAULT '{}',
         daily_goal INTEGER NOT NULL DEFAULT 20,
         practice_history TEXT NOT NULL DEFAULT '[]',
+        today_record TEXT NOT NULL DEFAULT '[]',
+        last_study_pos TEXT NOT NULL DEFAULT '',
+        mastered_mode TEXT NOT NULL DEFAULT 'ask',
+        hero_gender TEXT NOT NULL DEFAULT '',
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`).run();
+    // 老库补列（列已存在会报错，忽略即可）
+    for (const col of ['today_record TEXT NOT NULL DEFAULT \'[]\'',
+                       'last_study_pos TEXT NOT NULL DEFAULT \'\'',
+                       'mastered_mode TEXT NOT NULL DEFAULT \'ask\'',
+                       'hero_gender TEXT NOT NULL DEFAULT \'\'']) {
+        try { await env.INDO_LEARN_DB.prepare(`ALTER TABLE user_study_data ADD COLUMN ${col}`).run(); } catch(e) {}
+    }
 
     // 拉取：从 D1 返回用户学习数据
     if (body && body._action === 'pull') {
@@ -662,6 +673,10 @@ async function handleStudySync(context) {
                     studyStats: row.study_stats || '{}',
                     dailyGoal: row.daily_goal || 20,
                     practiceHistory: row.practice_history || '[]',
+                    todayRecord: row.today_record || '[]',
+                    lastStudyPos: row.last_study_pos || '',
+                    masteredMode: row.mastered_mode || 'ask',
+                    heroGender: row.hero_gender || '',
                 }
             });
         }
@@ -672,8 +687,8 @@ async function handleStudySync(context) {
     // 推送：将前端学习数据存入 D1（使用 UPSERT）
     const now = new Date().toISOString();
     await env.INDO_LEARN_DB.prepare(`
-        INSERT INTO user_study_data (username, mastery_records, favs, all_words, study_stats, daily_goal, practice_history, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO user_study_data (username, mastery_records, favs, all_words, study_stats, daily_goal, practice_history, today_record, last_study_pos, mastered_mode, hero_gender, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(username) DO UPDATE SET
             mastery_records = excluded.mastery_records,
             favs = excluded.favs,
@@ -681,6 +696,10 @@ async function handleStudySync(context) {
             study_stats = excluded.study_stats,
             daily_goal = excluded.daily_goal,
             practice_history = excluded.practice_history,
+            today_record = excluded.today_record,
+            last_study_pos = excluded.last_study_pos,
+            mastered_mode = excluded.mastered_mode,
+            hero_gender = excluded.hero_gender,
             updated_at = excluded.updated_at
     `).bind(
         username,
@@ -690,6 +709,10 @@ async function handleStudySync(context) {
         body.studyStats || '{}',
         body.dailyGoal || 20,
         body.practiceHistory || '[]',
+        body.todayRecord || '[]',
+        body.lastStudyPos || '',
+        body.masteredMode || 'ask',
+        body.heroGender || '',
         now
     ).run();
 

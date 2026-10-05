@@ -2314,7 +2314,38 @@ const today = new Date().toLocaleDateString();
             const serverHist = typeof result.practiceHistory === 'string' ? result.practiceHistory : JSON.stringify(result.practiceHistory);
             localStorage.setItem('fmi_practice_history', serverHist);
         }
-        
+
+        // 恢复今日记录（按日期比对：服务端是今天的就覆盖，否则保留本地）
+        if (result.todayRecord) {
+            try {
+                const serverToday = typeof result.todayRecord === 'string' ? JSON.parse(result.todayRecord) : result.todayRecord;
+                if (Array.isArray(serverToday) && serverToday.length > 0) {
+                    const localToday = JSON.parse(localStorage.getItem('fmi_today_record') || '[]');
+                    const merged = [...localToday];
+                    for (const r of serverToday) {
+                        if (r && r.indonesian && !merged.some(m => m.indonesian === r.indonesian)) merged.push(r);
+                    }
+                    localStorage.setItem('fmi_today_record', JSON.stringify(merged));
+                    if (typeof todayRecord !== 'undefined') todayRecord = merged;
+                }
+            } catch(e) {}
+        }
+        // 恢复上次学习位置
+        if (result.lastStudyPos) {
+            try { localStorage.setItem('fmi_last_study_pos', typeof result.lastStudyPos === 'string' ? result.lastStudyPos : JSON.stringify(result.lastStudyPos)); } catch(e) {}
+        }
+        // 恢复切词记录模式
+        if (result.masteredMode) {
+            try { localStorage.setItem('fmi_mastered_mode', result.masteredMode); } catch(e) {}
+        }
+        // 恢复角色性别
+        if (result.heroGender) {
+            try {
+                localStorage.setItem('fmi_hero_gender', result.heroGender);
+                if (typeof ChallengeModule !== 'undefined') ChallengeModule.heroGender = result.heroGender;
+            } catch(e) {}
+        }
+
         console.log('[StudySync] 学习数据已从服务端恢复');
     } catch(e) {
         console.warn('[StudySync] 恢复学习数据失败:', e);
@@ -2337,6 +2368,10 @@ function syncStudyToCloud() {
                 studyStats: localStorage.getItem('fmi_study_stats') || '{}',
                 dailyGoal: dailyGoal || 20,
                 practiceHistory: localStorage.getItem('fmi_practice_history') || '[]',
+                todayRecord: localStorage.getItem('fmi_today_record') || '[]',
+                lastStudyPos: localStorage.getItem('fmi_last_study_pos') || '',
+                masteredMode: localStorage.getItem('fmi_mastered_mode') || 'ask',
+                heroGender: localStorage.getItem('fmi_hero_gender') || '',
             });
         } catch(e) { console.warn('[StudySync] 同步失败:', e); }
     }, 3000);
