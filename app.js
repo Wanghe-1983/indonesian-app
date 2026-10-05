@@ -925,13 +925,25 @@ async function loadDB() {
         
         // 构建左侧菜单
         buildMenu();
-        // 显示第一个单词
-        showWord(curCat, curIdx);
-        // 添加到今日记录
-        addToTodayRecord(db[curCat].lessons["1"].words[curIdx]);
-        // 渲染记录
+        // 恢复上次学习位置；没有则显示空状态（不再硬塞第一个词，也不自动记为已掌握）
+        try {
+            const savedPos = JSON.parse(localStorage.getItem('fmi_last_study_pos') || 'null');
+            if (savedPos && db[savedPos.cat] && db[savedPos.cat].lessons[savedPos.lesson]) {
+                curCat = savedPos.cat;
+                curLesson = savedPos.lesson;
+                const words = db[curCat].lessons[curLesson].words;
+                curIdx = Math.min(Math.max(0, savedPos.idx || 0), words.length - 1);
+                showWord(curCat, curIdx);
+            } else {
+                document.getElementById('disp-indo').textContent = '请从左侧选择课程开始学习';
+                document.getElementById('disp-zh').textContent = '';
+                document.getElementById('word-idx').textContent = '--';
+            }
+        } catch(e) {
+            document.getElementById('disp-indo').textContent = '请从左侧选择课程开始学习';
+            document.getElementById('disp-zh').textContent = '';
+        }
         renderTodayRecord();
-        // 更新统计
         updateStats();
 
         console.log('词库加载成功！共', Object.keys(db).length, '个分类');
@@ -1284,6 +1296,8 @@ function showWord(catId, idx, lessonId = curLesson) {
     curCat = catId;
     curIdx = idx;
     curLesson = lessonId;
+    // 持久化学习位置，下次进来从这里继续
+    try { localStorage.setItem('fmi_last_study_pos', JSON.stringify({cat: catId, lesson: lessonId, idx: idx})); } catch(e) {}
     // 更新收藏状态
     const isFav = favs.some(item => item.cat === catId && item.lesson === lessonId && item.idx === idx);
     document.getElementById('fav-trigger').className = isFav ? 'star-btn active' : 'star-btn';
@@ -1295,7 +1309,6 @@ function loadLesson(catId, lessonId, idx) {
     curIdx = idx;
     curLesson = lessonId;
     showWord(catId, idx, lessonId);
-    addToTodayRecord(db[catId].lessons[lessonId].words[idx]);
     renderTodayRecord();
     updateStats();
 }
@@ -4370,25 +4383,30 @@ function displayCourseItem(item) {
     if (typeof stopSpeech === 'function') stopSpeech();
     // 更新收藏按钮状态
     updateFavBtnForCourse();
-    // 学习即记录：自动计入"今日学习记录"与"已掌握词汇"（与课程卡片/旧词库口径一致）
-    try {
-        if (item.lines && Array.isArray(item.lines)) {
-            for (const line of item.lines) {
-                if (line && line.indonesian && line.chinese) {
-                    addToTodayRecord({ indonesian: line.indonesian, chinese: line.chinese });
-                }
-            }
-        } else if (item && item.indonesian) {
-            addToTodayRecord({ indonesian: item.indonesian, chinese: item.chinese || '' });
-        }
-        renderTodayRecord();
-    } catch(e) { console.warn('课程浏览记录失败:', e); }
 }
 
 function navCourseWord(dir) {
     if (courseBrowseItems.length === 0) return;
     const wasSpeaking = typeof isSpeaking === 'function' && isSpeaking();
     if (wasSpeaking && typeof stopSpeech === 'function') stopSpeech();
+    // 前进时记录"即将离开"的当前词（首次进入不自动记为已掌握）
+    if (dir > 0) {
+        try {
+            const leaving = courseBrowseItems[courseBrowseIndex];
+            if (leaving) {
+                if (leaving.indonesian) {
+                    addToTodayRecord({ indonesian: leaving.indonesian, chinese: leaving.chinese || '' });
+                } else if (leaving.lines && Array.isArray(leaving.lines)) {
+                    for (const line of leaving.lines) {
+                        if (line && line.indonesian && line.chinese) {
+                            addToTodayRecord({ indonesian: line.indonesian, chinese: line.chinese });
+                        }
+                    }
+                }
+                renderTodayRecord();
+            }
+        } catch(e) { console.warn('记录离开词失败:', e); }
+    }
     courseBrowseIndex += dir;
     if (courseBrowseIndex < 0) courseBrowseIndex = courseBrowseItems.length - 1;
     if (courseBrowseIndex >= courseBrowseItems.length) courseBrowseIndex = 0;
