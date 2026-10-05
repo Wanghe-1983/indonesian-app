@@ -4370,6 +4370,19 @@ function displayCourseItem(item) {
     if (typeof stopSpeech === 'function') stopSpeech();
     // 更新收藏按钮状态
     updateFavBtnForCourse();
+    // 学习即记录：自动计入"今日学习记录"与"已掌握词汇"（与课程卡片/旧词库口径一致）
+    try {
+        if (item.lines && Array.isArray(item.lines)) {
+            for (const line of item.lines) {
+                if (line && line.indonesian && line.chinese) {
+                    addToTodayRecord({ indonesian: line.indonesian, chinese: line.chinese });
+                }
+            }
+        } else if (item && item.indonesian) {
+            addToTodayRecord({ indonesian: item.indonesian, chinese: item.chinese || '' });
+        }
+        renderTodayRecord();
+    } catch(e) { console.warn('课程浏览记录失败:', e); }
 }
 
 function navCourseWord(dir) {
