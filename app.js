@@ -13,6 +13,7 @@ function safeJSONParse(str, fallback) {
 }
 let favs = safeJSONParse(localStorage.getItem('fmi_v1_favs'), []); // 收藏
 let curCat = "1", curIdx = 0, curLesson = "1"; // 当前分类/单词索引
+let studyStarted = false; // 是否已开始学习（空状态下禁用方向键）
 let todayRecord = safeJSONParse(localStorage.getItem('fmi_today_record'), []); // 今日记录
 let studyStats = safeJSONParse(localStorage.getItem('fmi_study_stats'), { totalWords: 0, studySeconds: 0, todayWords: 0, startTime: null });
 let dailyGoal = (function() { try { return parseInt(localStorage.getItem('fmi_daily_goal') || '20'); } catch (e) { return 20; } })();
@@ -1304,6 +1305,7 @@ function loadCourseWord(levelId, unitId, type, index) {
 
 // 显示单词（适配 indonesian/chinese 字段）
 function showWord(catId, idx, lessonId = curLesson) {
+    studyStarted = true;
     const word = db[catId].lessons[lessonId].words[idx];
     document.getElementById('disp-indo').innerText = word.indonesian;
     document.getElementById('disp-zh').innerText = word.chinese;
@@ -1895,6 +1897,8 @@ async function loadStudyFromKV() {
 
 // 切换单词
 function navWord(dir) {
+    // 空状态（用户还没选课程）：禁用切词
+    if (!studyStarted) return;
     // 课程浏览模式
     if (courseBrowseItems.length > 0) {
         navCourseWord(dir);
@@ -4413,6 +4417,7 @@ function loadCourseItemsToCard(items, startIndex) {
     courseBrowseItems = items || [];
     courseBrowseIndex = startIndex || 0;
     if (courseBrowseItems.length === 0) return;
+    studyStarted = true;
     // 确保在勤学苦练-学习Tab
     switchMainPage('study');
     switchStudySubTab('learn');
