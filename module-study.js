@@ -492,12 +492,14 @@ const StudyModule = {
             if (records.length === 0) return;
 
             let allChanged = false;
+            let todayChanged = false;
             for (const rec of records) {
                 // 今日记录（去重）
                 const today = JSON.parse(localStorage.getItem('fmi_today_record') || '[]');
                 if (!today.some(t => t.indonesian === rec.indonesian)) {
                     today.push({ indonesian: rec.indonesian, chinese: rec.chinese });
                     localStorage.setItem('fmi_today_record', JSON.stringify(today));
+                    todayChanged = true;
                 }
                 // 累计已掌握词汇（去重）
                 const all = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
@@ -509,6 +511,25 @@ const StudyModule = {
             }
             if (allChanged && typeof syncStudyToCloud === 'function') {
                 try { syncStudyToCloud(); } catch(e) {}
+            }
+            // 实时刷新界面：同步内存状态并重建侧边栏（与收藏/错题集等写路径行为一致）
+            if (allChanged || todayChanged) {
+                try {
+                    // 同步 app.js 内存中的今日记录，避免 addToTodayRecord 整体回写时覆盖丢失
+                    if (Array.isArray(window.todayRecord)) {
+                        const todayNow = JSON.parse(localStorage.getItem('fmi_today_record') || '[]');
+                        for (const t of todayNow) {
+                            if (!window.todayRecord.some(r => r.indonesian === t.indonesian)) window.todayRecord.push(t);
+                        }
+                    }
+                    if (window.studyStats) {
+                        window.studyStats.todayWords = (Array.isArray(window.todayRecord) ? window.todayRecord : []).length;
+                        window.studyStats.totalWords = JSON.parse(localStorage.getItem('fmi_all_words') || '[]').length;
+                    }
+                    if (typeof buildMenu === 'function') buildMenu();
+                    if (typeof updateStats === 'function') updateStats();
+                    if (typeof renderTodayRecord === 'function') renderTodayRecord();
+                } catch(e) { console.warn('刷新已掌握列表失败:', e); }
             }
         } catch(e) {
             console.warn('记录学习进度失败:', e);
