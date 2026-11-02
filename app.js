@@ -1748,6 +1748,7 @@ function addToTodayRecord(word) {
         if (!pv.trackStudyTime && !pv.trackAccuracy) return;
     }
     const isExist = todayRecord.some(item => item.indonesian === word.indonesian);
+    let changed = false;
     if (!isExist) {
         todayRecord.push({
             indonesian: word.indonesian,
@@ -1755,13 +1756,18 @@ function addToTodayRecord(word) {
         });
         localStorage.setItem('fmi_today_record', JSON.stringify(todayRecord));
         studyStats.todayWords = todayRecord.length;
-        // 统计总单词数（去重）
-        const allWords = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
-        if (!allWords.includes(word.indonesian)) {
-            allWords.push(word.indonesian);
-            localStorage.setItem('fmi_all_words', JSON.stringify(allWords));
-        }
-        studyStats.totalWords = allWords.length;
+        changed = true;
+    }
+    // 统计总单词数（去重）——即使已在今日记录中，也要确保写入累计已掌握库，
+    // 修复"在今日记录但不在已掌握列表"的历史数据无法自愈的问题
+    const allWords = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
+    if (!allWords.includes(word.indonesian)) {
+        allWords.push(word.indonesian);
+        localStorage.setItem('fmi_all_words', JSON.stringify(allWords));
+        changed = true;
+    }
+    studyStats.totalWords = allWords.length;
+    if (!isExist) {
         updateStats();
         // 记录每日学习量
         const todayKey = new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0');
@@ -1770,9 +1776,9 @@ function addToTodayRecord(word) {
         localStorage.setItem('fmi_daily_history', JSON.stringify(dailyHist));
         // 同步到KV后端
         syncStudyToCloud();
-        // 实时重建侧边栏，让"已掌握"列表无需刷新页面即可显示新单词
-        if (typeof buildMenu === 'function') buildMenu();
     }
+    // 实时重建侧边栏，让"已掌握"列表无需刷新页面即可显示新单词
+    if (changed && typeof buildMenu === 'function') buildMenu();
 }
 
 // 渲染今日记录
