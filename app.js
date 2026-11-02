@@ -1770,6 +1770,8 @@ function addToTodayRecord(word) {
         localStorage.setItem('fmi_daily_history', JSON.stringify(dailyHist));
         // 同步到KV后端
         syncStudyToCloud();
+        // 实时重建侧边栏，让"已掌握"列表无需刷新页面即可显示新单词
+        if (typeof buildMenu === 'function') buildMenu();
     }
 }
 
