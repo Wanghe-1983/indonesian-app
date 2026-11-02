@@ -315,8 +315,9 @@ async function handleSystemInfo(context) {
     // 从 GitHub API 获取 commit hash（CF_PAGES_COMMIT_SHA 在 Functions 运行时不可用）
     let commitHash = '';
     try {
-        const ghRes = await fetch('https://api.github.com/repos/Wanghe-1983/indonesian-app/commits/main', {
-            headers: { 'User-Agent': 'indonesian-learn', 'Accept': 'application/vnd.github+json' }
+        const ghRes = await fetch('https://api.github.com/repos/Wanghe-1983/indonesian-app/commits/main?ts=' + Date.now(), {
+            headers: { 'User-Agent': 'indonesian-learn', 'Accept': 'application/vnd.github+json' },
+            cf: { cacheTtl: 300, cacheEverything: true }  // 缓存5分钟，避免GitHub API限流导致版本号为空
         });
         if (ghRes.ok) {
             const ghData = await ghRes.json();
