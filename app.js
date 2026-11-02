@@ -2980,6 +2980,15 @@ function filterMasteredItems(items, masteredList) {
     return items.filter(i => set.has(String(i.indonesian || '').trim().toLowerCase()));
 }
 
+// 生成选择题干扰项：优先从同题型（单词对单词、短句对短句、对话对对话）中抽取，
+// 同题型不足3个时再用其他题型补齐，避免出现"单词题选项是整句翻译"的错位
+function pickDistractors(allW, q, excludeFn) {
+    const qType = q.type || 'word';
+    const sameType = allW.filter(w => excludeFn(w) && (w.type || 'word') === qType);
+    const otherType = allW.filter(w => excludeFn(w) && (w.type || 'word') !== qType);
+    return shuffleArray(sameType.concat(otherType)).slice(0, 3);
+}
+
 // 更新设置页底部的可用题目数提示
 function updatePracticeWordCount() {
     const hint = document.getElementById('practice-word-count-hint');
@@ -3063,8 +3072,7 @@ function showQuestion() {
         document.getElementById('p-question-hint').innerHTML = '';
         document.getElementById('p-options').style.display = 'grid';
         document.getElementById('p-input-box').style.display = 'none';
-        let wrong = allW.filter(w => w.chinese !== q.chinese);
-        wrong = shuffleArray(wrong).slice(0, 3);
+        let wrong = pickDistractors(allW, q, w => w.chinese !== q.chinese);
         const opts = shuffleArray([{ text: q.chinese, correct: true }, ...wrong.map(w => ({ text: w.chinese, correct: false }))]);
         document.getElementById('p-options').innerHTML = opts.map(o =>
             '<div class="practice-option" onclick="selectOption(this,' + o.correct + ',\'' + o.text.replace(/'/g, "\\'") + '\')">' + o.text + '</div>'
@@ -3088,8 +3096,7 @@ function showQuestion() {
         document.getElementById('p-options').style.display = 'grid';
         document.getElementById('p-input-box').style.display = 'none';
         setTimeout(() => { googleSpeech(q.indonesian).catch(() => {}); }, 300);
-        let wrong = allW.filter(w => w.indonesian !== q.indonesian);
-        wrong = shuffleArray(wrong).slice(0, 3);
+        let wrong = pickDistractors(allW, q, w => w.indonesian !== q.indonesian);
         const opts = shuffleArray([{ text: q.chinese, correct: true }, ...wrong.map(w => ({ text: w.chinese, correct: false }))]);
         document.getElementById('p-options').innerHTML = opts.map(o =>
             '<div class="practice-option" onclick="selectOption(this,' + o.correct + ',\'' + o.text.replace(/'/g, "\\'") + '\')">' + o.text + '</div>'

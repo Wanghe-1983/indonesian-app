@@ -114,9 +114,10 @@ const StudyPractice = {
         const total = this.questions.length;
         const progressPct = Math.round((this.currentIndex) / total * 100);
 
-        // 生成4个选项（含正确答案）
-        const wrongOptions = this.questions.filter((_, i) => i !== this.currentIndex).map(x => x.zh);
-        const shuffledWrong = this._shuffle(wrongOptions).slice(0, 3);
+        // 生成4个选项（含正确答案）：干扰项优先取同题型（单词/短句），不足时再用其他题型补齐
+        const sameTypeWrong = this.questions.filter((x, i) => i !== this.currentIndex && (x.type || 'word') === (q.type || 'word')).map(x => x.zh);
+        const otherTypeWrong = this.questions.filter((x, i) => i !== this.currentIndex && (x.type || 'word') !== (q.type || 'word')).map(x => x.zh);
+        const shuffledWrong = this._shuffle(sameTypeWrong.concat(otherTypeWrong)).slice(0, 3);
         const options = this._shuffle([q.zh, ...shuffledWrong]);
 
         this.answered = false;
