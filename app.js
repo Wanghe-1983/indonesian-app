@@ -1919,8 +1919,10 @@ function navWord(dir) {
     if (newIdx > maxIdx) newIdx = 0;
     const currentWord = db[curCat].lessons[curLesson].words[curIdx];
     const alreadyLearned = todayRecord.some(item => item.indonesian === currentWord.indonesian);
+    // 已在累计已掌握词库中的单词不再弹确认窗
+    const alreadyMastered = getMasteredWords().includes(currentWord.indonesian);
     const mode = getMasteredMode();
-    if (alreadyLearned || mode === 'off') {
+    if (alreadyLearned || alreadyMastered || mode === 'off') {
         doNavWord(newIdx);
     } else if (dir > 0 && mode === 'auto') {
         addToTodayRecord(currentWord);
@@ -4489,7 +4491,8 @@ function navCourseWord(dir) {
                     }
                 } catch(e) { console.warn('记录离开词失败:', e); }
             };
-            if (mode === 'auto') {
+            const leavingMastered = leaving && leaving.indonesian && getMasteredWords().includes(leaving.indonesian);
+            if (mode === 'auto' || leavingMastered) {
                 doRecord();
             } else if (mode === 'ask' && leaving && leaving.indonesian) {
                 // 弹确认框；用户选"已掌握"才记录，然后继续切词
