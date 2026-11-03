@@ -2758,10 +2758,15 @@ function shuffleArray(arr) {
 }
 function initPracticePage() {
     const c = document.getElementById('page-study-practice');
+    loadPracticeSetup();
     if (c.dataset.init) {
         document.getElementById('practice-setup').style.display = '';
         document.getElementById('practice-quiz').style.display = 'none';
         document.getElementById('practice-result').style.display = 'none';
+        applyPracticeSetupUI();
+        const sel = document.getElementById('practice-cat-select');
+        if (sel) sel.value = practiceSetup.catId;
+        updatePracticeWordCount();
         return;
     }
     c.dataset.init = '1';
@@ -2799,6 +2804,7 @@ function initPracticePage() {
                     const sel = document.getElementById('practice-cat-select');
                     if (sel) {
                         sel.innerHTML = buildPracticeCatOptions(courseData.levels);
+                        sel.value = practiceSetup.catId;
                         updatePracticeWordCount();
                     }
                 }
@@ -2809,67 +2815,93 @@ function initPracticePage() {
     c.innerHTML = `
 <div class="practice-container">
   <div id="practice-setup">
-    <div style="text-align:center;margin-bottom:24px;">
+    <div style="text-align:center;margin-bottom:20px;">
       <h2 style="font-size:1.5rem;font-weight:800;color:var(--text-main);">
         <i class="fas fa-pen-fancy" style="color:var(--accent);margin-right:8px;"></i>练习模式
       </h2>
-      <p style="color:var(--text-muted);font-size:0.85rem;margin-top:6px;">选择范围和题型，开始巩固记忆</p>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-top:6px;">三步定制练习：范围 → 题型 → 数量</p>
     </div>
-    <div style="margin-bottom:18px;">
-      <div style="color:var(--text-muted);font-size:0.85rem;margin-bottom:8px;">课程范围</div>
-      <select id="practice-cat-select" onchange="updatePracticeWordCount()" style="width:100%;padding:11px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.95rem;outline:none;">
-        ${catOpts}
-      </select>
-      <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;user-select:none;">
-        <input type="checkbox" id="practice-mastered-filter" onchange="updatePracticeWordCount()" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer;">
-        <i class="fas fa-list-check" style="color:#818cf8;"></i> 仅包含已掌握词汇
-      </label>
-    </div>
-    <div style="margin-bottom:18px;">
-      <div style="color:var(--text-muted);font-size:0.85rem;margin-bottom:8px;">练习类型</div>
-      <div class="practice-type-selector">
-        <button class="practice-type-btn active" onclick="selectPracticeType('choice',this)"><i class="fas fa-th-large"></i> 选择题</button>
-        <button class="practice-type-btn" onclick="selectPracticeType('fill',this)"><i class="fas fa-keyboard"></i> 填空题</button>
-        <button class="practice-type-btn" onclick="selectPracticeType('listen',this)"><i class="fas fa-headphones"></i> 听力题</button>
+
+    <style>
+      .pz-step{background:var(--glass);border:1px solid var(--border-subtle);border-radius:14px;padding:14px 16px;margin-bottom:14px;}
+      .pz-step-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--text-main);font-size:0.92rem;font-weight:700;}
+      .pz-step-no{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:0.78rem;font-weight:800;flex-shrink:0;}
+      .pz-step-hint{margin-left:auto;font-size:0.75rem;color:var(--text-dim);font-weight:400;}
+      .pz-opt-btn{flex:1;padding:10px 8px;border-radius:10px;border:1px solid var(--border-light);background:var(--input-bg);color:var(--text-main);cursor:pointer;font-size:0.88rem;transition:all .15s;white-space:nowrap;}
+      .pz-opt-btn:hover{border-color:var(--accent);}
+      .pz-opt-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+      .pz-ratio-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+      .pz-ratio-row label{width:52px;font-size:0.82rem;color:var(--text-muted);flex-shrink:0;}
+      .pz-ratio-row select{flex:1;padding:6px 8px;border-radius:8px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.85rem;outline:none;}
+    </style>
+
+    <div class="pz-step">
+      <div class="pz-step-head"><span class="pz-step-no">1</span><span>选择题目范围</span><span class="pz-step-hint" id="pz-scope-hint"></span></div>
+      <div style="display:flex;gap:8px;">
+        <button id="pz-scope-mastered" class="pz-opt-btn" onclick="selectPracticeScope('mastered')"><i class="fas fa-list-check"></i> 已掌握</button>
+        <button id="pz-scope-course" class="pz-opt-btn" onclick="selectPracticeScope('course')"><i class="fas fa-book"></i> 课程（含全部）</button>
+      </div>
+      <div id="pz-course-wrap" style="display:none;margin-top:10px;">
+        <select id="practice-cat-select" onchange="selectPracticeCat(this.value)" style="width:100%;padding:11px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.95rem;outline:none;">
+          ${catOpts}
+        </select>
       </div>
     </div>
-    <div style="margin-bottom:18px;">
-      <div style="color:var(--text-muted);font-size:0.85rem;margin-bottom:8px;">题目数量</div>
+
+    <div class="pz-step">
+      <div class="pz-step-head"><span class="pz-step-no">2</span><span>选择题型</span><span class="pz-step-hint" id="pz-type-hint"></span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="practice-type-btn" onclick="selectPracticeCount(10,this)">10题</button>
-        <button class="practice-type-btn active" onclick="selectPracticeCount(20,this)">20题</button>
-        <button class="practice-type-btn" onclick="selectPracticeCount(50,this)">50题</button>
-        <button class="practice-type-btn" onclick="selectPracticeCount(0,this)">全部</button>
+        <button id="pz-type-choice" class="pz-opt-btn" onclick="selectPracticeTypeMode('choice')"><i class="fas fa-th-large"></i> 选择题</button>
+        <button id="pz-type-fill" class="pz-opt-btn" onclick="selectPracticeTypeMode('fill')"><i class="fas fa-keyboard"></i> 填空题</button>
+        <button id="pz-type-listen" class="pz-opt-btn" onclick="selectPracticeTypeMode('listen')"><i class="fas fa-headphones"></i> 听力题</button>
+        <button id="pz-type-ratio" class="pz-opt-btn" onclick="selectPracticeTypeMode('ratio')"><i class="fas fa-chart-pie"></i> 按比例混合</button>
+      </div>
+      <div id="pz-ratio-wrap" style="display:none;margin-top:12px;padding:12px;border-radius:10px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);">
+        <div class="pz-ratio-row"><label>选择题</label><select id="pz-ratio-choice" onchange="updateRatioPct()"></select><span style="font-size:0.82rem;color:var(--text-muted);">%</span></div>
+        <div class="pz-ratio-row"><label>填空题</label><select id="pz-ratio-fill" onchange="updateRatioPct()"></select><span style="font-size:0.82rem;color:var(--text-muted);">%</span></div>
+        <div class="pz-ratio-row"><label>听力题</label><select id="pz-ratio-listen" onchange="updateRatioPct()"></select><span style="font-size:0.82rem;color:var(--text-muted);">%</span></div>
+        <div id="pz-ratio-total" style="text-align:center;font-size:0.85rem;margin-top:4px;color:var(--text-muted);">当前合计：<b>100%</b> ✓</div>
+      </div>
+      <div id="practice-listen-options" style="display:none;margin-top:12px;padding:14px 18px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);">
+        <div class="sliders-col">
+          <div class="vslider-box">
+            <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
+            <div class="vslider-track-wrap">
+              <input type="range" class="vslider vslider-rate" id="p-rate-slider" min="1" max="15" value="10" step="1" oninput="setRateFromSlider(this.value)">
+              <div class="vslider-fill" id="p-rate-fill"></div>
+              <div class="vslider-thumb" id="p-rate-thumb"><span id="p-val-rate">1.0x</span></div>
+            </div>
+            <div class="vslider-range"><span>0.5x</span><span>1.5x</span></div>
+          </div>
+          <div class="vslider-box">
+            <div class="vslider-label"><i class="fas fa-repeat"></i> 循环</div>
+            <div class="vslider-track-wrap">
+              <input type="range" class="vslider vslider-loop" id="p-loop-slider" min="0" max="14" value="0" step="1" oninput="setLoopFromSlider(this.value)">
+              <div class="vslider-fill" id="p-loop-fill"></div>
+              <div class="vslider-thumb" id="p-loop-thumb"><span id="p-val-loop">1次</span></div>
+            </div>
+            <div class="vslider-range"><span>1次</span><span>无限</span></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div id="practice-listen-options" style="display:none;margin:20px 0;padding:14px 18px;border-radius:14px;border:1px dashed var(--border-subtle);background:var(--accent-subtle);">
-      <div class="sliders-col">
-        <div class="vslider-box">
-          <div class="vslider-label"><i class="fas fa-gauge-high"></i> 语速</div>
-          <div class="vslider-track-wrap">
-            <input type="range" class="vslider vslider-rate" id="p-rate-slider" min="1" max="15" value="10" step="1" oninput="setRateFromSlider(this.value)">
-            <div class="vslider-fill" id="p-rate-fill"></div>
-            <div class="vslider-thumb" id="p-rate-thumb"><span id="p-val-rate">1.0x</span></div>
-          </div>
-          <div class="vslider-range"><span>0.5x</span><span>1.5x</span></div>
-        </div>
-        <div class="vslider-box">
-          <div class="vslider-label"><i class="fas fa-repeat"></i> 循环</div>
-          <div class="vslider-track-wrap">
-            <input type="range" class="vslider vslider-loop" id="p-loop-slider" min="0" max="14" value="0" step="1" oninput="setLoopFromSlider(this.value)">
-            <div class="vslider-fill" id="p-loop-fill"></div>
-            <div class="vslider-thumb" id="p-loop-thumb"><span id="p-val-loop">1次</span></div>
-          </div>
-          <div class="vslider-range"><span>1次</span><span>无限</span></div>
-        </div>
+
+    <div class="pz-step">
+      <div class="pz-step-head"><span class="pz-step-no">3</span><span>选择题目数量</span><span class="pz-step-hint" id="pz-count-hint"></span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="pz-count-10" class="pz-opt-btn" onclick="selectPracticeCountMode(10)">10题</button>
+        <button id="pz-count-20" class="pz-opt-btn" onclick="selectPracticeCountMode(20)">20题</button>
+        <button id="pz-count-50" class="pz-opt-btn" onclick="selectPracticeCountMode(50)">50题</button>
+        <button id="pz-count-inf" class="pz-opt-btn" onclick="selectPracticeCountMode(-1)"><i class="fas fa-infinity"></i> 无限循环</button>
       </div>
     </div>
+
     <div id="practice-word-count-hint" style="text-align:center;color:var(--text-dim);font-size:0.82rem;margin-bottom:14px;"></div>
     <div style="display:flex;gap:10px;margin-bottom:14px;">
       <button onclick="showMasteredList()" style="flex:1;padding:11px;background:rgba(99,102,241,0.12);color:#818cf8;border:1px solid rgba(99,102,241,0.25);border-radius:10px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-list-check" style="margin-right:5px;"></i>已掌握词汇</button>
       <button onclick="showWrongWords()" style="flex:1;padding:11px;background:rgba(248,113,113,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.25);border-radius:10px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-bookmark" style="margin-right:5px;"></i>错题集</button>
     </div>
-    <button class="practice-start-btn" onclick="startPractice()" style="width:100%;padding:13px;font-size:1.05rem;">
+    <button class="practice-start-btn" id="practice-start-btn" onclick="startPractice()" style="width:100%;padding:13px;font-size:1.05rem;">
       <i class="fas fa-play"></i> 开始练习
     </button>
   </div>
@@ -2877,7 +2909,10 @@ function initPracticePage() {
   <div id="practice-quiz" style="display:none;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div style="color:var(--text-main);font-weight:700;">练习中</div>
-      <div style="color:var(--text-muted);font-size:0.9rem;" id="practice-progress">1/20</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div style="color:var(--text-muted);font-size:0.9rem;" id="practice-progress">1/20</div>
+        <button onclick="endPractice()" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border-light);background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:0.78rem;">结束</button>
+      </div>
     </div>
     <div style="height:4px;background:var(--border-subtle);border-radius:2px;margin-bottom:16px;overflow:hidden;">
       <div id="practice-progress-bar" style="height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s;width:0;"></div>
@@ -2904,32 +2939,145 @@ function initPracticePage() {
   <div id="practice-result" style="display:none;"></div>
 </div>`;
 
+    applyPracticeSetupUI();
+    const sel = document.getElementById('practice-cat-select');
+    if (sel) sel.value = practiceSetup.catId;
     updatePracticeWordCount();
 }
-function selectPracticeType(type, btn) {
-    selectedPracticeType = type;
-    btn.parentElement.querySelectorAll('.practice-type-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    // 仅听力题显示语速/循环滑块，且受后台开关控制
+// ========== 练习设置状态（持久化） ==========
+let practiceSetup = {
+    scope: 'mastered',            // 'mastered' | 'course'
+    catId: 'all',                 // 课程范围（scope=course 时生效）
+    typeMode: 'choice',           // 'choice' | 'fill' | 'listen' | 'ratio'
+    ratio: { choice: 20, fill: 40, listen: 40 },  // 混合模式比例，合计须为100
+    count: 20                     // 10/20/50，-1=无限循环
+};
+function loadPracticeSetup() {
+    try { Object.assign(practiceSetup, JSON.parse(localStorage.getItem('fmi_practice_setup') || '{}')); } catch(e) {}
+    if (practiceSetup.typeMode === 'ratio' && practiceSetup.ratio) {
+        const r = practiceSetup.ratio;
+        if ((r.choice|0)+(r.fill|0)+(r.listen|0) !== 100) practiceSetup.ratio = { choice: 20, fill: 40, listen: 40 };
+    }
+    if (![-1,10,20,50].includes(practiceSetup.count)) practiceSetup.count = 20;
+}
+function savePracticeSetup() {
+    try { localStorage.setItem('fmi_practice_setup', JSON.stringify(practiceSetup)); } catch(e) {}
+}
+
+// 1.0 选择题目范围
+function selectPracticeScope(scope) {
+    practiceSetup.scope = scope;
+    savePracticeSetup();
+    applyPracticeScopeUI();
+    updatePracticeWordCount();
+}
+function applyPracticeScopeUI() {
+    const mBtn = document.getElementById('pz-scope-mastered');
+    const cBtn = document.getElementById('pz-scope-course');
+    const wrap = document.getElementById('pz-course-wrap');
+    const hint = document.getElementById('pz-scope-hint');
+    if (!mBtn) return;
+    mBtn.classList.toggle('active', practiceSetup.scope === 'mastered');
+    cBtn.classList.toggle('active', practiceSetup.scope === 'course');
+    wrap.style.display = practiceSetup.scope === 'course' ? '' : 'none';
+    hint.textContent = practiceSetup.scope === 'mastered' ? '只练习已掌握词汇' : '';
+}
+
+// 1.0.2 选择课程
+function selectPracticeCat(v) {
+    practiceSetup.catId = v;
+    savePracticeSetup();
+    updatePracticeWordCount();
+}
+
+// 2.0 选择题型
+function selectPracticeTypeMode(mode) {
+    practiceSetup.typeMode = mode;
+    savePracticeSetup();
+    applyPracticeTypeUI();
+    updatePracticeWordCount();
+}
+function applyPracticeTypeUI() {
+    const ids = { choice: 'pz-type-choice', fill: 'pz-type-fill', listen: 'pz-type-listen', ratio: 'pz-type-ratio' };
+    for (const k in ids) {
+        const b = document.getElementById(ids[k]);
+        if (b) b.classList.toggle('active', practiceSetup.typeMode === k);
+    }
+    const ratioWrap = document.getElementById('pz-ratio-wrap');
+    if (ratioWrap) ratioWrap.style.display = practiceSetup.typeMode === 'ratio' ? '' : 'none';
+    const typeHint = document.getElementById('pz-type-hint');
+    if (typeHint) typeHint.textContent = practiceSetup.typeMode === 'ratio' ? '按比例混合出题' : '';
+    // 仅听力题（或混合且听力占比>0）显示语速/循环滑块，且受后台开关控制
     const listenOpts = document.getElementById('practice-listen-options');
     if (listenOpts) {
-        if (type !== 'listen') {
-            listenOpts.style.display = 'none';
-        } else {
+        const showSliders = practiceSetup.typeMode === 'listen'
+            || (practiceSetup.typeMode === 'ratio' && (practiceSetup.ratio.listen || 0) > 0);
+        if (showSliders) {
             const isVisitor = sessionStorage.getItem('fmi_visitor_login');
             const sysInfo = window._systemInfo || {};
             const cfg = isVisitor ? (sysInfo.studyPracticeVisitor || {}) : (sysInfo.studyPracticeUser || {});
             listenOpts.style.display = (cfg.showRateSlider !== false && cfg.showLoopSlider !== false) ? '' : 'none';
+        } else {
+            listenOpts.style.display = 'none';
         }
     }
-    updatePracticeWordCount();
 }
 
-function selectPracticeCount(count, btn) {
-    selectedPracticeCount = count;
-    btn.parentElement.querySelectorAll('.practice-type-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+// 比例选择：三个下拉（0-100，步进10），实时显示合计
+function initRatioSelects() {
+    const wrap = document.getElementById('pz-ratio-wrap');
+    if (!wrap) return;
+    ['choice','fill','listen'].forEach(k => {
+        const sel = document.getElementById('pz-ratio-' + k);
+        if (!sel) return;
+        if (sel.options.length === 0) {
+            for (let v = 0; v <= 100; v += 10) {
+                const opt = document.createElement('option');
+                opt.value = v; opt.textContent = v;
+                sel.appendChild(opt);
+            }
+        }
+        sel.value = practiceSetup.ratio[k];
+    });
+    updateRatioPct();
+}
+function updateRatioPct() {
+    ['choice','fill','listen'].forEach(k => {
+        const sel = document.getElementById('pz-ratio-' + k);
+        if (sel) practiceSetup.ratio[k] = Number(sel.value) || 0;
+    });
+    const total = (practiceSetup.ratio.choice|0) + (practiceSetup.ratio.fill|0) + (practiceSetup.ratio.listen|0);
+    const totalEl = document.getElementById('pz-ratio-total');
+    if (totalEl) {
+        const ok = total === 100;
+        totalEl.innerHTML = '当前合计：<b style="color:' + (ok ? 'var(--success,#34d399)' : 'var(--danger,#f87171)') + ';">' + total + '%</b> ' + (ok ? '✓' : '（须等于100%）');
+    }
+    savePracticeSetup();
+}
+
+// 3.0 选择题目数量
+function selectPracticeCountMode(count) {
+    practiceSetup.count = count;
+    savePracticeSetup();
+    applyPracticeCountUI();
     updatePracticeWordCount();
+}
+function applyPracticeCountUI() {
+    const ids = { 10: 'pz-count-10', 20: 'pz-count-20', 50: 'pz-count-50', '-1': 'pz-count-inf' };
+    for (const k in ids) {
+        const b = document.getElementById(ids[k]);
+        if (b) b.classList.toggle('active', practiceSetup.count === Number(k));
+    }
+    const hint = document.getElementById('pz-count-hint');
+    if (hint) hint.textContent = practiceSetup.count === -1 ? '循环练习直到手动结束' : '';
+}
+
+// 将设置状态应用到界面（进入页面/返回设置页时调用）
+function applyPracticeSetupUI() {
+    applyPracticeScopeUI();
+    applyPracticeTypeUI();
+    initRatioSelects();
+    applyPracticeCountUI();
 }
 
 // 更新设置页底部的可用词汇数提示
@@ -3049,15 +3197,15 @@ function updatePracticeWordCount() {
     const hint = document.getElementById('practice-word-count-hint');
     if (!hint) return;
     try {
-        const catId = document.getElementById('practice-cat-select').value;
-        const masterdOnly = document.getElementById('practice-mastered-filter') && document.getElementById('practice-mastered-filter').checked;
+        const catId = practiceSetup.scope === 'course'
+            ? (document.getElementById('practice-cat-select') ? document.getElementById('practice-cat-select').value : practiceSetup.catId)
+            : 'all';
         let items = getPracticePool(catId);
-        // 已掌握过滤（学习页记录的生词/短语，词句对话均可匹配）
-        if (masterdOnly) {
+        if (practiceSetup.scope === 'mastered') {
             items = filterMasteredItems(items, getMasteredWords());
         }
-        const count = selectedPracticeCount === 0 ? items.length : Math.min(selectedPracticeCount, items.length);
-        // 统计词/句/对话
+        const infinite = practiceSetup.count === -1;
+        const count = infinite ? items.length : Math.min(practiceSetup.count, items.length);
         const wordsN = items.filter(i => i.type === 'word' || !i.type).length;
         const sentencesN = items.filter(i => i.type === 'sentence').length;
         const dialoguesN = items.filter(i => i.type === 'dialogue').length;
@@ -3065,37 +3213,52 @@ function updatePracticeWordCount() {
         if (sentencesN > 0 || dialoguesN > 0) {
             detail = '（' + wordsN + '词' + (sentencesN > 0 ? ' + ' + sentencesN + '句' : '') + (dialoguesN > 0 ? ' + ' + dialoguesN + '对话' : '') + '）';
         }
-        hint.textContent = '可用题目 ' + items.length + detail + (selectedPracticeCount > 0 ? '，将随机抽取 ' + count + ' 题' : '');
+        const scopeTxt = practiceSetup.scope === 'mastered' ? '已掌握范围：' : '课程范围：';
+        const typeTxt = practiceSetup.typeMode === 'ratio' ? '，比例 选择' + practiceSetup.ratio.choice + '%/填空' + practiceSetup.ratio.fill + '%/听力' + practiceSetup.ratio.listen + '%' : '';
+        hint.textContent = scopeTxt + '可用题目 ' + items.length + detail + typeTxt
+            + (infinite ? '，无限循环模式' : '，将随机抽取 ' + count + ' 题');
     } catch(e) {
         hint.textContent = '';
     }
 }
 
 function startPractice() {
-    const catId = document.getElementById('practice-cat-select').value;
-    const masterdOnly = document.getElementById('practice-mastered-filter') && document.getElementById('practice-mastered-filter').checked;
+    const cfg = practiceSetup;
+    // 混合模式比例校验
+    if (cfg.typeMode === 'ratio') {
+        const total = (cfg.ratio.choice|0) + (cfg.ratio.fill|0) + (cfg.ratio.listen|0);
+        if (total !== 100) {
+            if (window._showCustomConfirm) window._showCustomConfirm('比例未达100%', '三种题型的比例合计须等于 100%，当前为 ' + total + '%。请调整后再开始。', '我知道了', null, function(){});
+            else alert('三种题型的比例合计须等于 100%，当前为 ' + total + '%');
+            return;
+        }
+    }
+    const catId = cfg.scope === 'course'
+        ? (document.getElementById('practice-cat-select') ? document.getElementById('practice-cat-select').value : cfg.catId)
+        : 'all';
     let words = getPracticePool(catId);
-    // 已掌握过滤（学习页记录的生词/短语，词句对话均可匹配）
-    if (masterdOnly) {
+    if (cfg.scope === 'mastered') {
         words = filterMasteredItems(words, getMasteredWords());
     }
     if (words.length < 4) {
-        if (window._showCustomConfirm) {
-            var insufficientMsg = masterdOnly
-                ? '当前已掌握词汇中只有 ' + words.length + ' 道题可练，至少需要4道。请继续学习更多词汇，或取消勾选“仅包含已掌握词汇”。'
-                : '当前范围内只有 ' + words.length + ' 道题，至少需要4道。请调整课程范围。';
-            window._showCustomConfirm('题目不足', insufficientMsg, '我知道了', null, function(){});
-        } else {
-            alert('题目不足（当前 ' + words.length + ' 道），至少需要4道');
-        }
+        const scopeName = cfg.scope === 'mastered' ? '已掌握词汇' : '当前课程范围';
+        const msg = scopeName + '中只有 ' + words.length + ' 道题可练，至少需要4道。请继续学习更多词汇，或调整题目范围。';
+        if (window._showCustomConfirm) window._showCustomConfirm('题目不足', msg, '我知道了', null, function(){});
+        else alert('题目不足（当前 ' + words.length + ' 道），至少需要4道');
         return;
     }
     words = shuffleArray(words);
-    const count = selectedPracticeCount === 0 ? words.length : Math.min(selectedPracticeCount, words.length);
+    const infinite = cfg.count === -1;
+    const total = infinite ? Infinity : Math.min(cfg.count, words.length);
+    const questions = infinite ? words.slice() : words.slice(0, total);
+    assignQuestionTypes(questions, cfg.typeMode, cfg.ratio);
     practiceState = {
-        type: selectedPracticeType, catId, questions: words.slice(0, count),
-        currentIndex: 0, score: 0, total: count, answered: false, isFinished: false, wrongWords: [],
-        answeredCount: 0
+        typeMode: cfg.typeMode, ratio: cfg.ratio,
+        type: cfg.typeMode === 'ratio' ? 'mixed' : cfg.typeMode,
+        catId, scope: cfg.scope, infinite,
+        questions, basePool: words,
+        currentIndex: 0, score: 0, total: infinite ? questions.length : total,
+        answered: false, isFinished: false, wrongWords: [], answeredCount: 0
     };
     document.getElementById('practice-setup').style.display = 'none';
     document.getElementById('practice-quiz').style.display = 'block';
@@ -3103,14 +3266,40 @@ function startPractice() {
     showQuestion();
 }
 
+// 按题型模式为每道题分配实际题型（q.ptype）；混合模式按比例用最大余数法分配
+function assignQuestionTypes(questions, typeMode, ratio) {
+    if (typeMode !== 'ratio') {
+        questions.forEach(q => { q.ptype = typeMode; });
+        return;
+    }
+    const n = questions.length;
+    const raw = ['choice', 'fill', 'listen'].map(k => ({ k, exact: n * (ratio[k] || 0) / 100 }));
+    const counts = raw.map(r => ({ k: r.k, base: Math.floor(r.exact), frac: r.exact - Math.floor(r.exact) }));
+    let remain = n - counts.reduce((a, c) => a + c.base, 0);
+    counts.sort((a, b) => b.frac - a.frac);
+    for (let i = 0; remain > 0; i = (i + 1) % counts.length, remain--) counts[i].base++;
+    const typeArr = [];
+    counts.forEach(c => { for (let i = 0; i < c.base; i++) typeArr.push(c.k); });
+    shuffleArray(typeArr);
+    questions.forEach((q, i) => { q.ptype = typeArr[i] || 'choice'; });
+}
+
 function showQuestion() {
     const s = practiceState;
-    if (s.currentIndex >= s.total) { finishPractice(); return; }
+    // 无限循环模式：题库循环使用，永不自动结束
+    if (s.infinite) {
+        if (s.currentIndex >= s.questions.length) {
+            s.questions = shuffleArray(s.basePool);
+            assignQuestionTypes(s.questions, s.typeMode, s.ratio);
+            s.currentIndex = 0;
+        }
+    } else if (s.currentIndex >= s.total) { finishPractice(); return; }
     s.answered = false;
     const q = s.questions[s.currentIndex];
+    const qtype = q.ptype || s.type || 'choice';
     // 更新进度
-    const progress = ((s.currentIndex) / s.total * 100).toFixed(0);
-    document.getElementById('practice-progress').textContent = (s.currentIndex + 1) + '/' + s.total;
+    const progress = s.infinite ? 100 : ((s.currentIndex) / s.total * 100).toFixed(0);
+    document.getElementById('practice-progress').textContent = s.infinite ? (s.answeredCount + 1) + ' / ∞' : (s.currentIndex + 1) + '/' + s.total;
     const bar = document.getElementById('practice-progress-bar');
     if (bar) bar.style.width = progress + '%';
     document.getElementById('p-correct').textContent = s.score;
@@ -3121,7 +3310,7 @@ function showQuestion() {
     fb.className = 'practice-feedback';
     document.getElementById('p-next-btn').style.display = 'none';
     const allW = getPracticePool(s.catId);
-    if (s.type === 'choice') {
+    if (qtype === 'choice') {
         document.getElementById('p-question-label').textContent = '请选择正确的中文翻译';
         document.getElementById('p-question-word').textContent = q.indonesian;
         document.getElementById('p-question-hint').innerHTML = '';
@@ -3132,7 +3321,7 @@ function showQuestion() {
         document.getElementById('p-options').innerHTML = opts.map(o =>
             '<div class="practice-option" onclick="selectOption(this,' + o.correct + ',\'' + o.text.replace(/'/g, "\\'") + '\')">' + o.text + '</div>'
         ).join('');
-    } else if (s.type === 'fill') {
+    } else if (qtype === 'fill') {
         document.getElementById('p-question-label').textContent = '请输入中文翻译';
         document.getElementById('p-question-word').textContent = q.indonesian;
         const answerLen = q.chinese.length;
@@ -3145,7 +3334,7 @@ function showQuestion() {
         inp.focus();
         // 支持 Enter 提交
         inp.onkeydown = function(e) { if (e.key === 'Enter') submitFillAnswer(); };
-    } else if (s.type === 'listen') {
+    } else if (qtype === 'listen') {
         document.getElementById('p-question-label').textContent = '听发音，选择正确的中文翻译';
         document.getElementById('p-question-word').textContent = '\uD83D\uDD0A';
         document.getElementById('p-options').style.display = 'grid';
