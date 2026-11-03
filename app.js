@@ -3934,7 +3934,7 @@ function showMasteredList() {
     const dialog = document.createElement('div');
     dialog.id = 'mastered-list-dialog';
     dialog.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;';
-    dialog.innerHTML = '<div style="background:var(--glass,rgba(30,41,59,0.97));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:20px 24px;max-width:420px;width:92%;max-height:75vh;overflow-y:auto;backdrop-filter:blur(20px);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h3 style="color:var(--text-main);font-size:1.1rem;font-weight:700;"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>已掌握列表</h3><span style="color:var(--text-muted);font-size:0.85rem;" id="mastered-count">共 ' + learned.length + ' 词</span></div>' + html + '<div style="display:flex;gap:10px;margin-top:12px;"><button onclick="clearAllMastered()" style="flex:1;padding:8px 12px;background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3);border-radius:10px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-trash-alt" style="margin-right:4px;"></i>一键清空</button><button onclick="document.getElementById(\'mastered-list-dialog\').remove()" style="flex:1;padding:8px 24px;background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;">关闭</button></div></div>';
+    dialog.innerHTML = '<div style="background:var(--glass,rgba(30,41,59,0.97));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:20px 24px;max-width:420px;width:92%;max-height:75vh;overflow-y:auto;backdrop-filter:blur(20px);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h3 style="color:var(--text-main);font-size:1.1rem;font-weight:700;"><i class="fas fa-list-check" style="color:var(--accent);margin-right:8px;"></i>已掌握列表</h3><span style="display:flex;align-items:center;gap:10px;"><span style="color:var(--text-muted);font-size:0.85rem;" id="mastered-count">共 ' + learned.length + ' 词</span><button id="mastered-clear-btn" onclick="clearAllMastered(this)" title="清空全部已掌握词汇（需确认）" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:0.85rem;padding:2px 4px;"><i class="fas fa-trash-alt"></i></button></span></div>' + html + '<div style="display:flex;gap:10px;margin-top:12px;"><button onclick="document.getElementById(\'mastered-list-dialog\').remove()" style="flex:1;padding:8px 24px;background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;">关闭</button></div></div>';
     document.body.appendChild(dialog);
     dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.remove(); });
 }
@@ -4020,9 +4020,24 @@ function removeMasteredWord(word, btnEl) {
 }
 
 // 一键清空已掌握列表
-function clearAllMastered() {
+function clearAllMastered(triggerBtn) {
+    // 两步确认：第一次点击按钮变红要求再点一次，3秒内未点则自动复位
+    if (triggerBtn && !triggerBtn.dataset.armed) {
+        triggerBtn.dataset.armed = '1';
+        triggerBtn.style.color = '#f87171';
+        triggerBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 再点一次确认';
+        setTimeout(() => {
+            if (document.body.contains(triggerBtn)) {
+                delete triggerBtn.dataset.armed;
+                triggerBtn.style.color = '#64748b';
+                triggerBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            }
+        }, 3000);
+        return;
+    }
     if (window._showCustomConfirm) {
         window._showCustomConfirm('确认清空', '确定要清空所有已掌握词汇吗？此操作不可恢复。', '确认清空', '取消', function() {
+            localStorage.setItem('fmi_clear_words_ack', '1');
             localStorage.setItem('fmi_all_words', '[]');
             if (typeof studyStats !== 'undefined') studyStats.totalWords = 0;
             const dialog = document.getElementById('mastered-list-dialog');
@@ -4030,6 +4045,7 @@ function clearAllMastered() {
             updatePracticeWordCount();
         });
     } else if (confirm('确定要清空所有已掌握词汇吗？')) {
+        localStorage.setItem('fmi_clear_words_ack', '1');
         localStorage.setItem('fmi_all_words', '[]');
         if (typeof studyStats !== 'undefined') studyStats.totalWords = 0;
         const dialog = document.getElementById('mastered-list-dialog');
