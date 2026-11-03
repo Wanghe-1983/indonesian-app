@@ -2764,8 +2764,6 @@ function initPracticePage() {
         document.getElementById('practice-quiz').style.display = 'none';
         document.getElementById('practice-result').style.display = 'none';
         applyPracticeSetupUI();
-        const sel = document.getElementById('practice-cat-select');
-        if (sel) sel.value = practiceSetup.catId;
         updatePracticeWordCount();
         return;
     }
@@ -2804,7 +2802,7 @@ function initPracticePage() {
                     const sel = document.getElementById('practice-cat-select');
                     if (sel) {
                         sel.innerHTML = buildPracticeCatOptions(courseData.levels);
-                        sel.value = practiceSetup.catId;
+                        renderPracticeCourseGrid();
                         updatePracticeWordCount();
                     }
                 }
@@ -2833,6 +2831,11 @@ function initPracticePage() {
       .pz-ratio-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
       .pz-ratio-row label{width:52px;font-size:0.82rem;color:var(--text-muted);flex-shrink:0;}
       .pz-ratio-row select{flex:1;padding:6px 8px;border-radius:8px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.85rem;outline:none;}
+      .pz-course-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 8px;border-radius:12px;border:1px solid var(--border-light);background:var(--input-bg);color:var(--text-main);cursor:pointer;font-size:0.82rem;text-align:center;transition:all .15s;min-height:64px;}
+      .pz-course-tile i{font-size:1.1rem;color:var(--accent);}
+      .pz-course-tile:hover{border-color:var(--accent);}
+      .pz-course-tile.active{border-color:var(--accent);background:rgba(99,102,241,0.18);box-shadow:0 0 0 1px var(--accent);font-weight:600;}
+      .pz-course-all{grid-column:1/-1;flex-direction:row;min-height:52px;gap:10px;font-size:0.95rem;background:var(--accent-subtle);border-style:dashed;}
     </style>
 
     <div class="pz-step">
@@ -2842,9 +2845,8 @@ function initPracticePage() {
         <button id="pz-scope-course" class="pz-opt-btn" onclick="selectPracticeScope('course')"><i class="fas fa-book"></i> 课程（含全部）</button>
       </div>
       <div id="pz-course-wrap" style="display:none;margin-top:10px;">
-        <select id="practice-cat-select" onchange="selectPracticeCat(this.value)" style="width:100%;padding:11px;border-radius:10px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--border-light);font-size:0.95rem;outline:none;">
-          ${catOpts}
-        </select>
+        <select id="practice-cat-select" style="display:none;">${catOpts}</select>
+        <div id="pz-course-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;"></div>
       </div>
       <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;user-select:none;">
         <input type="checkbox" id="practice-wrong-boost" onchange="toggleWrongBoost(this.checked)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer;">
@@ -2940,8 +2942,6 @@ function initPracticePage() {
 </div>`;
 
     applyPracticeSetupUI();
-    const sel = document.getElementById('practice-cat-select');
-    if (sel) sel.value = practiceSetup.catId;
     updatePracticeWordCount();
 }
 // ========== 练习设置状态（持久化） ==========
@@ -2990,7 +2990,26 @@ function toggleWrongBoost(on) {
     savePracticeSetup();
 }
 
-// 1.0.2 选择课程
+// 1.0.2 选择课程（卡片式网格：全部课程通栏置顶，醒目不可错过）
+function renderPracticeCourseGrid() {
+    const grid = document.getElementById('pz-course-grid');
+    const sel = document.getElementById('practice-cat-select');
+    if (!grid || !sel) return;
+    sel.value = practiceSetup.catId;
+    let html = '';
+    for (const opt of sel.options) {
+        const v = opt.value;
+        const isAll = v === 'all';
+        const active = practiceSetup.catId === v;
+        html += '<button class="pz-course-tile' + (isAll ? ' pz-course-all' : '') + (active ? ' active' : '') + '" onclick="pickPracticeCat(\'' + v + '\')">' +
+            '<i class="fas ' + (isAll ? 'fa-layer-group' : 'fa-book') + '"></i><span>' + opt.textContent + '</span></button>';
+    }
+    grid.innerHTML = html;
+}
+function pickPracticeCat(v) {
+    selectPracticeCat(v);
+    renderPracticeCourseGrid();
+}
 function selectPracticeCat(v) {
     practiceSetup.catId = v;
     savePracticeSetup();
@@ -3085,6 +3104,7 @@ function applyPracticeSetupUI() {
     applyPracticeTypeUI();
     initRatioSelects();
     applyPracticeCountUI();
+    renderPracticeCourseGrid();
     const wb = document.getElementById('practice-wrong-boost');
     if (wb) wb.checked = practiceSetup.wrongBoost !== false;
 }
