@@ -2901,10 +2901,6 @@ function initPracticePage() {
     </div>
 
     <div id="practice-word-count-hint" style="text-align:center;color:var(--text-dim);font-size:0.82rem;margin-bottom:14px;"></div>
-    <div style="display:flex;gap:10px;margin-bottom:14px;">
-      <button onclick="showMasteredList()" style="flex:1;padding:11px;background:rgba(99,102,241,0.12);color:#818cf8;border:1px solid rgba(99,102,241,0.25);border-radius:10px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-list-check" style="margin-right:5px;"></i>已掌握词汇</button>
-      <button onclick="showWrongWords()" style="flex:1;padding:11px;background:rgba(248,113,113,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.25);border-radius:10px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-bookmark" style="margin-right:5px;"></i>错题集</button>
-    </div>
     <button class="practice-start-btn" id="practice-start-btn" onclick="startPractice()" style="width:100%;padding:13px;font-size:1.05rem;">
       <i class="fas fa-play"></i> 开始练习
     </button>
