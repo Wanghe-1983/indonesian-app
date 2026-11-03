@@ -686,6 +686,14 @@ async function handleStudySync(context) {
     }
 
     // 推送：将前端学习数据存入 D1（使用 UPSERT）
+    // 保护云端词库：若客户端推来的 all_words 为空但云端非空，且未带用户清空确认标记，
+    // 则保留云端词库（防止浏览器数据被误清/换设备时把云端积累覆盖掉）
+    if (body.clearAllWords !== true && (!body.allWords || body.allWords === '[]')) {
+        const existRow = await dbGet(env, 'SELECT all_words FROM user_study_data WHERE username = ?', [username]);
+        if (existRow && existRow.all_words && existRow.all_words !== '[]') {
+            body.allWords = existRow.all_words;
+        }
+    }
     const now = new Date().toISOString();
     await env.INDO_LEARN_DB.prepare(`
         INSERT INTO user_study_data (username, mastery_records, favs, all_words, study_stats, daily_goal, practice_history, today_record, last_study_pos, mastered_mode, hero_gender, updated_at)

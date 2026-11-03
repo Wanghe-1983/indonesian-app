@@ -367,6 +367,7 @@ function showLogoutConfirmDialog() {
 
     // 点击"清空记录"：退出并清空学习数据
     dialog.querySelector('#logout-clear-btn').onclick = function() {
+        localStorage.setItem('fmi_clear_words_ack', '1');
         localStorage.removeItem('fmi_today_record');
         localStorage.removeItem('fmi_study_stats');
         localStorage.removeItem('fmi_study_date');
@@ -2238,8 +2239,10 @@ function startStudySync() {
 async function restoreStudyFromServer() {
     if (!API.isLoggedIn()) return;
     try {
-        const result = await API.loadStudy();
-        if (!result || result.error || !result.found) return;
+        const raw = await API.loadStudy();
+        // 服务端返回 { success, _action:'pull', data:{...} }；兼容旧结构
+        const result = raw && raw.data ? raw.data : raw;
+        if (!raw || raw.error || !result) return;
         
         // ========== 通用确认弹窗 ==========
 // 修复：此前全站 14 处调用 window._showCustomConfirm 但从未定义，
@@ -2307,14 +2310,20 @@ const today = new Date().toLocaleDateString();
             localStorage.setItem('fmi_v1_favs', serverFavs);
         }
         
-        // 恢复已学单词列表
+        // 恢复已学单词列表（并集合并，防止任一端数据被误清后丢失）
         if (result.allWords) {
-            const serverWords = typeof result.allWords === 'string' ? result.allWords : JSON.stringify(result.allWords);
-            const serverWordList = JSON.parse(serverWords);
-            if (serverWordList.length > localAllWords.length) {
-                localStorage.setItem('fmi_all_words', serverWords);
-                studyStats.totalWords = serverWordList.length;
-            }
+            try {
+                const serverWords = typeof result.allWords === 'string' ? result.allWords : JSON.stringify(result.allWords);
+                const serverWordList = JSON.parse(serverWords);
+                if (Array.isArray(serverWordList) && serverWordList.length > 0) {
+                    const merged = [...localAllWords];
+                    for (const w of serverWordList) {
+                        if (!merged.includes(w)) merged.push(w);
+                    }
+                    localStorage.setItem('fmi_all_words', JSON.stringify(merged));
+                    studyStats.totalWords = merged.length;
+                }
+            } catch(e) {}
         }
         
         // 恢复每日目标
@@ -2386,7 +2395,9 @@ function syncStudyToCloud() {
                 lastStudyPos: localStorage.getItem('fmi_last_study_pos') || '',
                 masteredMode: localStorage.getItem('fmi_mastered_mode') || 'ask',
                 heroGender: localStorage.getItem('fmi_hero_gender') || '',
+                clearAllWords: localStorage.getItem('fmi_clear_words_ack') === '1',
             });
+            localStorage.removeItem('fmi_clear_words_ack');
         } catch(e) { console.warn('[StudySync] 同步失败:', e); }
     }, 3000);
 }
@@ -3542,6 +3553,7 @@ function clearTimeStats() {
 function clearMasteredStats() {
     if (window._showCustomConfirm) {
         window._showCustomConfirm('确认清空', '确定要清空所有已掌握记录吗？此操作不可恢复。', '确认清空', '取消', function() {
+            localStorage.setItem('fmi_clear_words_ack', '1');
             localStorage.setItem('fmi_all_words', '[]');
             studyStats.totalWords = 0;
             localStorage.setItem('fmi_study_stats', JSON.stringify(studyStats));
@@ -3549,6 +3561,7 @@ function clearMasteredStats() {
             updatePracticeWordCount();
         });
     } else if (confirm('确定要清空所有已掌握记录吗？')) {
+        localStorage.setItem('fmi_clear_words_ack', '1');
         localStorage.setItem('fmi_all_words', '[]');
         studyStats.totalWords = 0;
         localStorage.setItem('fmi_study_stats', JSON.stringify(studyStats));
@@ -3589,6 +3602,7 @@ function clearAllStudyData() {
         if (confirmBtn) confirmBtn.onclick = () => {
             todayRecord = [];
             studyStats = { todayWords: 0, totalWords: 0, studySeconds: 0, startTime: new Date().getTime() };
+            localStorage.setItem('fmi_clear_words_ack', '1');
             localStorage.removeItem('fmi_today_record');
             localStorage.removeItem('fmi_study_stats');
             localStorage.removeItem('fmi_all_words');
