@@ -2846,6 +2846,10 @@ function initPracticePage() {
           ${catOpts}
         </select>
       </div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:0.82rem;color:var(--text-muted);cursor:pointer;user-select:none;">
+        <input type="checkbox" id="practice-wrong-boost" onchange="toggleWrongBoost(this.checked)" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer;">
+        <i class="fas fa-bookmark" style="color:#f87171;"></i> 错题集词汇优先复现（加权出现）
+      </label>
     </div>
 
     <div class="pz-step">
@@ -2950,7 +2954,8 @@ let practiceSetup = {
     catId: 'all',                 // 课程范围（scope=course 时生效）
     typeMode: 'choice',           // 'choice' | 'fill' | 'listen' | 'ratio'
     ratio: { choice: 20, fill: 40, listen: 40 },  // 混合模式比例，合计须为100
-    count: 20                     // 10/20/50，-1=无限循环
+    count: 20,                    // 10/20/50，-1=无限循环
+    wrongBoost: true              // 错题集词汇加权复现
 };
 function loadPracticeSetup() {
     try { Object.assign(practiceSetup, JSON.parse(localStorage.getItem('fmi_practice_setup') || '{}')); } catch(e) {}
@@ -2981,6 +2986,12 @@ function applyPracticeScopeUI() {
     cBtn.classList.toggle('active', practiceSetup.scope === 'course');
     wrap.style.display = practiceSetup.scope === 'course' ? '' : 'none';
     hint.textContent = practiceSetup.scope === 'mastered' ? '只练习已掌握词汇' : '';
+}
+
+// 1.0.3 错题加权开关
+function toggleWrongBoost(on) {
+    practiceSetup.wrongBoost = !!on;
+    savePracticeSetup();
 }
 
 // 1.0.2 选择课程
@@ -3078,6 +3089,8 @@ function applyPracticeSetupUI() {
     applyPracticeTypeUI();
     initRatioSelects();
     applyPracticeCountUI();
+    const wb = document.getElementById('practice-wrong-boost');
+    if (wb) wb.checked = practiceSetup.wrongBoost !== false;
 }
 
 // 更新设置页底部的可用词汇数提示
@@ -3239,6 +3252,15 @@ function startPractice() {
     let words = getPracticePool(catId);
     if (cfg.scope === 'mastered') {
         words = filterMasteredItems(words, getMasteredWords());
+    }
+    // 错题集词汇加权：错过的词额外复制一份入池，出现概率翻倍，达到强化练习目的
+    if (cfg.wrongBoost !== false) {
+        try {
+            const wrongSet = new Set((favs || []).filter(f => f && f._wrongBook).map(f => f.indonesian));
+            if (wrongSet.size > 0) {
+                words = words.concat(words.filter(w => wrongSet.has(w.indonesian)));
+            }
+        } catch(e) {}
     }
     if (words.length < 4) {
         const scopeName = cfg.scope === 'mastered' ? '已掌握词汇' : '当前课程范围';
@@ -3966,16 +3988,20 @@ function navigateToMasteredWord(word) {
 // 从侧边栏已掌握列表删除单条词汇
 function removeMasteredFromNav(word, event) {
     if (event) event.stopPropagation();
-    let learned = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
-    learned = learned.filter(w => w !== word);
-    localStorage.setItem('fmi_all_words', JSON.stringify(learned));
-    if (typeof studyStats !== 'undefined') studyStats.totalWords = learned.length;
-    if (event && event.target) {
-        const row = event.target.closest('div[style*="padding:6px 10px"]');
-        if (row) row.remove();
+    const doRemove = function() {
+        let learned = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
+        learned = learned.filter(w => w !== word);
+        localStorage.setItem('fmi_all_words', JSON.stringify(learned));
+        if (typeof studyStats !== 'undefined') studyStats.totalWords = learned.length;
+        updatePracticeWordCount();
+        buildMenu();
+    };
+    // 防误操作：从已掌握移除需二次确认（移除后该词将重新作为生词出现）
+    if (window._showCustomConfirm) {
+        window._showCustomConfirm('移除已掌握', '确定把「' + word + '」从已掌握列表移除吗？\n移除后它会重新作为生词出现。', '确认移除', '取消', doRemove);
+    } else if (confirm('确定把「' + word + '」从已掌握列表移除吗？')) {
+        doRemove();
     }
-    updatePracticeWordCount();
-    buildMenu();
 }
 
 function removeMasteredWord(word, btnEl) {
