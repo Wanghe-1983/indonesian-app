@@ -1025,13 +1025,21 @@ async function buildMenu() {
     const wrongFavs = favs.filter(f => f._wrongBook);
     const normalFavs = favs.filter(f => !f._wrongBook);
 
+    // 后台练习功能开关：错题删除/清空、已掌握移除权限
+    const _permFeatures = (window._systemInfo || {})[
+        sessionStorage.getItem('fmi_visitor_login') ? 'studyPracticeVisitor' : 'studyPracticeUser'] || {};
+    const _canDelWrong = _permFeatures.allowDeleteWrong !== false;
+    const _canClearWrong = _permFeatures.allowClearWrong !== false;
+    const _canUnmark = _permFeatures.allowUnmarkMastered !== false;
     let wrongHTML = wrongFavs.length > 0 ? wrongFavs.map(item => {
         const ri = favs.indexOf(item);
         return '<div style="padding:6px 10px;font-size:13px;color:#fca5a5;display:flex;justify-content:space-between;align-items:center;">' +
             '<span style="cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" onclick="showFavWord(\'' + item.cat + '\', ' + item.idx + ', \'1\')">' + item.indonesian + ' - ' + item.chinese + '</span>' +
-            '<button onclick="deleteFav(' + ri + ', event)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:6px;"><i class="fas fa-times"></i></button></div>';
+            (_canDelWrong ? '<button onclick="deleteFav(' + ri + ', event)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:6px;"><i class="fas fa-times"></i></button>' : '') + '</div>';
     }).join('') : '<div style="padding:8px;font-size:13px;color:#64748b;">暂无错题</div>';
-    wrongHTML += '<div style="padding:6px 10px;margin-top:6px;"><button onclick="clearWrongBook(event)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-trash-alt"></i> 一键清空</button></div>';
+    if (_canClearWrong) {
+        wrongHTML += '<div style="padding:6px 10px;margin-top:6px;"><button onclick="clearWrongBook(event)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-trash-alt"></i> 一键清空</button></div>';
+    }
 
     let favsHTML = normalFavs.length > 0 ? normalFavs.map(item => {
         const ri = favs.indexOf(item);
@@ -1054,9 +1062,11 @@ async function buildMenu() {
             const ew = word.replace(/'/g, "\\'");
             masteredHTML += '<div style="padding:6px 10px;font-size:13px;color:#c4b5fd;display:flex;justify-content:space-between;align-items:center;">' +
                 '<span style="cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" onclick="navigateToMasteredWord(\'' + ew + '\')">' + word + (info.zh ? ' - ' + info.zh : '') + '</span>' +
-                '<button onclick="removeMasteredFromNav(\'' + ew + '\',event)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:6px;"><i class="fas fa-times"></i></button></div>';
+                (_canUnmark ? '<button onclick="removeMasteredFromNav(\'' + ew + '\',event)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:6px;"><i class="fas fa-times"></i></button>' : '') + '</div>';
         }
-        masteredHTML += '<div style="padding:6px 10px;margin-top:6px;"><button onclick="clearAllMastered()" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-trash-alt"></i> 一键清空</button></div>';
+        if (_canUnmark) {
+            masteredHTML += '<div style="padding:6px 10px;margin-top:6px;"><button onclick="clearAllMastered()" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-trash-alt"></i> 一键清空</button></div>';
+        }
     }
 
     let menuHTML = `
@@ -2759,6 +2769,7 @@ function shuffleArray(arr) {
 function initPracticePage() {
     const c = document.getElementById('page-study-practice');
     loadPracticeSetup();
+    ensurePracticePermLoaded();
     if (c.dataset.init) {
         document.getElementById('practice-setup').style.display = '';
         document.getElementById('practice-quiz').style.display = 'none';
@@ -2944,6 +2955,60 @@ function initPracticePage() {
     applyPracticeSetupUI();
     updatePracticeWordCount();
 }
+// ========== 后台权限关联（勤学苦练设置） ==========
+// 三态等级控制: 2=可学习, 1=仅展示(不可进入), 0=隐藏；练习题库只取"可学习"等级
+function getPracticePerm() {
+    const isVisitor = !!sessionStorage.getItem('fmi_visitor_login');
+    const sysInfo = window._systemInfo || {};
+    let levelConfig = null;
+    if (window._levelConfig && Object.keys(window._levelConfig).length > 0) {
+        levelConfig = window._levelConfig;
+    } else {
+        const raw = isVisitor
+            ? (sysInfo.levelConfigVisitor || sysInfo.studyLevelConfigVisitor || sysInfo.studyVisibleLevelsVisitor)
+            : (sysInfo.levelConfigUser || sysInfo.studyLevelConfigUser || sysInfo.studyVisibleLevelsUser);
+        if (Array.isArray(raw)) {
+            levelConfig = {};
+            for (let i = 0; i <= 7; i++) levelConfig[i] = raw.includes(i) ? 2 : 0;
+        } else if (raw && typeof raw === 'object') {
+            levelConfig = raw;
+        }
+    }
+    const features = isVisitor ? (sysInfo.studyPracticeVisitor || {}) : (sysInfo.studyPracticeUser || {});
+    return { isVisitor, levelConfig: levelConfig || {}, features };
+}
+function isLevelPracticeAllowed(levelId) {
+    const { levelConfig } = getPracticePerm();
+    if (!levelConfig || Object.keys(levelConfig).length === 0) return true; // 无配置时不过滤
+    const st = levelConfig[String(levelId)] !== undefined ? levelConfig[String(levelId)] : levelConfig[Number(levelId)];
+    return st === 2;
+}
+// 确保 _systemInfo 已加载（不阻塞渲染，回来后刷新UI）
+function ensurePracticePermLoaded() {
+    if (window._systemInfo) return;
+    fetch('/api/system/info').then(r => r.json()).then(d => {
+        if (!d.error) { window._systemInfo = d; applyPracticePermUI(); updatePracticeWordCount(); buildMenu(); }
+    }).catch(() => {});
+}
+// 按后台开关修正练习设置界面的可用性
+function applyPracticePermUI() {
+    const { features } = getPracticePerm();
+    // includeMastered=false：禁止"已掌握"范围
+    const mBtn = document.getElementById('pz-scope-mastered');
+    if (mBtn) {
+        const banned = features.includeMastered === false;
+        mBtn.style.display = banned ? 'none' : '';
+        if (banned && practiceSetup.scope === 'mastered') selectPracticeScope('course');
+    }
+    // enableWrongBook=false：隐藏错题加权开关并强制关闭
+    const wb = document.getElementById('practice-wrong-boost');
+    if (wb) {
+        const banned = features.enableWrongBook === false;
+        wb.parentElement.style.display = banned ? 'none' : '';
+        if (banned && practiceSetup.wrongBoost !== false) { practiceSetup.wrongBoost = false; savePracticeSetup(); }
+    }
+}
+
 // ========== 练习设置状态（持久化） ==========
 let practiceSetup = {
     scope: 'mastered',            // 'mastered' | 'course'
@@ -3146,7 +3211,9 @@ function getPracticeItemsByLevel(levelId) {
     if (!courseData || !courseData.levels) return [];
     const items = [];
     if (levelId === 'all') {
+        // 只收集后台设置为"可学习"(state>=2)的等级，隐藏/仅展示的不进入练习题库
         for (const lv of courseData.levels) {
+            if (!isLevelPracticeAllowed(lv.id)) continue;
             collectLevelItems(lv, items);
         }
     } else {
