@@ -494,7 +494,14 @@ async function initUI() {
         <div style="flex:1;min-width:320px;background:var(--glass);padding:15px;border-radius:15px;border:1px solid rgba(255,255,255,0.05);">
             <div style="display:flex;gap:12px;">
                 <div style="flex:1;">
-                    <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:5px;"><i class="fas fa-lightbulb" style="color:#f59e0b;"></i> 随机推荐单词</div>
+                    <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:5px;">
+                        <span><i class="fas fa-lightbulb" style="color:#f59e0b;"></i> 推荐单词</span>
+                        <select id="word-display-mode" onchange="setWordDisplayMode(this.value)" title="选择登录后推荐单词的显示方式" style="background:var(--input-bg);color:var(--text-muted);border:1px solid var(--border-light);border-radius:6px;font-size:0.75rem;padding:2px 4px;outline:none;">
+                            <option value="last">上次学习</option>
+                            <option value="blank">空白</option>
+                            <option value="random">随机</option>
+                        </select>
+                    </div>
                     <div id="random-word" style="font-size:18px;color:#a5b4fc;font-weight:600;">加载中...</div>
                 </div>
                 <div style="width:1px;background:var(--border-subtle);margin:0 4px;"></div>
@@ -714,9 +721,11 @@ async function initUI() {
     updateDateTime();
     setInterval(updateDateTime, 1000);
 
-    // 加载随机推荐单词
+    // 加载推荐单词（按用户选择的显示模式）
     setTimeout(() => {
-        loadRandomWord();
+        const modeSel = document.getElementById('word-display-mode');
+        if (modeSel) modeSel.value = getWordDisplayMode();
+        renderRecommendedWord();
     }, 1000);
 
     // 加载天气信息
@@ -734,20 +743,55 @@ async function initUI() {
     await loadDB();
 }
 
-// 加载随机推荐单词
-function loadRandomWord() {
+// 推荐单词显示模式：'last'=上次学习的单词（默认），'blank'=空白由用户手动加载，'random'=随机
+function getWordDisplayMode() {
+    return localStorage.getItem('fmi_word_display_mode') || 'last';
+}
+function setWordDisplayMode(mode) {
+    localStorage.setItem('fmi_word_display_mode', mode);
+    renderRecommendedWord();
+}
+
+function renderRecommendedWord(forceLoad) {
     try {
+        const el = document.getElementById('random-word');
+        if (!el) return;
+        const mode = getWordDisplayMode();
+
+        // 空白模式：默认只显示占位，用户点击按钮后才加载
+        if (mode === 'blank' && !forceLoad) {
+            el.innerHTML = '<span style="color:var(--text-dim);">已隐藏</span> <button onclick="renderRecommendedWord(true)" style="background:none;border:1px solid var(--border-light);color:var(--accent);cursor:pointer;font-size:0.78rem;padding:2px 8px;border-radius:6px;">加载</button>';
+            return;
+        }
+
+        // 上次学习模式：恢复最近学习的单词；无记录时回退随机
+        if (mode === 'last' && !forceLoad) {
+            const savedPos = JSON.parse(localStorage.getItem('fmi_last_study_pos') || 'null');
+            if (savedPos && db[savedPos.cat] && db[savedPos.cat].lessons[savedPos.lesson]) {
+                const words = db[savedPos.cat].lessons[savedPos.lesson].words;
+                const w = words[Math.min(Math.max(0, savedPos.idx || 0), words.length - 1)];
+                if (w) { renderWordChip(el, w); return; }
+            }
+            el.innerHTML = '<span style="color:var(--text-dim);">暂无学习记录</span>';
+            return;
+        }
+
+        // 随机模式（以及上述模式的回退路径）
         const catIds = Object.keys(db);
         const randomCat = catIds[Math.floor(Math.random() * catIds.length)];
         const lessonIds = Object.keys(db[randomCat].lessons);
         const randomLesson = lessonIds[Math.floor(Math.random() * lessonIds.length)];
         const words = db[randomCat].lessons[randomLesson].words;
         const randomWord = words[Math.floor(Math.random() * words.length)];
-        const el = document.getElementById('random-word');
-        el.innerHTML = `<span class="rw-indo">${randomWord.indonesian}</span> <button onclick="googleSpeech('${randomWord.indonesian.replace(/'/g, "\\'")}').catch(()=>{})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.9rem;padding:2px 4px;" title="播放发音"><i class="fas fa-volume-up"></i></button><span class="rw-zh">${randomWord.chinese}</span>`;
+        renderWordChip(el, randomWord);
     } catch (e) {
-        document.getElementById('random-word').innerText = "暂无推荐单词";
+        const el = document.getElementById('random-word');
+        if (el) el.innerText = "暂无推荐单词";
     }
+}
+
+function renderWordChip(el, w) {
+    el.innerHTML = `<span class="rw-indo">${w.indonesian}</span> <button onclick="googleSpeech('${w.indonesian.replace(/'/g, "\\'")}').catch(()=>{})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.9rem;padding:2px 4px;" title="播放发音"><i class="fas fa-volume-up"></i></button><span class="rw-zh">${w.chinese}</span>`;
 }
 
 // ========== 快速翻译功能（中印尼互译） ==========
