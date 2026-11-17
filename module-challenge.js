@@ -378,12 +378,12 @@ const ChallengeModule = {
                     <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:24px;">选择你的英雄踏上地狱征程</div>
                     <div style="display:flex;gap:16px;justify-content:center;">
                         <div onclick="ChallengeModule._confirmGender('male');document.querySelectorAll('.ch-gender-modal').forEach(m=>m.remove());" style="cursor:pointer;flex:1;background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.08));border:2px solid rgba(59,130,246,0.4);border-radius:16px;padding:20px 12px;transition:all 0.2s;">
-                            <img src="assets/hero/hero-q0.png" onerror="this.style.display='none'" style="width:96px;height:96px;object-fit:contain;margin:0 auto 10px;display:block;background:radial-gradient(circle,rgba(99,102,241,0.25),transparent 70%);border-radius:50%;">
+                            <img src="assets/hero/hero-q0-v2.png" onerror="this.style.display='none'" style="width:96px;height:96px;object-fit:contain;margin:0 auto 10px;display:block;background:radial-gradient(circle,rgba(99,102,241,0.25),transparent 70%);border-radius:50%;">
                             <div style="font-weight:700;color:#60a5fa;font-size:1rem;">男性护法</div>
                             <div style="font-size:0.72rem;color:#94a3b8;margin-top:4px;">竹甲勇士 → 佛教护法</div>
                         </div>
                         <div onclick="ChallengeModule._confirmGender('female');document.querySelectorAll('.ch-gender-modal').forEach(m=>m.remove());" style="cursor:pointer;flex:1;background:linear-gradient(135deg,rgba(236,72,153,0.15),rgba(219,39,119,0.08));border:2px solid rgba(236,72,153,0.4);border-radius:16px;padding:20px 12px;transition:all 0.2s;">
-                            <img src="assets/hero/heroine-q0.png" onerror="this.style.display='none'" style="width:96px;height:96px;object-fit:contain;margin:0 auto 10px;display:block;background:radial-gradient(circle,rgba(236,72,153,0.25),transparent 70%);border-radius:50%;">
+                            <img src="assets/hero/heroine-q0-v3.png" onerror="this.style.display='none'" style="width:96px;height:96px;object-fit:contain;margin:0 auto 10px;display:block;background:radial-gradient(circle,rgba(236,72,153,0.25),transparent 70%);border-radius:50%;">
                             <div style="font-weight:700;color:#f472b6;font-size:1rem;">女祭司</div>
                             <div style="font-size:0.72rem;color:#94a3b8;margin-top:4px;">白袍祭司 → 神袍圣女</div>
                         </div>
@@ -574,26 +574,26 @@ const ChallengeModule = {
 
     // 用户角色形象定义（按等级成长）
     _heroDefs: {
-        '0': { name: '竹甲勇士', icon: 'fa-person-hiking', color: '#84cc16', desc: '竹甲木矛的初心勇者', image: 'assets/hero/hero-q0.png' },
-        '1': { name: '铜甲战士', icon: 'fa-shield', color: '#d97706', desc: '铜甲铜矛的坚毅战士', image: 'assets/hero/hero-q1.png' },
-        '2': { name: '铁甲武士', icon: 'fa-shield-halved', color: '#9ca3af', desc: '铁甲铁矛的钢铁武士', image: 'assets/hero/hero-q2.jpg' },
-        '3': { name: '银甲猎人', icon: 'fa-bow-arrow', color: '#94a3b8', desc: '银甲银弓的迅捷猎人', image: 'assets/hero/hero-q3.png' },
-        '4': { name: '银金飞刃', icon: 'fa-star', color: '#fbbf24', desc: '银金甲飞刀的灵巧刺客', image: 'assets/hero/hero-q4.png' },
-        '5': { name: '宝石护法', icon: 'fa-gem', color: '#a78bfa', desc: '宝石铠甲的神圣护法', image: 'assets/hero/hero-q5.png' },
-        '6': { name: '钻石翼甲', icon: 'fa-feather', color: '#38bdf8', desc: '白金钻石翼甲的天空骑士', image: 'assets/hero/hero-q6.png' },
-        '7': { name: '佛教护法', icon: 'fa-crown', color: '#f59e0b', desc: '佛陀浮雕盾的神圣护法', image: 'assets/hero/hero-q7.png' },
+        '0': { name: '竹甲勇士', icon: 'fa-person-hiking', color: '#84cc16', desc: '竹甲木矛的初心勇者', image: 'assets/hero/hero-q0-v2.png' },
+        '1': { name: '铜甲战士', icon: 'fa-shield', color: '#d97706', desc: '铜甲铜矛的坚毅战士', image: 'assets/hero/hero-q1-v2.png' },
+        '2': { name: '铁甲武士', icon: 'fa-shield-halved', color: '#9ca3af', desc: '铁甲铁矛的钢铁武士', image: 'assets/hero/hero-q2-v2.png' },
+        '3': { name: '银甲猎人', icon: 'fa-bow-arrow', color: '#94a3b8', desc: '银甲银弓的迅捷猎人', image: 'assets/hero/hero-q3-v2.png' },
+        '4': { name: '银金飞刃', icon: 'fa-star', color: '#fbbf24', desc: '银金甲飞刀的灵巧刺客', image: 'assets/hero/hero-q4-v2.png' },
+        '5': { name: '宝石护法', icon: 'fa-gem', color: '#a78bfa', desc: '宝石铠甲的神圣护法', image: 'assets/hero/hero-q5-v2.png' },
+        '6': { name: '钻石翼甲', icon: 'fa-feather', color: '#38bdf8', desc: '白金钻石翼甲的天空骑士', image: 'assets/hero/hero-q6-v2.png' },
+        '7': { name: '佛教护法', icon: 'fa-crown', color: '#f59e0b', desc: '佛陀浮雕盾的神圣护法', image: 'assets/hero/hero-q7-v2.png' },
     },
 
     // 女性角色形象定义（女祭司/神官路线）
     _heroineDefs: {
-        '0': { name: '白袍祭司', icon: 'fa-leaf', color: '#e2e8f0', desc: '白袍茉莉花的初心祭司', image: 'assets/hero/heroine-q0.png' },
-        '1': { name: '铜饰祭司', icon: 'fa-ring', color: '#d97706', desc: '铜饰法袍的虔诚祭司', image: 'assets/hero/heroine-q1.png' },
-        '2': { name: '铁饰法袍', icon: 'fa-ankh', color: '#9ca3af', desc: '铁饰法袍的坚毅祭司', image: 'assets/hero/heroine-q2.png' },
-        '3': { name: '银袍祭司', icon: 'fa-moon', color: '#94a3b8', desc: '银白丝绸袍的圣洁祭司', image: 'assets/hero/heroine-q3.png' },
-        '4': { name: '白金袍祭司', icon: 'fa-sun', color: '#fbbf24', desc: '白金丝织袍的光明祭司', image: 'assets/hero/heroine-q4.png' },
-        '5': { name: '金袍圣女', icon: 'fa-fire', color: '#f59e0b', desc: '金色法袍赤足金莲的圣女', image: 'assets/hero/heroine-q5.png' },
-        '6': { name: '宝石圣女', icon: 'fa-gem', color: '#a78bfa', desc: '宝石法袍佛像隐现的圣女', image: 'assets/hero/heroine-q6.png' },
-        '7': { name: '神袍圣女', icon: 'fa-dove', color: '#fbbf24', desc: '神器圣袍完整佛像法相', image: 'assets/hero/heroine-q7.png' },
+        '0': { name: '白袍祭司', icon: 'fa-leaf', color: '#e2e8f0', desc: '白袍茉莉花的初心祭司', image: 'assets/hero/heroine-q0-v3.png' },
+        '1': { name: '铜饰祭司', icon: 'fa-ring', color: '#d97706', desc: '铜饰法袍的虔诚祭司', image: 'assets/hero/heroine-q1-v2.png' },
+        '2': { name: '铁饰法袍', icon: 'fa-ankh', color: '#9ca3af', desc: '铁饰法袍的坚毅祭司', image: 'assets/hero/heroine-q2-v2.png' },
+        '3': { name: '银袍祭司', icon: 'fa-moon', color: '#94a3b8', desc: '银白丝绸袍的圣洁祭司', image: 'assets/hero/heroine-q3-v2.png' },
+        '4': { name: '白金袍祭司', icon: 'fa-sun', color: '#fbbf24', desc: '白金丝织袍的光明祭司', image: 'assets/hero/heroine-q4-v2.png' },
+        '5': { name: '金袍圣女', icon: 'fa-fire', color: '#f59e0b', desc: '金色法袍赤足金莲的圣女', image: 'assets/hero/heroine-q5-v2.png' },
+        '6': { name: '宝石圣女', icon: 'fa-gem', color: '#a78bfa', desc: '宝石法袍佛像隐现的圣女', image: 'assets/hero/heroine-q6-v2.png' },
+        '7': { name: '神袍圣女', icon: 'fa-dove', color: '#fbbf24', desc: '神器圣袍完整佛像法相', image: 'assets/hero/heroine-q7-v2.png' },
     },
 
     _regenerateStages() {

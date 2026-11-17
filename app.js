@@ -764,7 +764,7 @@ function renderRecommendedWord(forceLoad) {
             return;
         }
 
-        // 上次学习模式：恢复最近学习的单词；无记录时回退随机
+        // 上次学习模式：上次学习的词 -> 已掌握列表最后一个词 -> 引导提示
         if (mode === 'last' && !forceLoad) {
             const savedPos = JSON.parse(localStorage.getItem('fmi_last_study_pos') || 'null');
             if (savedPos && db[savedPos.cat] && db[savedPos.cat].lessons[savedPos.lesson]) {
@@ -772,7 +772,20 @@ function renderRecommendedWord(forceLoad) {
                 const w = words[Math.min(Math.max(0, savedPos.idx || 0), words.length - 1)];
                 if (w) { renderWordChip(el, w); return; }
             }
-            el.innerHTML = '<span style="color:var(--text-dim);">暂无学习记录</span>';
+            // 兜底1：取已掌握列表里最后一个能在词库中找到的词
+            try {
+                const mastered = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
+                for (let i = mastered.length - 1; i >= 0; i--) {
+                    const target = mastered[i];
+                    for (const c of Object.keys(db)) {
+                        for (const l of Object.keys(db[c].lessons)) {
+                            const hit = (db[c].lessons[l].words || []).find(w => w.indonesian === target);
+                            if (hit) { renderWordChip(el, hit); return; }
+                        }
+                    }
+                }
+            } catch(e) {}
+            el.innerHTML = '<span style="color:var(--text-dim);"><i class="fas fa-hand-point-left" style="margin-right:4px;"></i>请从左侧导航栏选择对应课程</span>';
             return;
         }
 
@@ -2409,7 +2422,11 @@ const today = new Date().toLocaleDateString();
         }
         // 恢复上次学习位置
         if (result.lastStudyPos) {
-            try { localStorage.setItem('fmi_last_study_pos', typeof result.lastStudyPos === 'string' ? result.lastStudyPos : JSON.stringify(result.lastStudyPos)); } catch(e) {}
+            try {
+                localStorage.setItem('fmi_last_study_pos', typeof result.lastStudyPos === 'string' ? result.lastStudyPos : JSON.stringify(result.lastStudyPos));
+                // 云恢复可能晚于推荐词首渲染，立即刷新保证显示的是上次学习的词
+                if (typeof renderRecommendedWord === 'function') renderRecommendedWord();
+            } catch(e) {}
         }
         // 恢复切词记录模式
         if (result.masteredMode) {
