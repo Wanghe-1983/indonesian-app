@@ -372,7 +372,8 @@ const ChallengeModule = {
         modal.className = 'ch-gender-modal';
         modal.innerHTML = `
             <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;">
-                <div style="background:linear-gradient(135deg,#1e1b2e,#0f0f1a);border:3px solid rgba(239,68,68,0.4);border-radius:20px;padding:32px 28px;max-width:420px;width:90%;text-align:center;box-shadow:0 0 60px rgba(239,68,68,0.2);">
+                <div style="position:relative;background:linear-gradient(135deg,#1e1b2e,#0f0f1a);border:3px solid rgba(239,68,68,0.4);border-radius:20px;padding:32px 28px;max-width:420px;width:90%;text-align:center;box-shadow:0 0 60px rgba(239,68,68,0.2);">
+                    <button onclick="this.closest('.ch-gender-modal').remove()" title="关闭" style="position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.35);color:#f87171;cursor:pointer;font-size:0.95rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(248,113,113,0.3)'" onmouseout="this.style.background='rgba(248,113,113,0.12)'"><i class="fas fa-times"></i></button>
                     <div style="font-size:3rem;margin-bottom:8px;"><i class="fas fa-skull-crossbones" style="color:#f87171;"></i></div>
                     <div style="font-size:1.3rem;font-weight:700;color:#f87171;margin-bottom:8px;">地狱模式 - 选择角色</div>
                     <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:24px;">选择你的英雄踏上地狱征程</div>
