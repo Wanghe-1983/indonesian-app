@@ -8946,3 +8946,317 @@
 .boss-loading-overlay .boss-loading-progress-bar {
     box-shadow: 0 0 14px rgba(251, 191, 36, 0.5);
 }
+
+/* ==================== 魔法书架（书目选择） ==================== */
+.mb-bookshelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px;
+    margin-top: 16px;
+}
+.mb-book {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 16px;
+    background: linear-gradient(150deg, rgba(36, 26, 51, 0.85), rgba(20, 14, 34, 0.92));
+    border: 1px solid color-mix(in srgb, var(--bk, #60a5fa) 40%, transparent);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    animation: mb-book-in 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+    position: relative;
+    overflow: hidden;
+}
+.mb-book:hover { transform: translateY(-5px) rotate(-0.5deg); box-shadow: 0 14px 40px color-mix(in srgb, var(--bk, #60a5fa) 30%, transparent); }
+@keyframes mb-book-in {
+    from { opacity: 0; transform: translateY(26px) rotate(4deg) scale(0.94); }
+    to { opacity: 1; transform: none; }
+}
+.mb-book-cover {
+    width: 92px; height: 124px; flex-shrink: 0;
+    border-radius: 6px 12px 12px 6px;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--bk) 55%, #1a1028), #140d24 80%);
+    border: 1px solid color-mix(in srgb, var(--bk) 55%, transparent);
+    box-shadow: inset 4px 0 10px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.5);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    position: relative;
+}
+.mb-book-cover::before {
+    content: '';
+    position: absolute; left: 7px; top: 5px; bottom: 5px; width: 1px;
+    background: rgba(251, 191, 36, 0.4);
+}
+.mb-book-emblem { font-size: 1.5rem; color: #fbbf24; text-shadow: 0 0 14px rgba(251, 191, 36, 0.6); }
+.mb-book-lv { font-size: 0.68rem; font-weight: 800; color: #fde68a; letter-spacing: 1px; }
+.mb-book-info { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 7px; min-width: 0; }
+.mb-book-name { font-weight: 700; color: #e2e8f0; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-book-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; }
+.mb-book-bar { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.mb-book-fill { height: 100%; border-radius: 3px; transition: width 0.6s; }
+.mb-book-open-hint { font-size: 0.72rem; color: var(--bk, #60a5fa); opacity: 0.85; }
+.mb-book:hover .mb-book-open-hint { color: #fbbf24; }
+
+/* ==================== 对开魔法书 ==================== */
+.bk-view { margin-top: 14px; }
+.bk-shelf-top { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.bk-back-btn {
+    padding: 8px 16px; border-radius: 10px; cursor: pointer;
+    background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #fbbf24; font-size: 0.82rem; transition: all 0.15s;
+}
+.bk-back-btn:hover { background: rgba(251, 191, 36, 0.22); }
+.bk-book-title { flex: 1; text-align: center; font-weight: 800; color: #fde68a; font-size: 1.05rem; letter-spacing: 1px; text-shadow: 0 0 14px rgba(251, 191, 36, 0.35); }
+.bk-page-indicator { font-size: 0.82rem; color: #94a3b8; min-width: 64px; text-align: right; }
+
+.bk-book {
+    display: flex;
+    min-height: 480px;
+    border-radius: 14px;
+    position: relative;
+    transform-style: preserve-3d;
+    perspective: 2400px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+    animation-duration: 1.4s;
+    animation-fill-mode: both;
+    animation-timing-function: cubic-bezier(0.18, 0.8, 0.28, 1);
+    background: linear-gradient(150deg, #241a33, #150e26);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+/* 八种等级出场动画 */
+.book-in-q0 { animation-name: bk-in-spin; }
+.book-in-q1 { animation-name: bk-in-flip; }
+.book-in-q2 { animation-name: bk-in-shatter; }
+.book-in-q3 { animation-name: bk-in-storm; }
+.book-in-q4 { animation-name: bk-in-flash; }
+.book-in-q5 { animation-name: bk-in-mist; }
+.book-in-q6 { animation-name: bk-in-crystal; }
+.book-in-q7 { animation-name: bk-in-divine; }
+@keyframes bk-in-spin {
+    0% { transform: perspective(2200px) rotateY(-140deg) scale(0.82); opacity: 0; }
+    100% { transform: perspective(2200px) rotateY(0) scale(1); opacity: 1; }
+}
+@keyframes bk-in-flip {
+    0% { transform: perspective(2200px) rotateX(110deg) translateY(60px); opacity: 0; }
+    100% { transform: perspective(2200px) rotateX(0) translateY(0); opacity: 1; }
+}
+@keyframes bk-in-shatter {
+    0% { transform: scale(1.5); opacity: 0; filter: blur(16px); }
+    60% { opacity: 1; }
+    100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+@keyframes bk-in-storm {
+    0% { transform: perspective(2200px) rotate(-8deg) rotateY(70deg) scale(0.7); opacity: 0; }
+    40% { opacity: 1; }
+    100% { transform: none; opacity: 1; }
+}
+@keyframes bk-in-flash {
+    0% { opacity: 0; filter: brightness(4) saturate(0.2); }
+    35% { opacity: 1; }
+    100% { filter: brightness(1); }
+}
+@keyframes bk-in-mist {
+    0% { opacity: 0; transform: scale(1.18); filter: blur(24px) hue-rotate(40deg); }
+    100% { opacity: 1; transform: scale(1); filter: blur(0) hue-rotate(0); }
+}
+@keyframes bk-in-crystal {
+    0% { transform: perspective(2200px) rotate3d(1, 1, 0, 80deg) scale(0.86); opacity: 0; }
+    100% { transform: perspective(2200px) none; opacity: 1; }
+}
+@keyframes bk-in-divine {
+    0% { transform: perspective(2200px) translateY(80px) scale(0.9); opacity: 0; filter: brightness(3) blur(10px); }
+    50% { opacity: 1; }
+    100% { transform: none; opacity: 1; filter: none; }
+}
+/* 翻页动画 */
+.bk-book.bk-flip-fwd { animation: bk-page-fwd 0.78s cubic-bezier(0.3, 0.1, 0.3, 1); }
+.bk-book.bk-flip-back { animation: bk-page-back 0.78s cubic-bezier(0.3, 0.1, 0.3, 1); }
+@keyframes bk-page-fwd {
+    0% { transform: perspective(2400px) rotateY(0); }
+    45% { transform: perspective(2400px) rotateY(-14deg) scale(0.985); }
+    100% { transform: perspective(2400px) rotateY(0); }
+}
+@keyframes bk-page-back {
+    0% { transform: perspective(2400px) rotateY(0); }
+    45% { transform: perspective(2400px) rotateY(14deg) scale(0.985); }
+    100% { transform: perspective(2400px) rotateY(0); }
+}
+
+/* 书页 */
+.bk-page {
+    flex: 1;
+    padding: 26px 26px 22px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+}
+.bk-left-page {
+    background:
+        radial-gradient(ellipse at 20% 0%, rgba(251, 191, 36, 0.07), transparent 55%),
+        linear-gradient(155deg, #2c2340, #221a33 70%, #1c1530);
+    border-radius: 12px 4px 4px 12px;
+    box-shadow: inset -14px 0 26px rgba(0, 0, 0, 0.45), inset 0 0 60px rgba(251, 191, 36, 0.03);
+}
+.bk-right-page {
+    background:
+        radial-gradient(ellipse at 80% 100%, rgba(251, 191, 36, 0.05), transparent 55%),
+        linear-gradient(205deg, #2c2340, #221a33 70%, #1c1530);
+    border-radius: 4px 12px 12px 4px;
+    box-shadow: inset 14px 0 26px rgba(0, 0, 0, 0.45), inset 0 0 60px rgba(251, 191, 36, 0.03);
+}
+.bk-page-deco {
+    position: absolute; inset: 12px;
+    border: 1px solid rgba(251, 191, 36, 0.16);
+    border-radius: 8px;
+    pointer-events: none;
+}
+.bk-page-label { font-size: 0.72rem; letter-spacing: 3px; color: #b08d4a; }
+.bk-stage-no { font-size: 2rem; font-weight: 900; text-shadow: 0 0 24px currentColor; }
+.bk-boss-visual {
+    width: 180px; height: 180px;
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), 0 0 30px rgba(251, 191, 36, 0.08);
+    background: #000;
+    margin: 6px 0;
+}
+.bk-boss-visual img { width: 100%; height: 100%; object-fit: contain; }
+.bk-locked-veil img { filter: brightness(0.28) blur(2px) grayscale(0.5); }
+.bk-rune-deco {
+    width: 120px; height: 120px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.6rem; color: rgba(251, 191, 36, 0.55);
+    border: 1px dashed rgba(251, 191, 36, 0.3);
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.07), transparent 70%);
+    margin: 14px 0;
+    animation: bk-rune-float 3.2s ease-in-out infinite;
+}
+@keyframes bk-rune-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.bk-boss-name { font-weight: 800; color: #fde68a; font-size: 1.1rem; text-align: center; }
+.bk-boss-sub { font-size: 0.8rem; color: #94a3b8; }
+.bk-stage-status { font-size: 0.92rem; font-weight: 600; }
+.bk-stars { letter-spacing: 2px; }
+.bk-frame-slot { display: flex; align-items: center; gap: 8px; margin-top: 2px; min-height: 30px; }
+.bk-frame-tag { font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; }
+.bk-frame-btn {
+    width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+    background: rgba(129, 140, 248, 0.12); border: 1px solid rgba(129, 140, 248, 0.3);
+    color: #818cf8; font-size: 0.8rem; display: inline-flex; align-items: center; justify-content: center;
+}
+.bk-frame-btn:hover { background: rgba(129, 140, 248, 0.28); }
+.bk-start-btn {
+    margin-top: auto;
+    padding: 13px 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #d4a017, #f5c542);
+    color: #1a1028;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 8px 28px rgba(245, 197, 66, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.bk-start-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(245, 197, 66, 0.5); }
+.bk-start-btn.bk-btn-disabled { background: rgba(100, 116, 139, 0.25); color: #64748b; cursor: not-allowed; box-shadow: none; }
+.bk-next-hint { margin-top: auto; padding: 12px 20px; border-radius: 10px; font-size: 0.82rem; color: #94a3b8; background: rgba(100, 116, 139, 0.12); border: 1px dashed rgba(148, 163, 184, 0.3); display: flex; align-items: center; gap: 8px; }
+.bk-next-hint.bk-next-ok { color: #fbbf24; border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.07); }
+.bk-chapter-end { margin: auto 0; text-align: center; color: #fbbf24; font-size: 1.4rem; display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 30px 0; }
+.bk-chapter-end .bk-end-sub { font-size: 0.8rem; color: #94a3b8; }
+
+.bk-spine {
+    width: 26px; flex-shrink: 0;
+    background: linear-gradient(90deg, rgba(0,0,0,0.6), rgba(251,191,36,0.12) 50%, rgba(0,0,0,0.6));
+    display: flex; align-items: center; justify-content: center;
+}
+.bk-spine-runes {
+    writing-mode: vertical-lr;
+    color: rgba(251, 191, 36, 0.5);
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    animation: spine-glow 3s ease-in-out infinite;
+}
+@keyframes spine-glow { 0%, 100% { opacity: 0.5; text-shadow: none; } 50% { opacity: 1; text-shadow: 0 0 10px rgba(251,191,36,0.6); } }
+
+.bk-controls { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 16px; }
+.bk-nav-btn {
+    padding: 10px 22px; border-radius: 10px; cursor: pointer;
+    background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #fde68a; font-size: 0.88rem; transition: all 0.15s;
+}
+.bk-nav-btn:hover:not(:disabled) { background: rgba(251, 191, 36, 0.24); transform: translateY(-2px); }
+.bk-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.bk-dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 50%; }
+.bk-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(148, 163, 184, 0.3); transition: all 0.2s; }
+.bk-dot.on { background: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.7); transform: scale(1.25); }
+
+/* 风车出场 */
+.sb-fanout-overlay {
+    position: fixed; inset: 0; z-index: 99998;
+    background: rgba(5, 3, 12, 0.88);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(5px);
+}
+.sb-fan-stage { position: relative; width: 300px; height: 420px; perspective: 1300px; }
+.sb-fan-page {
+    position: absolute; inset: 0;
+    background: linear-gradient(155deg, #3a2d55, #241a3d);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 10px;
+    box-shadow: 0 10px 50px rgba(251, 191, 36, 0.18);
+    transform-origin: left bottom;
+    animation: sb-fan-fly 0.75s cubic-bezier(0.3, 0, 0.4, 1) forwards;
+}
+.sb-fan-hint {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; color: #fbbf24;
+    text-shadow: 0 0 30px rgba(251, 191, 36, 0.8);
+    animation: sb-fan-hint 0.9s ease-out forwards;
+}
+@keyframes sb-fan-hint { 0% { transform: scale(0.4); opacity: 0; } 45% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes sb-fan-fly {
+    0% { transform: rotate(0deg) translate(0, 0); opacity: 1; }
+    100% { transform: rotate(var(--fan-rot)) translate(230px, -170px) scale(0.5); opacity: 0; }
+}
+
+/* 卷轴加载（加强版：更长的展开时间） */
+.boss-loading-overlay {
+    background: linear-gradient(180deg, #140c26, #0a0616);
+    overflow: hidden;
+    animation: scroll-unroll 1.15s cubic-bezier(0.16, 0.75, 0.28, 1) forwards;
+    transform-origin: center center;
+}
+.boss-loading-overlay::before,
+.boss-loading-overlay::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 46%;
+    height: 16px;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #6b4f2a, #c9a45c 45%, #8a6a34);
+    box-shadow: 0 2px 14px rgba(201, 164, 92, 0.5), inset 0 1px 2px rgba(255, 235, 190, 0.65);
+    z-index: 3;
+}
+.boss-loading-overlay::before { top: 16px; }
+.boss-loading-overlay::after { bottom: 16px; }
+@keyframes scroll-unroll {
+    0% { transform: scaleY(0.04); opacity: 0; }
+    40% { opacity: 1; }
+    70% { transform: scaleY(1.015); }
+    100% { transform: scaleY(1); opacity: 1; }
+}
+.boss-loading-content { position: relative; z-index: 2; }
+.boss-loading-overlay .boss-loading-progress-bar { box-shadow: 0 0 16px rgba(251, 191, 36, 0.55); }
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .spellbook { flex-direction: column; }
+    .sb-left { width: 100%; border-right: none; border-bottom: 1px solid rgba(251, 191, 36, 0.2); }
+    .sb-spine { display: none; }
+    .bk-book { flex-direction: column; }
+    .bk-spine { display: none; }
+}
