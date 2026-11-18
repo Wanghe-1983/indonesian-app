@@ -9260,3 +9260,5 @@
     .bk-book { flex-direction: column; }
     .bk-spine { display: none; }
 }
+
+.bk-stage-global { font-size: 0.68rem; color: #64748b; margin-top: -6px; }

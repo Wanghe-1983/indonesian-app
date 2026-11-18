@@ -899,6 +899,7 @@ const ChallengeModule = {
 
         const stagePageHtml = (st, role) => {
             const gi = globalIdxOf[st.id];
+            const relNo = lvStages.indexOf(st) + 1; // 本书内关号，避免下一关从5跳到150的突兀编号
             const isBoss = st._isBoss === true;
             const p = this.serverProgress[st.id];
             const cleared = p && p.cleared;
@@ -915,7 +916,8 @@ const ChallengeModule = {
             return '<div class="bk-page ' + (role === 'cur' ? 'bk-left-page' : 'bk-right-page') + '">'
                 + '<div class="bk-page-deco"></div>'
                 + '<div class="bk-page-label">' + (role === 'cur' ? '◆ 当前关卡' : '◆ 下一关') + '</div>'
-                + '<div class="bk-stage-no" style="color:' + stColor + ';">第 ' + (gi + 1) + ' 关</div>'
+                + '<div class="bk-stage-no" style="color:' + stColor + ';">第 ' + relNo + ' 关</div>'
+                + '<div class="bk-stage-global" style="font-size:0.68rem;color:#64748b;">（全书第 ' + (gi + 1) + ' 关）</div>'
                 + (isBoss && bossImg ? '<div class="bk-boss-visual' + (locked ? ' bk-locked-veil' : '') + '"><img src="' + bossImg + '" alt="" onerror="this.remove()"></div>' : '<div class="bk-rune-deco"><i class="fas fa-' + (isBoss ? 'skull' : 'wand-sparkles') + '"></i></div>')
                 + (bd ? '<div class="bk-boss-name">' + (bd.nameLocal || bd.name || '') + '</div><div class="bk-boss-sub">' + (bd.name || '') + '</div>' : '')
                 + '<div class="bk-stage-status" style="color:' + statusColor + ';">'
