@@ -868,7 +868,8 @@ const ChallengeModule = {
         // [DEBUG removed] _equippedFrameIds:', JSON.stringify(this._equippedFrameIds), 'first stage levelId:', this.allStages[0]?.levelId);
         groups.forEach(group => {
             const hellTag = group.isHell ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:6px;font-size:0.7rem;font-weight:600;"><i class="fas fa-skull-crossbones"></i> 地狱模式</span>` : '';
-            stageGrid += `<div class="stage-group-wrap">`;
+            const _chapActive = String(group.levelId) === String(this._bookChapter || groups[0].levelId);
+            stageGrid += `<div class="stage-group-wrap" data-chapter="${group.levelId}" style="${_chapActive ? '' : 'display:none;'}">`;
             stageGrid += `<div class="stage-group-header"><span class="sg-dot" style="background:${group.isHell ? '#f87171' : '#60a5fa'};"></span><span class="sg-name">${group.levelName}</span>${hellTag}</div>`;
             stageGrid += `<div class="stage-grid">`;
             group.stages.forEach(({stage, index: i}) => {
@@ -924,7 +925,7 @@ const ChallengeModule = {
                     const _sfk = _frameKeyFor(stage.id);
                     const _sfkDefB = _sfk ? this._frameDefs['frame_' + _sfk] : null;
                     const _bossMark = _sfkDefB ? '<div class="frame-boss-mark" title="' + _sfkDefB.desc + '"><img src="assets/boss/boss-big-q' + _sfkDefB.bossLevel + '.png" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-flex\';"><i class="fas fa-dragon" style="display:none;"></i><span class="fbm-crown"><i class="fas fa-crown"></i></span></div>' : '';
-                    stageGrid += '<div class="stage-card boss-banner ' + statusClass + (_sfk ? ' frame-' + _sfk : '') + '" style="--boss-theme:' + bc + ';grid-column:1/-1;" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
+                    stageGrid += '<div class="stage-card boss-banner ' + statusClass + (_sfk ? ' frame-' + _sfk : '') + '" style="--boss-theme:' + bc + ';grid-column:1/-1;" onclick="' + (isLocked ? '' : "ChallengeModule._bookEnterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
                         + '<div class="boss-mist"></div>' + (_sfk ? '<div class="frame-border"></div>' + _bossMark : '')
                         + '<button class="stage-frame-btn' + (_sfk ? ' on' : '') + '" style="' + (_sfk ? 'color:' + (this._frameDefs['frame_' + _sfk] ? this._frameDefs['frame_' + _sfk].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="boss-banner-img">'
@@ -956,7 +957,7 @@ const ChallengeModule = {
                     const _sfk2 = _frameKeyFor(stage.id);
                     const _sfkDef2B = _sfk2 ? this._frameDefs['frame_' + _sfk2] : null;
                     const _bossMark2 = _sfkDef2B ? '<div class="frame-boss-mark" title="' + _sfkDef2B.desc + '"><img src="assets/boss/boss-big-q' + _sfkDef2B.bossLevel + '.png" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-flex\';"><i class="fas fa-dragon" style="display:none;"></i><span class="fbm-crown"><i class="fas fa-crown"></i></span></div>' : '';
-                    stageGrid += '<div class="stage-card boss-mini-card ' + statusClass + (_sfk2 ? ' frame-' + _sfk2 : '') + '" style="--boss-theme:' + bc + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
+                    stageGrid += '<div class="stage-card boss-mini-card ' + statusClass + (_sfk2 ? ' frame-' + _sfk2 : '') + '" style="--boss-theme:' + bc + ';" onclick="' + (isLocked ? '' : "ChallengeModule._bookEnterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
                         + '<div class="boss-mini-badge"><i class="fas ' + bd.icon + '"></i></div>' + (_sfk2 ? '<div class="frame-border"></div>' + _bossMark2 : '')
                         + '<button class="stage-frame-btn' + (_sfk2 ? ' on' : '') + '" style="' + (_sfk2 ? 'color:' + (this._frameDefs['frame_' + _sfk2] ? this._frameDefs['frame_' + _sfk2].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="boss-mini-img">'
@@ -981,7 +982,7 @@ const ChallengeModule = {
                     const _sfk3 = _frameKeyFor(stage.id);
                     const _sfkDef3B = _sfk3 ? this._frameDefs['frame_' + _sfk3] : null;
                     const _bossMark3 = _sfkDef3B ? '<div class="frame-boss-mark" title="' + _sfkDef3B.desc + '"><img src="assets/boss/boss-big-q' + _sfkDef3B.bossLevel + '.png" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-flex\';"><i class="fas fa-dragon" style="display:none;"></i><span class="fbm-crown"><i class="fas fa-crown"></i></span></div>' : '';
-                    stageGrid += '<div class="stage-card ' + statusClass + (_sfk3 ? ' frame-' + _sfk3 : '') + '" style="--stage-color:' + lvColor + ';" onclick="' + (isLocked ? '' : "ChallengeModule.enterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
+                    stageGrid += '<div class="stage-card ' + statusClass + (_sfk3 ? ' frame-' + _sfk3 : '') + '" style="--stage-color:' + lvColor + ';" onclick="' + (isLocked ? '' : "ChallengeModule._bookEnterStage('" + stage.id + "')") + '" ' + (isReadonly ? 'title="该课程暂未开放"' : '') + '>'
                         + (_sfk3 ? '<div class="frame-border"></div>' + _bossMark3 : '')
                         + '<button class="stage-frame-btn' + (_sfk3 ? ' on' : '') + '" style="' + (_sfk3 ? 'color:' + (this._frameDefs['frame_' + _sfk3] ? this._frameDefs['frame_' + _sfk3].color : '#818cf8') + ';' : '') + '" onclick="event.stopPropagation();ChallengeModule._openStageFramePicker(\'' + stage.id + '\',event)" title="装配/卸下本关卡边框"><i class="fas fa-border-all"></i></button>'
                         + '<div class="sc-castle-bg"></div>'
@@ -1058,9 +1059,64 @@ const ChallengeModule = {
                     </div>
                     <span class="stages-progress-text">${totalCleared} / ${stages.length}</span>
                 </div>
-                <div class="stages-groups" style="--grid-cols:${gridCols};">${stageGrid}</div>
+                <div class="spellbook">
+                    <div class="sb-left">
+                        <div class="sb-cover-title">
+                            <i class="fas fa-book-sparkles" style="color:#fbbf24;"></i>
+                            <span>${isHellMode ? '地狱魔典' : '冒险之书'}</span>
+                        </div>
+                        <div class="sb-overview">
+                            <div class="sb-ov-row"><span>通关</span><b>${totalCleared} / ${stages.length}</b></div>
+                            <div class="sb-ov-row"><span>星数</span><b style="color:#fbbf24;">${maxStars}</b></div>
+                            <div class="sb-ov-row"><span>积分</span><b style="color:#60a5fa;">${totalScore.toFixed(0)}</b></div>
+                            <div class="sb-ov-progress"><div class="sb-ov-fill" style="width:${clearedPct}%;background:${barColor};"></div></div>
+                        </div>
+                        <div class="sb-bookmarks">
+                            ${groups.map(g => {
+                                const gc = g.stages.filter(x => this.serverProgress[x.stage.id]?.cleared).length;
+                                const active = String(g.levelId) === String(this._bookChapter || groups[0].levelId);
+                                return '<div class="sb-bookmark' + (active ? ' active' : '') + '" onclick="ChallengeModule._bookGoChapter(\'' + g.levelId + '\')"><span class="sb-bm-dot" style="background:' + (g.isHell ? '#f87171' : '#60a5fa') + ';"></span><span class="sb-bm-name">' + g.levelName + '</span><span class="sb-bm-count">' + gc + '/' + g.stages.length + '</span></div>';
+                            }).join('')}
+                        </div>
+                        <div class="sb-bookmark-hint"><i class="fas fa-hand-pointer"></i> 点击章节书签翻页</div>
+                    </div>
+                    <div class="sb-spine"></div>
+                    <div class="sb-right" id="sb-right-page">
+                        <div class="stages-groups" style="--grid-cols:${gridCols};">${stageGrid}</div>
+                    </div>
+                </div>
             </div>
         `;
+    },
+
+    /** 魔法书翻页：切换章节 */
+    _bookGoChapter(levelId) {
+        if (String(this._bookChapter || '') === String(levelId)) return;
+        const page = document.getElementById('sb-right-page');
+        if (page) {
+            page.classList.add('sb-turning');
+            setTimeout(() => {
+                this._bookChapter = levelId;
+                this.render();
+            }, 320);
+        } else {
+            this._bookChapter = levelId;
+            this.render();
+        }
+    },
+
+    /** 选中关卡：风车翻页出场动画后进入 */
+    _bookEnterStage(stageId) {
+        const overlay = document.createElement('div');
+        overlay.className = 'sb-fanout-overlay';
+        let fan = '';
+        for (let k = 0; k < 5; k++) {
+            fan += '<div class="sb-fan-page" style="animation-delay:' + (k * 0.07) + 's;--fan-rot:' + (-28 + k * 14) + 'deg;"></div>';
+        }
+        overlay.innerHTML = '<div class="sb-fan-stage">' + fan + '</div>';
+        document.body.appendChild(overlay);
+        setTimeout(() => { this.enterStage(stageId); }, 620);
+        setTimeout(() => { overlay.remove(); }, 1400);
     },
     _cycleGridCols() {
         const _sysCfg = window._systemInfo || {};
@@ -2888,7 +2944,7 @@ const ChallengeModule = {
                 </div>
                 ${isNew ? '<div class="new-record-badge">新纪录！</div>' : ''}
                 <div class="challenge-result-actions">
-                    <button class="result-btn retry" onclick="ChallengeModule.enterStage('${state.stageId}')">
+                    <button class="result-btn retry" onclick="ChallengeModule._bookEnterStage('${state.stageId}')">
                         <i class="fas fa-redo"></i> 再来一次
                     </button>
                     <button class="result-btn back" onclick="ChallengeModule.exitStage()">
