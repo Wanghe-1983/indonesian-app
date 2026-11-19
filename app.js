@@ -998,24 +998,75 @@ async function loadDB() {
         
         // 构建左侧菜单
         buildMenu();
-        // 恢复上次学习位置；没有则显示空状态（不再硬塞第一个词，也不自动记为已掌握）
-        try {
-            const savedPos = JSON.parse(localStorage.getItem('fmi_last_study_pos') || 'null');
-            if (savedPos && db[savedPos.cat] && db[savedPos.cat].lessons[savedPos.lesson]) {
-                curCat = savedPos.cat;
-                curLesson = savedPos.lesson;
-                const words = db[curCat].lessons[curLesson].words;
-                curIdx = Math.min(Math.max(0, savedPos.idx || 0), words.length - 1);
-                showWord(curCat, curIdx);
-            } else {
-                document.getElementById('disp-indo').textContent = '请从左侧选择课程开始学习';
-                document.getElementById('disp-zh').textContent = '';
-                document.getElementById('word-idx').textContent = '--';
-            }
-        } catch(e) {
+        // 恢复显示优先级：①最后掌握的生词（优先在词库内定位，可继续翻页）
+        // ②上次学习位置 ③引导提示。彻底避免显示与课程无关的随机词。
+        const showEmptyPrompt = function() {
             document.getElementById('disp-indo').textContent = '请从左侧选择课程开始学习';
             document.getElementById('disp-zh').textContent = '';
-        }
+            document.getElementById('word-idx').textContent = '--';
+        };
+        let restored = false;
+        try {
+            // ①最后掌握的生词：先在本地词库里找（可导航）
+            const mastered = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
+            if (mastered.length > 0) {
+                outer:
+                for (let m = mastered.length - 1; m >= 0; m--) {
+                    for (const c of Object.keys(db)) {
+                        for (const l of Object.keys(db[c].lessons)) {
+                            const wi = (db[c].lessons[l].words || []).findIndex(w => w.indonesian === mastered[m]);
+                            if (wi >= 0) {
+                                curCat = c; curLesson = l; curIdx = wi;
+                                showWord(c, wi);
+                                restored = true;
+                                break outer;
+                            }
+                        }
+                    }
+                }
+            }
+            // 词库里找不到的最后掌握词（BIPA课程词）→ 等课程内容加载后尝试显示
+            if (!restored && mastered.length > 0 && typeof CourseContent !== 'undefined') {
+                const renderCourseWord = function() {
+                    try {
+                        const data = CourseContent.data;
+                        if (!data || !data.levels) return;
+                        for (let m = mastered.length - 1; m >= 0; m--) {
+                            const target = mastered[m];
+                            for (const lv of data.levels) {
+                                for (const u of (lv.units || [])) {
+                                    const hit = (u.words || []).find(w => (w.indonesian || w.en || w.word) === target)
+                                        || (u.sentences || []).find(w => (w.indonesian || w.en || w.word) === target)
+                                        || (u.dialogues || []).find(w => (w.indonesian || w.en || w.word) === target);
+                                    if (hit) {
+                                        document.getElementById('disp-indo').textContent = target;
+                                        document.getElementById('disp-zh').textContent = hit.chinese || hit.zh || '';
+                                        document.getElementById('word-idx').textContent = '--';
+                                        restored = true;
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                };
+                if (CourseContent._loaded) renderCourseWord();
+                else CourseContent.on('loaded', renderCourseWord);
+            }
+            // ②上次学习位置（词库导航上下文）
+            if (!restored) {
+                const savedPos = JSON.parse(localStorage.getItem('fmi_last_study_pos') || 'null');
+                if (savedPos && db[savedPos.cat] && db[savedPos.cat].lessons[savedPos.lesson]) {
+                    curCat = savedPos.cat;
+                    curLesson = savedPos.lesson;
+                    const words = db[curCat].lessons[curLesson].words;
+                    curIdx = Math.min(Math.max(0, savedPos.idx || 0), words.length - 1);
+                    showWord(curCat, curIdx);
+                    restored = true;
+                }
+            }
+        } catch(e) {}
+        if (!restored) showEmptyPrompt();
         renderTodayRecord();
         updateStats();
         if (typeof initMasteredModeSelect === 'function') initMasteredModeSelect();
