@@ -986,7 +986,8 @@ const ChallengeModule = {
                             const _locked = sequentialMode && _gi > nextAvailable && !isAdmin;
                             const _cleared = this.serverProgress[x.id]?.cleared;
                             const _cls = 'bk-page-chip' + (i2 === idx ? ' on' : '') + (_cleared ? ' done' : '') + (_locked ? ' lock' : '');
-                            return '<button class="' + _cls + '"' + (_locked ? ' disabled title="需先完成前置关卡"' : ' title="第' + (i2 + 1) + '关：直达本页"') + ' onclick="ChallengeModule._bookJumpTo(' + i2 + ')">' + (i2 + 1) + '</button>';
+                            const _pad = String(i2 + 1).padStart(3, '0');
+                            return '<button class="' + _cls + '"' + (_locked ? ' disabled title="需先完成前置关卡"' : ' title="第' + (i2 + 1) + '关：直达本页"') + ' onclick="ChallengeModule._bookJumpTo(' + i2 + ')">' + _pad + '</button>';
                         }).join('')}</div>
                         <button class="bk-nav-btn" onclick="ChallengeModule._bookFlip(1)" ${idx >= lvStages.length - 1 ? 'disabled' : ''}>下一页 <i class="fas fa-chevron-right"></i></button>
                     </div>

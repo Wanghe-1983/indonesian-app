@@ -9438,3 +9438,5 @@
 .bk-nav-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--bk, #60a5fa) 30%, transparent); }
 .bk-dot.on { background: var(--bk, #fbbf24); box-shadow: 0 0 10px color-mix(in srgb, var(--bk, #60a5fa) 70%, transparent); }
 .bk-back-btn { background: color-mix(in srgb, var(--bk, #60a5fa) 12%, transparent); border-color: color-mix(in srgb, var(--bk, #60a5fa) 35%, transparent); color: color-mix(in srgb, var(--bk, #60a5fa) 70%, #ffffff); }
+
+.bk-page-chip { min-width: 36px; font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
