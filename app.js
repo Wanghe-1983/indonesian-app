@@ -1053,8 +1053,8 @@ async function loadDB() {
                 if (CourseContent._loaded) renderCourseWord();
                 else CourseContent.on('loaded', renderCourseWord);
             }
-            // ②上次学习位置（词库导航上下文）
-            if (!restored) {
+            // ②上次学习位置：仅在没有掌握记录时才作为兜底（有掌握记录但无法展示时宁可用提示语）
+            if (!restored && mastered.length === 0) {
                 const savedPos = JSON.parse(localStorage.getItem('fmi_last_study_pos') || 'null');
                 if (savedPos && db[savedPos.cat] && db[savedPos.cat].lessons[savedPos.lesson]) {
                     curCat = savedPos.cat;
@@ -1902,7 +1902,8 @@ function addToTodayRecord(word) {
     if (!isExist) {
         todayRecord.push({
             indonesian: word.indonesian,
-            chinese: word.chinese
+            chinese: word.chinese,
+            date: new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0')
         });
         localStorage.setItem('fmi_today_record', JSON.stringify(todayRecord));
         studyStats.todayWords = todayRecord.length;
@@ -2487,18 +2488,26 @@ const today = new Date().toLocaleDateString();
             localStorage.setItem('fmi_practice_history', serverHist);
         }
 
-        // 恢复今日记录（按日期比对：服务端是今天的就覆盖，否则保留本地）
+        // 恢复今日记录（严格按日期：只合并属于"今天"的条目，旧日期的一律忽略，
+        // 防止每日重置后又被几天前的云数据重新填回）
         if (result.todayRecord) {
             try {
                 const serverToday = typeof result.todayRecord === 'string' ? JSON.parse(result.todayRecord) : result.todayRecord;
-                if (Array.isArray(serverToday) && serverToday.length > 0) {
-                    const localToday = JSON.parse(localStorage.getItem('fmi_today_record') || '[]');
-                    const merged = [...localToday];
-                    for (const r of serverToday) {
-                        if (r && r.indonesian && !merged.some(m => m.indonesian === r.indonesian)) merged.push(r);
+                if (Array.isArray(serverToday)) {
+                    const now = new Date();
+                    const todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+                    const fresh = serverToday.filter(r => r && r.indonesian && r.date === todayStr);
+                    if (fresh.length > 0) {
+                        const localToday = JSON.parse(localStorage.getItem('fmi_today_record') || '[]');
+                        const merged = [...localToday];
+                        for (const r of fresh) {
+                            if (!merged.some(m => m.indonesian === r.indonesian)) merged.push(r);
+                        }
+                        localStorage.setItem('fmi_today_record', JSON.stringify(merged));
+                        if (typeof todayRecord !== 'undefined') todayRecord = merged;
+                        if (typeof renderTodayRecord === 'function') renderTodayRecord();
+                        if (typeof updateStats === 'function') updateStats();
                     }
-                    localStorage.setItem('fmi_today_record', JSON.stringify(merged));
-                    if (typeof todayRecord !== 'undefined') todayRecord = merged;
                 }
             } catch(e) {}
         }

@@ -368,8 +368,92 @@ const StudyModule = {
     navCard(dir) {
         const newIndex = this.studyIndex + dir;
         if (newIndex < 0 || newIndex >= this.studyItems.length) return;
+        // 向后切到某类内容（生词/短句/对话）的末尾时：若该类已全部掌握，
+        // 询问是否进入下一部分/下一课；否则静默循环回该类开头继续复习
+        if (dir === 1) {
+            const segs = this._getTypeSegments();
+            const seg = segs.find(x => this.studyIndex >= x.start && this.studyIndex <= x.end);
+            if (seg && this.studyIndex === seg.end) {
+                const TYPE_LABEL = { words: '生词', sentences: '短句', dialogues: '对话' };
+                const segLabel = TYPE_LABEL[seg.type] || seg.type;
+                const mastered = JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
+                const allMastered = seg.items.every(it => mastered.includes(it.indonesian));
+                const nextSeg = segs[segs.indexOf(seg) + 1];
+                const rerender = () => this._renderLearnCard(document.getElementById('study-sub-content'));
+                if (allMastered && nextSeg) {
+                    const nextLabel = nextSeg.unitId === seg.unitId
+                        ? '【' + (TYPE_LABEL[nextSeg.type] || nextSeg.type) + '】部分'
+                        : '下一课《' + nextSeg.unitName + '》的【' + (TYPE_LABEL[nextSeg.type] || nextSeg.type) + '】';
+                    this._showSectionPrompt(
+                        '🎉 ' + segLabel + '已全部掌握！',
+                        '《' + seg.unitName + '》的' + segLabel + '已全部收入"已掌握"。\n是否开始学习' + nextLabel + '？\n（选"否"将从头循环复习当前' + segLabel + '）',
+                        nextSeg.unitId === seg.unitId ? '进入下一部分' : '进入下一课',
+                        () => { this.studyIndex = nextSeg.start; rerender(); },
+                        () => { this.studyIndex = seg.start; rerender(); }
+                    );
+                    return;
+                }
+                if (allMastered && !nextSeg) {
+                    this._showSectionPrompt(
+                        '🎓 本课全部内容已掌握！',
+                        '《' + seg.unitName + '》的生词、短句、对话已全部收入"已掌握"。\n是否从头再学一轮加深记忆？',
+                        '再学一轮',
+                        () => { this.studyIndex = 0; rerender(); },
+                        () => { this.studyIndex = seg.start; rerender(); }
+                    );
+                    return;
+                }
+                // 未全部掌握：静默循环回本段开头
+                this.studyIndex = seg.start;
+                rerender();
+                return;
+            }
+        }
         this.studyIndex = newIndex;
         this._renderLearnCard(document.getElementById('study-sub-content'));
+    },
+
+    /** 把学习卡片按 单元+内容类型 切分为连续段 */
+    _getTypeSegments() {
+        const segs = [];
+        for (let i = 0; i < this.studyItems.length; i++) {
+            const it = this.studyItems[i];
+            const key = it.unitId + '::' + it.type;
+            const last = segs[segs.length - 1];
+            if (last && last.key === key) { last.end = i; last.items.push(it); }
+            else segs.push({ key, unitId: it.unitId, unitName: it.unitName, type: it.type, start: i, end: i, items: [it] });
+        }
+        return segs;
+    },
+
+    /** 双按钮选择框：确认=onOk，取消/点遮罩=onCancel */
+    _showSectionPrompt(title, msg, okText, onOk, onCancel) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:10003;display:flex;align-items:center;justify-content:center;';
+        const box = document.createElement('div');
+        box.style.cssText = 'background:var(--glass,rgba(30,41,59,0.97));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 28px;max-width:400px;width:90%;text-align:center;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+        const h = document.createElement('h3');
+        h.style.cssText = 'color:var(--text-main,#e2e8f0);font-size:1.05rem;margin:0 0 10px 0;';
+        h.textContent = title;
+        const m = document.createElement('p');
+        m.style.cssText = 'color:#94a3b8;font-size:0.9rem;line-height:1.7;margin:0 0 20px 0;white-space:pre-line;';
+        m.textContent = msg;
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:12px;justify-content:center;';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '否，循环复习';
+        cancelBtn.style.cssText = 'background:#475569;color:white;border:none;padding:10px 22px;border-radius:10px;cursor:pointer;font-size:0.9rem;';
+        const okBtn = document.createElement('button');
+        okBtn.textContent = okText || '确定';
+        okBtn.style.cssText = 'background:var(--accent,#6366f1);color:white;border:none;padding:10px 22px;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:bold;';
+        const close = (fn) => { overlay.remove(); if (typeof fn === 'function') fn(); };
+        cancelBtn.onclick = () => close(onCancel);
+        okBtn.onclick = () => close(onOk);
+        overlay.onclick = (e) => { if (e.target === overlay) close(onCancel); };
+        row.appendChild(cancelBtn); row.appendChild(okBtn);
+        box.appendChild(h); box.appendChild(m); box.appendChild(row);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
     },
 
     toggleHide() {
@@ -497,7 +581,7 @@ const StudyModule = {
                 // 今日记录（去重）
                 const today = JSON.parse(localStorage.getItem('fmi_today_record') || '[]');
                 if (!today.some(t => t.indonesian === rec.indonesian)) {
-                    today.push({ indonesian: rec.indonesian, chinese: rec.chinese });
+                    today.push({ indonesian: rec.indonesian, chinese: rec.chinese, date: new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0') });
                     localStorage.setItem('fmi_today_record', JSON.stringify(today));
                     todayChanged = true;
                 }
