@@ -1052,6 +1052,13 @@ async function loadDB() {
                 };
                 if (CourseContent._loaded) renderCourseWord();
                 else CourseContent.on('loaded', renderCourseWord);
+                // 课程内容就绪后补齐释义并刷新侧边栏（课程词也能显示释义）
+                const _refreshMeanings = function() {
+                    ensureWordMeanings();
+                    if (typeof buildMenu === 'function') buildMenu();
+                };
+                if (CourseContent._loaded) setTimeout(_refreshMeanings, 100);
+                else CourseContent.on('loaded', _refreshMeanings);
             }
             // ②上次学习位置：仅在没有掌握记录时才作为兜底（有掌握记录但无法展示时宁可用提示语）
             if (!restored && mastered.length === 0) {
@@ -1117,6 +1124,13 @@ async function buildMenu() {
     const masteredWordMap = {};
     const mAllW = getAllWords();
     mAllW.forEach(w => { masteredWordMap[w.indonesian] = { zh: w.chinese || '' }; });
+    // 释义映射表兜底：课程词（BIPA）不在旧词库时从映射表取释义
+    ensureWordMeanings();
+    const _wordMeanings = getWordMeanings();
+    masteredList.forEach(word => {
+        if (masteredWordMap[word] && masteredWordMap[word].zh) return;
+        if (_wordMeanings[word]) masteredWordMap[word] = { zh: _wordMeanings[word] };
+    });
     let masteredHTML = '';
     if (masteredList.length === 0) {
         masteredHTML = '<div style="padding:8px 10px;font-size:13px;color:#64748b;">暂无已掌握词汇</div>';
@@ -1900,6 +1914,7 @@ function addToTodayRecord(word) {
     const isExist = todayRecord.some(item => item.indonesian === word.indonesian);
     let changed = false;
     if (!isExist) {
+        recordWordMeaning(word.indonesian, word.chinese);
         todayRecord.push({
             indonesian: word.indonesian,
             chinese: word.chinese,
@@ -4136,6 +4151,58 @@ function getMasteredWords() {
     return JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
 }
 
+// ===== 生词释义映射表（fmi_word_meanings: {单词: 中文}） =====
+function getWordMeanings() {
+    try { return JSON.parse(localStorage.getItem('fmi_word_meanings') || '{}'); } catch(e) { return {}; }
+}
+function recordWordMeaning(indo, zh) {
+    if (!indo || !zh) return;
+    try {
+        const map = getWordMeanings();
+        if (map[indo] === zh) return;
+        map[indo] = zh;
+        localStorage.setItem('fmi_word_meanings', JSON.stringify(map));
+    } catch(e) {}
+}
+function ensureWordMeanings() {
+    try {
+        const map = getWordMeanings();
+        const mastered = new Set(getMasteredWords());
+        if (mastered.size === 0) return;
+        try {
+            JSON.parse(localStorage.getItem('fmi_today_record') || '[]').forEach(r => {
+                if (r && r.indonesian && r.chinese && mastered.has(r.indonesian)) map[r.indonesian] = r.chinese;
+            });
+        } catch(e) {}
+        try {
+            (favs || []).forEach(f => {
+                if (f && f.indonesian && f.chinese && mastered.has(f.indonesian)) map[f.indonesian] = f.chinese;
+            });
+        } catch(e) {}
+        for (const c in db) {
+            for (const l in db[c].lessons) {
+                (db[c].lessons[l].words || []).forEach(w => {
+                    if (w.indonesian && w.chinese && mastered.has(w.indonesian) && !map[w.indonesian]) map[w.indonesian] = w.chinese;
+                });
+            }
+        }
+        if (typeof CourseContent !== 'undefined' && CourseContent.data) {
+            for (const lv of (CourseContent.data.levels || [])) {
+                for (const u of (lv.units || [])) {
+                    for (const key of ['words', 'sentences', 'dialogues']) {
+                        (u[key] || []).forEach(w => {
+                            const indo = w.indonesian || w.en || w.word;
+                            const zh = w.chinese || w.zh || '';
+                            if (indo && zh && mastered.has(indo) && !map[indo]) map[indo] = zh;
+                        });
+                    }
+                }
+            }
+        }
+        localStorage.setItem('fmi_word_meanings', JSON.stringify(map));
+    } catch(e) {}
+}
+
 // 从侧边栏已掌握列表点击词汇，定位到学习界面
 function navigateToMasteredWord(word) {
     switchStudySubTab('learn');
@@ -4154,25 +4221,28 @@ function navigateToMasteredWord(word) {
         }
         if (found) break;
     }
-    if (!found && window._courseMenuData && window._courseMenuData.levels) {
-        for (const lv of window._courseMenuData.levels) {
+    if (!found && typeof CourseContent !== 'undefined' && CourseContent.data) {
+        outer:
+        for (const lv of (CourseContent.data.levels || [])) {
             for (const unit of (lv.units || [])) {
-                for (const w of (unit.words || [])) {
-                    if (w.indonesian === word) {
-                        document.getElementById('disp-indo').innerText = w.indonesian;
-                        document.getElementById('disp-zh').innerText = w.chinese || '';
-                        document.getElementById('word-idx').innerText = '--';
-                        found = true; break;
+                for (const key of ['words', 'sentences', 'dialogues']) {
+                    for (const w of (unit[key] || [])) {
+                        const indo = w.indonesian || w.en || w.word;
+                        const zh = w.chinese || w.zh || '';
+                        if (indo === word) {
+                            document.getElementById('disp-indo').innerText = indo;
+                            document.getElementById('disp-zh').innerText = zh || '(释义缺失)';
+                            document.getElementById('word-idx').innerText = '--';
+                            found = true; break outer;
+                        }
                     }
                 }
-                if (found) break;
             }
-            if (found) break;
         }
     }
     if (!found) {
         document.getElementById('disp-indo').innerText = word;
-        document.getElementById('disp-zh').innerText = '(未在词库中找到)';
+        document.getElementById('disp-zh').innerText = getWordMeanings()[word] || '(未在词库中找到)';
     }
 }
 

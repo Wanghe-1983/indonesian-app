@@ -580,6 +580,10 @@ const StudyModule = {
             for (const rec of records) {
                 // 今日记录（去重）
                 const today = JSON.parse(localStorage.getItem('fmi_today_record') || '[]');
+                // 同步记录释义到映射表
+                if (rec.indonesian && rec.chinese && typeof recordWordMeaning === 'function') {
+                    try { recordWordMeaning(rec.indonesian, rec.chinese); } catch(e) {}
+                }
                 if (!today.some(t => t.indonesian === rec.indonesian)) {
                     today.push({ indonesian: rec.indonesian, chinese: rec.chinese, date: new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0') });
                     localStorage.setItem('fmi_today_record', JSON.stringify(today));
