@@ -957,7 +957,8 @@ const ChallengeModule = {
         })();
 
         const bookLevelName = levelNames[String(this._bookLevel)] || ('Level ' + this._bookLevel);
-        const entranceClass = 'book-in-q' + (parseInt(String(this._bookLevel)) % 8);
+        const entranceClass = this._bookJustOpened ? ('book-in-q' + (parseInt(String(this._bookLevel)) % 8)) : '';
+        this._bookJustOpened = false;
         container.innerHTML = `
             <div class="stages-page">
                 ${frameToolbar}
@@ -1015,27 +1016,48 @@ const ChallengeModule = {
             }
         }
         this._bookPageIdx = pi < 0 ? 0 : pi;
+        this._bookJustOpened = true;
         this.render();
         function global_stages_index(st) { return stages.indexOf(st); }
     },
 
     _bookExitBook() { this._bookLevel = null; this._bookPageIdx = 0; this.render(); },
 
-    /** 翻页（带书页动画） */
+    /** 翻页：真实3D书页——当前页绕书脊缓缓掀起翻落（右页→左页 / 左页→右页），翻完更新内容 */
     _bookFlip(dir) {
         const stages = this.allStages;
         const lvStages = stages.filter(s => String(s.levelId) === String(this._bookLevel));
         const target = (this._bookPageIdx || 0) + dir;
         if (target < 0 || target > lvStages.length - 1) return;
-        this._bookPageIdx = target;
-        this._bookFlipDir = dir > 0 ? 'right' : 'left';
         const book = document.getElementById('bk-book');
-        if (book) {
-            book.classList.add(dir > 0 ? 'bk-flip-fwd' : 'bk-flip-back');
-            setTimeout(() => this.render(), 780);
-        } else {
+        if (!book || book.dataset.flipping) { this._bookPageIdx = target; this._bookFlipDir = null; this.render(); return; }
+        book.dataset.flipping = '1';
+        const srcPage = book.querySelector(dir > 0 ? '.bk-right-page' : '.bk-left-page');
+        // 翻起的"叶子"：正面=被翻页的内容，背面=空白羊皮纸
+        const leaf = document.createElement('div');
+        leaf.className = 'bk-leaf ' + (dir > 0 ? 'bk-leaf-fwd' : 'bk-leaf-back');
+        const face = document.createElement('div');
+        face.className = 'bk-leaf-face';
+        face.innerHTML = srcPage ? srcPage.innerHTML : '';
+        face.innerHTML += '<div class="bk-leaf-shade"></div>';
+        const back = document.createElement('div');
+        back.className = 'bk-leaf-backface';
+        back.innerHTML = '<div class="bk-page-deco"></div><div class="bk-leaf-blank"><i class="fas fa-feather-pointed"></i></div>';
+        leaf.appendChild(face);
+        leaf.appendChild(back);
+        book.appendChild(leaf);
+        // 被翻走的那页先藏起来，露出下层羊皮纸
+        if (srcPage) srcPage.style.visibility = 'hidden';
+        // 下一帧启动翻转动画（右页从右下向左上掀起 / 左页翻回右侧）
+        requestAnimationFrame(() => requestAnimationFrame(() => leaf.classList.add('go')));
+        leaf.addEventListener('animationend', () => {
+            delete book.dataset.flipping;
+            this._bookPageIdx = target;
+            this._bookFlipDir = null;
             this.render();
-        }
+        }, { once: true });
+        // 兜底：动画事件丢失时也要恢复
+        setTimeout(() => { if (book.dataset.flipping) { delete book.dataset.flipping; this._bookPageIdx = target; this._bookFlipDir = null; this.render(); } }, 2000);
     },
 
     /** 选中关卡：风车翻页出场动画后进入 */
