@@ -855,8 +855,14 @@ const ChallengeModule = {
                 const gStars = g.stages.reduce((a, x) => a + (this.serverProgress[x.id]?.stars || 0), 0);
                 const lvColor = stageColors[parseInt(g.levelId) % 8] || '#60a5fa';
                 const pct = g.stages.length ? Math.round(gc / g.stages.length * 100) : 0;
+                // 该等级的BOSS大头像作为封面主视觉（优先大BOSS，其次小BOSS）
+                const bs = g.stages.find(x => x._isBoss && x.bossType === 'big') || g.stages.find(x => x._isBoss);
+                const bossImg = bs ? (bs.bossType === 'big' ? (bs.bossDef?.image || bs.bossDef?.miniImage) : (bs.bossDef?.miniImage || bs.bossDef?.image)) : null;
+                const bossEl = bossImg
+                    ? '<img class="mb-book-boss" src="' + bossImg + '" alt="" onerror="this.remove()">'
+                    : '<div class="mb-book-emblem"><i class="fas fa-book-sparkles"></i></div>';
                 return '<div class="mb-book" style="--bk:' + lvColor + ';animation-delay:' + (gi * 0.14) + 's;" onclick="ChallengeModule._openBook(\'' + g.levelId + '\')">'
-                    + '<div class="mb-book-cover"><div class="mb-book-emblem"><i class="fas fa-book-sparkles"></i></div><div class="mb-book-lv">BIPA ' + g.levelId + '</div></div>'
+                    + '<div class="mb-book-cover">' + bossEl + '<div class="mb-book-lv">BIPA ' + g.levelId + '</div><div class="mb-book-corner tl"></div><div class="mb-book-corner br"></div></div>'
                     + '<div class="mb-book-info"><div class="mb-book-name">' + g.name + '</div>'
                     + '<div class="mb-book-meta"><span>' + gc + '/' + g.stages.length + ' 通关</span><span style="color:#fbbf24;">★' + gStars + '</span></div>'
                     + '<div class="mb-book-bar"><div class="mb-book-fill" style="width:' + pct + '%;background:' + lvColor + ';"></div></div>'
@@ -968,7 +974,7 @@ const ChallengeModule = {
                         <div class="bk-book-title">${isHellMode ? '<i class="fas fa-skull-crossbones" style="color:#f87171;"></i> ' : ''}${bookLevelName} · 魔法书</div>
                         <div class="bk-page-indicator">${idx + 1} / ${lvStages.length}</div>
                     </div>
-                    <div class="bk-book ${entranceClass} ${this._bookFlipDir === 'left' ? 'bk-flip-back' : this._bookFlipDir === 'right' ? 'bk-flip-fwd' : ''}" id="bk-book">
+                    <div class="bk-book ${entranceClass}" style="--bk:${lvColor};" id="bk-book">
                         <div class="bk-page bk-left-page">${''}</div>
                         <div class="bk-spine"><div class="bk-spine-runes">✦ ✧ ✦ ✧ ✦ ✧ ✦</div></div>
                         <div class="bk-page bk-right-page">${''}</div>
