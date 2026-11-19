@@ -975,7 +975,13 @@ const ChallengeModule = {
                     </div>
                     <div class="bk-controls">
                         <button class="bk-nav-btn" onclick="ChallengeModule._bookFlip(-1)" ${idx === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> 上一页</button>
-                        <div class="bk-dots">${lvStages.map((x, i2) => '<span class="bk-dot' + (i2 === idx ? ' on' : '') + '"></span>').join('')}</div>
+                        <div class="bk-dots">${lvStages.map((x, i2) => {
+                            const _gi = globalIdxOf[x.id];
+                            const _locked = sequentialMode && _gi > nextAvailable && !isAdmin;
+                            const _cleared = this.serverProgress[x.id]?.cleared;
+                            const _cls = 'bk-page-chip' + (i2 === idx ? ' on' : '') + (_cleared ? ' done' : '') + (_locked ? ' lock' : '');
+                            return '<button class="' + _cls + '"' + (_locked ? ' disabled title="需先完成前置关卡"' : ' title="第' + (i2 + 1) + '关：直达本页"') + ' onclick="ChallengeModule._bookJumpTo(' + i2 + ')">' + (i2 + 1) + '</button>';
+                        }).join('')}</div>
                         <button class="bk-nav-btn" onclick="ChallengeModule._bookFlip(1)" ${idx >= lvStages.length - 1 ? 'disabled' : ''}>下一页 <i class="fas fa-chevron-right"></i></button>
                     </div>
                 </div>
@@ -1023,11 +1029,37 @@ const ChallengeModule = {
 
     _bookExitBook() { this._bookLevel = null; this._bookPageIdx = 0; this.render(); },
 
-    /** 翻页：真实3D书页——当前页绕书脊缓缓掀起翻落（右页→左页 / 左页→右页），翻完更新内容 */
+    /** 翻页（相对方向） */
     _bookFlip(dir) {
+        this._bookFlipTo((this._bookPageIdx || 0) + dir, dir);
+    },
+
+    /** 页码直达（带权限：普通用户不可直达未解锁关卡，管理员不受限） */
+    _bookJumpTo(pageIdx) {
         const stages = this.allStages;
         const lvStages = stages.filter(s => String(s.levelId) === String(this._bookLevel));
-        const target = (this._bookPageIdx || 0) + dir;
+        if (pageIdx === (this._bookPageIdx || 0)) return;
+        const target = lvStages[pageIdx];
+        if (!target) return;
+        // 权限校验：顺序模式下普通用户不能直达未解锁的关卡
+        const _sysInfo2 = window._systemInfo || {};
+        const sequentialMode = this.challengeMode === 'hell'
+            ? (_sysInfo2.hellSettings ? _sysInfo2.hellSettings.sequentialMode !== false : true)
+            : ((_sysInfo2.normalSettings ? _sysInfo2.normalSettings.sequentialMode === true : false) || _sysInfo2.challengeSequentialMode === true);
+        if (sequentialMode && !this._isAdmin()) {
+            let highestCleared = -1;
+            for (let i = 0; i < stages.length; i++) {
+                if (this.serverProgress[stages[i].id]?.cleared) highestCleared = i;
+            }
+            if (stages.indexOf(target) > highestCleared + 1) return;
+        }
+        this._bookFlipTo(pageIdx, pageIdx > (this._bookPageIdx || 0) ? 1 : -1);
+    },
+
+    /** 真实3D书页翻动（叶子页绕书脊掀起翻落），翻完更新内容 */
+    _bookFlipTo(target, dir) {
+        const stages = this.allStages;
+        const lvStages = stages.filter(s => String(s.levelId) === String(this._bookLevel));
         if (target < 0 || target > lvStages.length - 1) return;
         const book = document.getElementById('bk-book');
         if (!book || book.dataset.flipping) { this._bookPageIdx = target; this._bookFlipDir = null; this.render(); return; }

@@ -9331,3 +9331,28 @@
 @media (max-width: 768px) {
     .bk-leaf { width: 100%; right: 0 !important; left: 0 !important; transform-origin: left center; }
 }
+
+/* ==================== 页码直达导航 ==================== */
+.bk-dots { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; max-width: 62%; align-items: center; }
+.bk-page-chip {
+    min-width: 24px; height: 24px; padding: 0 5px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #94a3b8;
+    font-size: 0.68rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.bk-page-chip:hover:not(:disabled):not(.on) { border-color: rgba(251, 191, 36, 0.5); color: #fde68a; transform: translateY(-2px); }
+.bk-page-chip.done { color: #6ee7b7; border-color: rgba(52, 211, 153, 0.35); background: rgba(52, 211, 153, 0.08); }
+.bk-page-chip.done::after { content: '✓'; font-size: 0.55rem; margin-left: 2px; }
+.bk-page-chip.on {
+    background: linear-gradient(135deg, #d4a017, #f5c542);
+    border-color: #f5c542; color: #1a1028; font-weight: 800;
+    box-shadow: 0 0 14px rgba(245, 197, 66, 0.55);
+    transform: scale(1.12);
+}
+.bk-page-chip.lock { opacity: 0.35; cursor: not-allowed; color: #475569; background: transparent; border-style: dashed; }
+.bk-page-chip.lock::before { content: ''; }
