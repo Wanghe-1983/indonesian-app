@@ -553,6 +553,10 @@
                         <div class="setting-control"><input type="password" class="setting-input" id="setAdminPassword" placeholder="admin123" style="width:160px;font-family:monospace;letter-spacing:2px;"></div>
                     </div>
                     <div class="setting-row">
+                        <div class="setting-info"><div class="setting-label">管理入口点击次数</div><div class="setting-desc">连续点击主页页脚 © 号该次数后进入管理员验证（3~20次，默认8次；点击3次后开始倒计提示）</div></div>
+                        <div class="setting-control"><input type="number" class="setting-input" id="setAdminClicks" min="3" max="20" value="8" style="width:80px;"><span style="color:#64748b;font-size:0.8rem;">次</span></div>
+                    </div>
+                    <div class="setting-row">
                         <div class="setting-info"><div class="setting-label">主界面显示在线人数</div><div class="setting-desc">在学习页面显示当前在线人数</div></div>
                         <div class="setting-control"><label class="toggle"><input type="checkbox" id="setShowOnlineMain" checked><span class="slider"></span></label></div>
                     </div>
@@ -1771,6 +1775,7 @@ let allUsers = [];
         document.getElementById('setRequireEmployeeVerify').checked = s.requireEmployeeVerify !== false;
         document.getElementById('setWhitelistEnabled').checked = s.whitelistEnabled === true;
         document.getElementById('setAdminPassword').value = s.adminPanelPassword || '';
+        document.getElementById('setAdminClicks').value = s.adminClickCount || 8;
         document.getElementById('setShowOnlineCount').checked = s.showOnlineCount !== false;
         document.getElementById('showOnlineCount-hint').textContent = s.showOnlineCount !== false ? '显示中' : '已隐藏';
         document.getElementById('setShowRegCount').checked = s.showRegCount !== false;
@@ -2336,6 +2341,7 @@ function toggleQuestionTypeOptions(mode) {
             adminPanelPassword: document.getElementById('setAdminPassword').value || 'admin123',
             showOnlineCount: document.getElementById('setShowOnlineCount').checked,
             showRegCount: document.getElementById('setShowRegCount').checked,
+            adminClickCount: Math.min(20, Math.max(3, parseInt(document.getElementById('setAdminClicks').value) || 8)),
         };
         console.log('[StudySettings] 正在保存:', JSON.stringify(settings).substring(0,200));
         var result = await adminFetch('admin/settings', { method: 'PUT', body: JSON.stringify(settings) });

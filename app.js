@@ -608,11 +608,11 @@ async function initUI() {
     <div id="page-messages" style="display:none;"></div>
 
     <div class="copyright" id="copyright">
-        仅供学习・禁止商用 © 2026｜
+        仅供学习・禁止商用 <span id="admin-trigger" style="cursor:pointer;user-select:none;" onclick="onCopyrightTap(event)" title="©">©</span> 2026｜
         <span style="cursor:pointer;color:#60a5fa;" onclick="showUserGuide()"><i class="fas fa-circle-question" style="margin-right:2px;"></i>使用说明</span>｜
         v<span id="main-version-num" style="cursor:pointer;color:#34d399;" onclick="showVersionChangelog()">...</span>｜
         联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span>
-        <span style="float:right;opacity:0.4;cursor:pointer;" onclick="openAdminModal()" title="管理员入口"><i class="fas fa-cog" style="font-size:0.8rem;"></i></span>
+        <span id="admin-trigger-hint" style="float:right;font-size:0.72rem;color:#f59e0b;opacity:0;transition:opacity 0.2s;"></span>
     </div>
 </main>
 
@@ -1723,6 +1723,37 @@ function initSliders() {
 
 
 // 打开管理员弹窗（需后台密码验证）
+// 隐藏管理入口：连续点击页脚 © 号 N 次（后台可配，默认8次）触发管理员验证
+// 点击3次后开始倒计提示；间隔超过2.5秒自动重新计数
+let _adminClickCount = 0;
+let _adminClickResetTimer = null;
+function getAdminClickTarget() {
+    const n = (window._systemInfo || {}).adminClickCount;
+    return (typeof n === 'number' && n >= 3 && n <= 20) ? n : 8;
+}
+function onCopyrightTap(e) {
+    if (e) e.stopPropagation();
+    _adminClickCount++;
+    clearTimeout(_adminClickResetTimer);
+    _adminClickResetTimer = setTimeout(() => {
+        _adminClickCount = 0;
+        const hint = document.getElementById('admin-trigger-hint');
+        if (hint) { hint.style.opacity = '0'; hint.textContent = ''; }
+    }, 2500);
+    const target = getAdminClickTarget();
+    const hint = document.getElementById('admin-trigger-hint');
+    if (_adminClickCount >= target) {
+        _adminClickCount = 0;
+        if (hint) { hint.style.opacity = '0'; hint.textContent = ''; }
+        openAdminModal();
+        return;
+    }
+    if (_adminClickCount >= 3 && hint) {
+        hint.textContent = '再点 ' + (target - _adminClickCount) + ' 次';
+        hint.style.opacity = '0.8';
+    }
+}
+
 function openAdminModal() {
     // 从 localStorage 读取管理员设置的后台密码，默认 admin123
     const adminSettings = JSON.parse(localStorage.getItem('fmi_admin_settings') || '{}');
