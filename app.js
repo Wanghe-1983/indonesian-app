@@ -608,11 +608,10 @@ async function initUI() {
     <div id="page-messages" style="display:none;"></div>
 
     <div class="copyright" id="copyright">
-        仅供学习・禁止商用 <span id="admin-trigger" style="cursor:pointer;user-select:none;" onclick="onCopyrightTap(event)" title="©">©</span> 2026｜
+        仅供学习・禁止商用 <span id="admin-trigger" style="position:relative;display:inline-block;cursor:pointer;user-select:none;color:#60a5fa;font-weight:700;font-size:1.15rem;padding:0 4px;" onclick="onCopyrightTap(event)" title="©">©<span id="admin-trigger-hint" style="position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:rgba(15,15,25,0.95);border:1px solid rgba(251,191,36,0.45);color:#fbbf24;font-size:0.78rem;font-weight:600;padding:7px 14px;border-radius:10px;white-space:nowrap;opacity:0;transition:opacity 0.25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);">再点 5 次<span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(251,191,36,0.45);"></span></span></span> 2026｜
         <span style="cursor:pointer;color:#60a5fa;" onclick="showUserGuide()"><i class="fas fa-circle-question" style="margin-right:2px;"></i>使用说明</span>｜
         v<span id="main-version-num" style="cursor:pointer;color:#34d399;" onclick="showVersionChangelog()">...</span>｜
         联系：<span style="color:var(--accent);cursor:pointer;" onclick="openQrModal()">王鹤</span>
-        <span id="admin-trigger-hint" style="float:right;font-size:0.72rem;color:#f59e0b;opacity:0;transition:opacity 0.2s;"></span>
     </div>
 </main>
 
@@ -1763,8 +1762,11 @@ function onCopyrightTap(e) {
         return;
     }
     if (_adminClickCount >= 3 && hint) {
-        hint.textContent = '再点 ' + (target - _adminClickCount) + ' 次';
-        hint.style.opacity = '0.8';
+        // 气泡文案：去掉箭头以外的内容再包一层（保留箭头小三角）
+        const arrow = hint.querySelector('span');
+        hint.textContent = '🎯 再点 ' + (target - _adminClickCount) + ' 次进入管理入口';
+        if (arrow) hint.appendChild(arrow);
+        hint.style.opacity = '1';
     }
 }
 
