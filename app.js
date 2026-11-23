@@ -1029,9 +1029,12 @@ async function loadDB() {
             }
             // 词库里找不到的最后掌握词（BIPA课程词）→ 等课程内容加载后尝试显示
             if (!restored && mastered.length > 0 && typeof CourseContent !== 'undefined') {
+                // ①课程优先：最后掌握的词几乎都在BIPA课程里，直接进课程浏览模式
                 const renderCourseWord = function() {
                     try {
+                        if (restored) return;
                         if (!CourseContent._loaded || !CourseContent.data) return;
+                        buildCourseUidMap();
                         for (let m = mastered.length - 1; m >= 0; m--) {
                             const loc = findCourseWordLoc(mastered[m]);
                             if (!loc) continue;
@@ -1039,7 +1042,6 @@ async function loadDB() {
                             const unit = level && (level.units || []).find(u => String(u.id) === String(loc.unitId));
                             const items = unit ? (unit[loc.type] || []) : [];
                             if (items.length === 0) continue;
-                            // 直接进入课程浏览模式（不依赖 courseMenuData 的异步加载时序）
                             loadCourseItemsToCard(items, loc.index);
                             restored = true;
                             return;
@@ -4192,6 +4194,37 @@ function getMasteredWords() {
     return JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
 }
 
+// ===== 全库唯一序号注册表 =====
+// 每个生词/短句/对话都有唯一序号，如 B0-U1-W001（0级-1单元-生词表第1条）
+// 用于"已掌握"与课程内容的精准匹配，避免同名/旧词库错位
+window._courseUidMap = null;
+function buildCourseUidMap() {
+    if (typeof CourseContent === 'undefined' || !CourseContent.data) return null;
+    const TYPE_CODE = { words: 'W', sentences: 'S', dialogues: 'D' };
+    const map = {};
+    for (const lv of (CourseContent.data.levels || [])) {
+        for (const u of (lv.units || [])) {
+            for (const type of Object.keys(TYPE_CODE)) {
+                (u[type] || []).forEach((w, i) => {
+                    const indo = w.indonesian || w.en || w.word;
+                    if (!indo) return;
+                    const zh = w.chinese || w.zh || '';
+                    if (!map[indo]) {
+                        map[indo] = { uid: 'B' + lv.id + '-U' + u.id + '-' + TYPE_CODE[type] + String(i + 1).padStart(3, '0'),
+                                      levelId: lv.id, unitId: u.id, type, index: i, zh };
+                    }
+                });
+            }
+        }
+    }
+    window._courseUidMap = map;
+    return map;
+}
+function getWordUid(word) {
+    if (!window._courseUidMap) buildCourseUidMap();
+    return window._courseUidMap ? (window._courseUidMap[word] || null) : null;
+}
+
 // 在BIPA课程内容中定位某词的 (等级, 单元, 类型, 序号)——打通"已掌握"与课程的映射
 function findCourseWordLoc(word) {
     if (typeof CourseContent === 'undefined' || !CourseContent.data) return null;
@@ -4263,23 +4296,9 @@ function ensureWordMeanings() {
 function navigateToMasteredWord(word) {
     switchStudySubTab('learn');
     let found = false;
-    for (const catId in db) {
-        for (const lid in db[catId].lessons) {
-            const words = db[catId].lessons[lid].words;
-            for (let wi = 0; wi < words.length; wi++) {
-                if (words[wi].indonesian === word) {
-                    curCat = catId; curLesson = lid; curIdx = wi;
-                    showWord(catId, wi, lid);
-                    found = true; break;
-                }
-            }
-            if (found) break;
-        }
-        if (found) break;
-    }
-    // BIPA课程词 → 直接加载课程条目到主卡片课程浏览模式
-    if (!found) {
-        const loc = (typeof findCourseWordLoc === 'function') ? findCourseWordLoc(word) : null;
+    // ①BIPA课程优先：已掌握的词几乎都来自课程，序号/翻页/打卡与课程完全一致
+    if (typeof CourseContent !== 'undefined' && CourseContent.data) {
+        const loc = findCourseWordLoc(word);
         if (loc) {
             const level = (CourseContent.data.levels || []).find(l => String(l.id) === String(loc.levelId));
             const unit = level && (level.units || []).find(u => String(u.id) === String(loc.unitId));
@@ -4290,6 +4309,24 @@ function navigateToMasteredWord(word) {
             }
         }
     }
+    // ②旧词库兜底（仅课程里没有的词）
+    if (!found) {
+        for (const catId in db) {
+            for (const lid in db[catId].lessons) {
+                const words = db[catId].lessons[lid].words;
+                for (let wi = 0; wi < words.length; wi++) {
+                    if (words[wi].indonesian === word) {
+                        curCat = catId; curLesson = lid; curIdx = wi;
+                        showWord(catId, wi, lid);
+                        found = true; break;
+                    }
+                }
+                if (found) break;
+            }
+            if (found) break;
+        }
+    }
+    // ③最终兜底：单词+释义表
     if (!found) {
         document.getElementById('disp-indo').innerText = word;
         document.getElementById('disp-zh').innerText = getWordMeanings()[word] || '(未在词库中找到)';
@@ -5046,7 +5083,13 @@ function displayCourseItem(item) {
     const idxEl = document.getElementById('word-idx');
     const indoEl = document.getElementById('disp-indo');
     const zhEl = document.getElementById('disp-zh');
-    if (idxEl) idxEl.textContent = String(courseBrowseIndex + 1).padStart(2, '0');
+    if (idxEl) {
+        idxEl.textContent = String(courseBrowseIndex + 1).padStart(2, '0');
+        // 悬停显示全库唯一序号（如 B0-U1-W015）
+        const _uidItem = item.indonesian || (item.lines ? (item.title_id || item.title) : '');
+        const _uid = _uidItem && typeof getWordUid === 'function' ? getWordUid(_uidItem) : null;
+        idxEl.title = _uid ? '唯一序号: ' + _uid.uid : '';
+    }
     if (item.lines) {
         // 对话：无顶层 indonesian/chinese，显示标题
         if (indoEl) indoEl.textContent = item.title_id || item.title || '';

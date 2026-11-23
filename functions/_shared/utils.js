@@ -524,10 +524,24 @@ async function handleVisitorLogin(context) {
 // ========== 用户信息 ==========
 
 async function handleGetMe(context) {
-    const { env } = await requireAuth(context);
+    const { env, request } = await requireAuth(context);
     const username = context.username;
     const user = await dbGet(env, 'SELECT username, name, role, user_type as userType, company_code as companyCode, emp_no as empNo, created_at as createdAt FROM users WHERE username = ?', [username]);
     if (!user) return jsonErr('用户不存在');
+    // 会话验证视为一次"登录会话"：同一用户+同一IP 30分钟内只记一条（刷新页面不刷屏）
+    try {
+        const cf = request.cf || {};
+        const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '未知';
+        const locParts = [cf.city, cf.region, cf.country].filter(Boolean);
+        const recent = await env.INDO_LEARN_DB.prepare('SELECT id FROM login_history WHERE username = ? AND ip = ? AND logged_at > ? LIMIT 1')
+            .bind(username, ip, new Date(Date.now() - 30 * 60 * 1000).toISOString()).first();
+        if (!recent) {
+            await env.INDO_LEARN_DB.prepare('INSERT INTO login_history (username, ip, location, logged_at) VALUES (?, ?, ?, ?)')
+                .bind(username, ip, locParts.join(' · ') || '未知', new Date().toISOString()).run();
+            await env.INDO_LEARN_DB.prepare('DELETE FROM login_history WHERE username = ? AND id NOT IN (SELECT id FROM login_history WHERE username = ? ORDER BY id DESC LIMIT 20)')
+                .bind(username, username).run();
+        }
+    } catch(e) {}
     return json({ user });
 }
 
