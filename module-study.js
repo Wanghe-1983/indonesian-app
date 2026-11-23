@@ -380,20 +380,34 @@ const StudyModule = {
                 const allMastered = seg.items.every(it => mastered.includes(it.indonesian));
                 const nextSeg = segs[segs.indexOf(seg) + 1];
                 const rerender = () => this._renderLearnCard(document.getElementById('study-sub-content'));
-                if (allMastered && nextSeg) {
+                if (nextSeg) {
                     const nextLabel = nextSeg.unitId === seg.unitId
                         ? '【' + (TYPE_LABEL[nextSeg.type] || nextSeg.type) + '】部分'
                         : '下一课《' + nextSeg.unitName + '》的【' + (TYPE_LABEL[nextSeg.type] || nextSeg.type) + '】';
-                    this._showSectionPrompt(
-                        '🎉 ' + segLabel + '已全部掌握！',
-                        '《' + seg.unitName + '》的' + segLabel + '已全部收入"已掌握"。\n是否开始学习' + nextLabel + '？\n（选"否"将从头循环复习当前' + segLabel + '）',
-                        nextSeg.unitId === seg.unitId ? '进入下一部分' : '进入下一课',
-                        () => { this.studyIndex = nextSeg.start; rerender(); },
-                        () => { this.studyIndex = seg.start; rerender(); }
-                    );
+                    if (allMastered) {
+                        this._showSectionPrompt(
+                            '🎉 ' + segLabel + '已全部掌握！',
+                            '《' + seg.unitName + '》的' + segLabel + '已全部收入"已掌握"。\n是否开始学习' + nextLabel + '？\n（选"否"将从头循环复习当前' + segLabel + '）',
+                            nextSeg.unitId === seg.unitId ? '进入下一部分' : '进入下一课',
+                            () => { this.studyIndex = nextSeg.start; rerender(); },
+                            () => { this.studyIndex = seg.start; rerender(); }
+                        );
+                    } else {
+                        // 未全部掌握：也不静默无限循环，明确告知进度由用户决定
+                        const doneCount = seg.items.filter(it => mastered.includes(it.indonesian)).length;
+                        this._showSectionPrompt(
+                            '📖 本部分学完一轮',
+                            '《' + seg.unitName + '》的' + segLabel + '已过一遍（' + doneCount + '/' + seg.items.length + ' 已掌握）。\n是继续' + nextLabel + '，还是循环复习本部分巩固未掌握的词？',
+                            '继续下一部分',
+                            () => { this.studyIndex = nextSeg.start; rerender(); },
+                            () => { this.studyIndex = seg.start; rerender(); }
+                        );
+                    }
                     return;
                 }
-                if (allMastered && !nextSeg) {
+                // 本课最后一段
+                const _doneLast = seg.items.filter(it => mastered.includes(it.indonesian)).length;
+                if (allMastered) {
                     this._showSectionPrompt(
                         '🎓 本课全部内容已掌握！',
                         '《' + seg.unitName + '》的生词、短句、对话已全部收入"已掌握"。\n是否从头再学一轮加深记忆？',
@@ -401,11 +415,15 @@ const StudyModule = {
                         () => { this.studyIndex = 0; rerender(); },
                         () => { this.studyIndex = seg.start; rerender(); }
                     );
-                    return;
+                } else {
+                    this._showSectionPrompt(
+                        '📖 本课学完一轮',
+                        '《' + seg.unitName + '》全部内容已过一遍（本部分已掌握 ' + _doneLast + '/' + seg.items.length + '）。\n是否从头再学一轮？',
+                        '再学一轮',
+                        () => { this.studyIndex = 0; rerender(); },
+                        () => { this.studyIndex = seg.start; rerender(); }
+                    );
                 }
-                // 未全部掌握：静默循环回本段开头
-                this.studyIndex = seg.start;
-                rerender();
                 return;
             }
         }

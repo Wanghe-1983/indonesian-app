@@ -1302,6 +1302,7 @@ function buildLevelConfig(config, oldArray) {
         // 生成单元HTML的通用函数
         function buildUnitHTML(lvId, unit, unitIndex) {
             const showIndex = String(lvId) === '0';
+            const masteredSet = new Set(getMasteredWords());
             let typesHTML = '';
             const typeMap = [
                 { key: 'words', label: '生词', icon: 'fa-spell-check' },
@@ -1316,10 +1317,13 @@ function buildLevelConfig(config, oldArray) {
                     const escapedZh = (item.chinese || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
                     let displayText = item.indonesian;
                     if (item.title) displayText = item.title + (item.title_id ? ' (' + item.title_id + ')' : '');
-                    return '<div style="padding:5px 10px 5px 20px;font-size:12px;color:#94a3b8;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" ' +
+                    // 已掌握印记：绿色印章，快速判断该词是否已收入"已掌握"
+                    const _isM = masteredSet.has(item.indonesian);
+                    const _stamp = _isM ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(52,211,153,0.18);border:1px solid rgba(52,211,153,0.55);color:#34d399;font-size:8px;margin-left:5px;vertical-align:middle;flex-shrink:0;" title="已掌握"><i class="fas fa-check"></i></span>' : '';
+                    return '<div style="padding:5px 10px 5px 20px;font-size:12px;color:' + (_isM ? '#6ee7b7' : '#94a3b8') + ';cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;" ' +
                         'onclick="loadCourseWord(\'' + lvId + '\',\'' + unit.id + '\',\'' + tm.key + '\',' + idx + ')" ' +
-                        'title="' + escapedIndo + ' - ' + escapedZh + '">' +
-                        (idx + 1) + '. ' + displayText + '</div>';
+                        'title="' + escapedIndo + ' - ' + escapedZh + (_isM ? ' \u2713已掌握' : '') + '">' +
+                        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (idx + 1) + '. ' + displayText + '</span>' + _stamp + '</div>';
                 }).join('');
 
                 typesHTML += `
