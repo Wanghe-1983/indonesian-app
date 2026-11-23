@@ -1057,18 +1057,9 @@ async function loadDB() {
                     if (typeof buildMenu === 'function') buildMenu();
                 });
             }
-            // ②上次学习位置：仅在没有掌握记录时才作为兜底（有掌握记录但无法展示时宁可用提示语）
-            if (!restored && mastered.length === 0) {
-                const savedPos = JSON.parse(localStorage.getItem('fmi_last_study_pos') || 'null');
-                if (savedPos && db[savedPos.cat] && db[savedPos.cat].lessons[savedPos.lesson]) {
-                    curCat = savedPos.cat;
-                    curLesson = savedPos.lesson;
-                    const words = db[curCat].lessons[curLesson].words;
-                    curIdx = Math.min(Math.max(0, savedPos.idx || 0), words.length - 1);
-                    showWord(curCat, curIdx);
-                    restored = true;
-                }
-            }
+            // ②不再回退到旧词库的"上次学习位置"——那个序号是旧词库体系（如39），
+            // 与课程序号不一致会造成混淆；无掌握记录时直接显示引导提示。
+            // （fmi_last_study_pos 仍保存并云同步，供推荐词卡片使用）
         } catch(e) {}
         if (!restored) showEmptyPrompt();
         renderTodayRecord();
