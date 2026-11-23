@@ -1031,17 +1031,20 @@ async function loadDB() {
             if (!restored && mastered.length > 0 && typeof CourseContent !== 'undefined') {
                 const renderCourseWord = function() {
                     try {
-                        if (CourseContent._loaded && CourseContent.data) {
-                            for (let m = mastered.length - 1; m >= 0; m--) {
-                                const loc = findCourseWordLoc(mastered[m]);
-                                if (loc) {
-                                    loadCourseWord(loc.levelId, loc.unitId, loc.type, loc.index);
-                                    restored = true;
-                                    return;
-                                }
-                            }
+                        if (!CourseContent._loaded || !CourseContent.data) return;
+                        for (let m = mastered.length - 1; m >= 0; m--) {
+                            const loc = findCourseWordLoc(mastered[m]);
+                            if (!loc) continue;
+                            const level = (CourseContent.data.levels || []).find(l => String(l.id) === String(loc.levelId));
+                            const unit = level && (level.units || []).find(u => String(u.id) === String(loc.unitId));
+                            const items = unit ? (unit[loc.type] || []) : [];
+                            if (items.length === 0) continue;
+                            // 直接进入课程浏览模式（不依赖 courseMenuData 的异步加载时序）
+                            loadCourseItemsToCard(items, loc.index);
+                            restored = true;
+                            return;
                         }
-                    } catch(e) {}
+                    } catch(e) { console.warn('[restore] 课程词恢复失败:', e); }
                 };
                 if (CourseContent._loaded) renderCourseWord();
                 else CourseContent.on('loaded', renderCourseWord);
@@ -4274,13 +4277,17 @@ function navigateToMasteredWord(word) {
         }
         if (found) break;
     }
-    // BIPA课程词 → 通过课程映射加载（序号显示课程内真实位置，翻页在课程生词表内循环）
+    // BIPA课程词 → 直接加载课程条目到主卡片课程浏览模式
     if (!found) {
         const loc = (typeof findCourseWordLoc === 'function') ? findCourseWordLoc(word) : null;
         if (loc) {
-            courseBrowseItems = []; // 重置上下文再加载
-            loadCourseWord(loc.levelId, loc.unitId, loc.type, loc.index);
-            found = true;
+            const level = (CourseContent.data.levels || []).find(l => String(l.id) === String(loc.levelId));
+            const unit = level && (level.units || []).find(u => String(u.id) === String(loc.unitId));
+            const items = unit ? (unit[loc.type] || []) : [];
+            if (items.length > 0) {
+                loadCourseItemsToCard(items, loc.index);
+                found = true;
+            }
         }
     }
     if (!found) {
