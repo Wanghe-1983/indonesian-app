@@ -1131,7 +1131,9 @@ async function buildMenu() {
                 (_canUnmark ? '<button onclick="removeMasteredFromNav(\'' + ew + '\',event)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:6px;"><i class="fas fa-times"></i></button>' : '') + '</div>';
         }
         if (_canUnmark) {
-            masteredHTML += '<div style="padding:6px 10px;margin-top:6px;"><button onclick="clearAllMastered(this)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-trash-alt"></i> 一键清空</button></div>';
+            masteredHTML += '<div style="padding:6px 10px;margin-top:6px;display:flex;gap:6px;">'
+                + '<button onclick="showReviewList()" style="flex:1;background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);padding:5px 8px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-clipboard-list"></i> 复习清单</button>'
+                + '<button onclick="clearAllMastered(this)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:5px 8px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-trash-alt"></i> 一键清空</button></div>';
         }
     }
 
@@ -1760,6 +1762,93 @@ function onCopyrightTap(e) {
         hint.textContent = '🎯 再点 ' + (target - _adminClickCount) + ' 次进入管理入口';
         if (arrow) hint.appendChild(arrow);
         hint.style.opacity = '1';
+    }
+}
+
+// ===== 复习清单：收集课程中所有未掌握的生词/短句，按篇章分组，可点击直达 =====
+async function showReviewList() {
+    const old = document.getElementById('review-list-dialog');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'review-list-dialog';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10002;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+    overlay.innerHTML = '<div style="background:var(--glass,rgba(30,41,59,0.97));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:22px 24px;max-width:480px;width:94%;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+        + '<h3 style="color:var(--text-main,#e2e8f0);font-size:1.05rem;margin:0;"><i class="fas fa-clipboard-list" style="color:#fbbf24;margin-right:8px;"></i>复习清单（未掌握）</h3>'
+        + '<button onclick="document.getElementById(\'review-list-dialog\').remove()" style="background:rgba(148,163,184,0.1);border:none;color:#94a3b8;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:0.85rem;"><i class="fas fa-times"></i></button></div>'
+        + '<div id="rl-list" style="max-height:65vh;overflow-y:auto;"><div style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:20px 0;"><i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>生成中…</div></div>'
+        + '</div>';
+    document.body.appendChild(overlay);
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+    const data = await loadCourseMenuData();
+    const listEl = document.getElementById('rl-list');
+    try {
+        const mastered = new Set(getMasteredWords());
+        const TYPE_LABEL = { words: '生词', sentences: '短句', dialogues: '对话' };
+        if (!data || !data.levels) {
+            listEl.innerHTML = '<div style="color:#f87171;font-size:0.85rem;text-align:center;padding:20px 0;">课程数据未加载</div>';
+            return;
+        }
+        let totalUn = 0;
+        let html = '';
+        for (const lv of (data.levels || [])) {
+            let lvHas = false;
+            let lvHTML = '';
+            let lvTotal = 0, lvDone = 0;
+            const units = lv.units || [];
+            // 统计
+            for (const u of units) for (const k of Object.keys(TYPE_LABEL)) {
+                const items = u[k] || [];
+                lvTotal += items.length;
+                lvDone += items.filter(x => mastered.has(x.indonesian)).length;
+            }
+            const lvUn = lvTotal - lvDone;
+            if (lvUn === 0) continue; // 整级全掌握的跳过
+            for (const u of units) {
+                let uHTML = '';
+                let uUn = 0;
+                for (const k of Object.keys(TYPE_LABEL)) {
+                    const items = (u[k] || []).filter(x => !mastered.has(x.indonesian));
+                    uUn += items.length;
+                    if (!items.length) continue;
+                    uHTML += '<div style="padding:3px 0 1px;font-size:0.72rem;color:#a5b4fc;font-weight:600;">' + TYPE_LABEL[k] + '</div>';
+                    uHTML += items.map((item, idx2) => {
+                        const li = (u[k] || []).indexOf(item);
+                        const indo = item.indonesian || '';
+                        const zh = item.chinese || item.zh || '';
+                        return '<div onclick="loadCourseWord(\'' + lv.id + '\',\'' + u.id + '\',\'' + k + '\',' + li + ');document.getElementById(\'review-list-dialog\').remove();" '
+                            + 'style="padding:3px 6px;font-size:0.8rem;color:#cbd5e1;cursor:pointer;border-radius:6px;display:flex;justify-content:space-between;gap:8px;" '
+                            + 'onmouseover="this.style.background=\'rgba(99,102,241,0.12)\'" onmouseout="this.style.background=\'transparent\'" '
+                            + 'title="点击直达学习">'
+                            + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + indo + '</span>'
+                            + '<span style="color:#64748b;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;">' + zh + '</span></div>';
+                    }).join('');
+                }
+                if (uUn > 0) {
+                    lvHas = true;
+                    lvHTML += '<div style="margin:8px 0 4px;font-size:0.78rem;color:#e2e8f0;font-weight:600;display:flex;align-items:center;gap:6px;">'
+                        + '<i class="fas fa-book" style="color:#818cf8;font-size:0.7rem;"></i>' + (u.name || u.title || ('单元 ' + u.id))
+                        + '<span style="color:#f87171;font-size:0.7rem;font-weight:400;">未掌握 ' + uUn + '</span></div>' + uHTML;
+                }
+            }
+            if (lvHas) {
+                totalUn += lvUn;
+                html += '<div style="margin-bottom:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+                    + '<span style="color:#fde68a;font-size:0.85rem;font-weight:700;">' + (lv.name || ('Level ' + lv.id)) + '</span>'
+                    + '<span style="color:#94a3b8;font-size:0.72rem;">总进度 ' + lvDone + '/' + lvTotal + '</span></div>'
+                    + '<div class="sb-ov-progress" style="margin-bottom:6px;"><div class="sb-ov-fill" style="width:' + (lvTotal ? Math.round(lvDone / lvTotal * 100) : 0) + '%;background:#34d399;"></div></div>'
+                    + lvHTML + '</div>';
+            }
+        }
+        if (totalUn === 0) {
+            listEl.innerHTML = '<div style="text-align:center;padding:24px 0;color:#34d399;"><i class="fas fa-trophy" style="font-size:2rem;margin-bottom:8px;"></i><div style="font-size:0.95rem;font-weight:700;">全部已掌握！</div><div style="color:#94a3b8;font-size:0.78rem;margin-top:4px;">课程中没有需要复习的词了</div></div>';
+        } else {
+            listEl.innerHTML = '<div style="text-align:center;margin-bottom:8px;"><span style="color:#fbbf24;font-size:0.8rem;">共 <b>' + totalUn + '</b> 条未掌握 · 点击任意条目直达学习</span></div>' + html;
+        }
+    } catch(e) {
+        listEl.innerHTML = '<div style="color:#f87171;font-size:0.85rem;text-align:center;padding:20px 0;">生成失败，请稍后重试</div>';
     }
 }
 
