@@ -1030,13 +1030,14 @@ async function loadDB() {
             // 词库里找不到的最后掌握词（BIPA课程词）→ 等课程内容加载后尝试显示
             if (!restored && mastered.length > 0 && typeof CourseContent !== 'undefined') {
                 // ①课程优先：最后掌握的词几乎都在BIPA课程里，直接进课程浏览模式
-                const renderCourseWord = function() {
+                const renderCourseWord = async function() {
                     try {
                         if (restored) return;
-                        if (!CourseContent._loaded || !CourseContent.data) return;
-                        buildCourseUidMap();
+                        const data = await loadCourseMenuData();
+                        if (restored || !data) return;
+                        buildCourseUidMap(data);
                         for (let m = mastered.length - 1; m >= 0; m--) {
-                            const loc = findCourseWordLoc(mastered[m]);
+                            const loc = findCourseWordLoc(mastered[m], data);
                             if (!loc) continue;
                             const level = (CourseContent.data.levels || []).find(l => String(l.id) === String(loc.levelId));
                             const unit = level && (level.units || []).find(u => String(u.id) === String(loc.unitId));
@@ -1048,15 +1049,13 @@ async function loadDB() {
                         }
                     } catch(e) { console.warn('[restore] 课程词恢复失败:', e); }
                 };
-                if (CourseContent._loaded) renderCourseWord();
-                else CourseContent.on('loaded', renderCourseWord);
-                // 课程内容就绪后补齐释义并刷新侧边栏（课程词也能显示释义）
-                const _refreshMeanings = function() {
+                renderCourseWord();
+                // 课程数据就绪后补齐释义并刷新侧边栏（课程词也能显示释义）
+                loadCourseMenuData().then(function(data) {
+                    if (!data) return;
                     ensureWordMeanings();
                     if (typeof buildMenu === 'function') buildMenu();
-                };
-                if (CourseContent._loaded) setTimeout(_refreshMeanings, 100);
-                else CourseContent.on('loaded', _refreshMeanings);
+                });
             }
             // ②上次学习位置：仅在没有掌握记录时才作为兜底（有掌握记录但无法展示时宁可用提示语）
             if (!restored && mastered.length === 0) {
@@ -4198,11 +4197,12 @@ function getMasteredWords() {
 // 每个生词/短句/对话都有唯一序号，如 B0-U1-W001（0级-1单元-生词表第1条）
 // 用于"已掌握"与课程内容的精准匹配，避免同名/旧词库错位
 window._courseUidMap = null;
-function buildCourseUidMap() {
-    if (typeof CourseContent === 'undefined' || !CourseContent.data) return null;
+function buildCourseUidMap(srcData) {
+    const data = srcData || (typeof CourseContent !== 'undefined' && CourseContent.data) || window._courseMenuData || courseMenuData;
+    if (!data || !data.levels) return null;
     const TYPE_CODE = { words: 'W', sentences: 'S', dialogues: 'D' };
     const map = {};
-    for (const lv of (CourseContent.data.levels || [])) {
+    for (const lv of (data.levels || [])) {
         for (const u of (lv.units || [])) {
             for (const type of Object.keys(TYPE_CODE)) {
                 (u[type] || []).forEach((w, i) => {
@@ -4226,9 +4226,10 @@ function getWordUid(word) {
 }
 
 // 在BIPA课程内容中定位某词的 (等级, 单元, 类型, 序号)——打通"已掌握"与课程的映射
-function findCourseWordLoc(word) {
-    if (typeof CourseContent === 'undefined' || !CourseContent.data) return null;
-    for (const lv of (CourseContent.data.levels || [])) {
+function findCourseWordLoc(word, srcData) {
+    const data = srcData || (typeof CourseContent !== 'undefined' && CourseContent.data) || window._courseMenuData || courseMenuData;
+    if (!data || !data.levels) return null;
+    for (const lv of (data.levels || [])) {
         for (const u of (lv.units || [])) {
             for (const type of ['words', 'sentences', 'dialogues']) {
                 const list = u[type] || [];
@@ -4275,8 +4276,9 @@ function ensureWordMeanings() {
                 });
             }
         }
-        if (typeof CourseContent !== 'undefined' && CourseContent.data) {
-            for (const lv of (CourseContent.data.levels || [])) {
+        const _cd = (typeof CourseContent !== 'undefined' && CourseContent.data) || window._courseMenuData || courseMenuData;
+        if (_cd) {
+            for (const lv of (_cd.levels || [])) {
                 for (const u of (lv.units || [])) {
                     for (const key of ['words', 'sentences', 'dialogues']) {
                         (u[key] || []).forEach(w => {
@@ -4293,11 +4295,14 @@ function ensureWordMeanings() {
 }
 
 // 从侧边栏已掌握列表点击词汇，定位到学习界面
-function navigateToMasteredWord(word) {
+async function navigateToMasteredWord(word) {
     switchStudySubTab('learn');
     let found = false;
-    // ①BIPA课程优先：已掌握的词几乎都来自课程，序号/翻页/打卡与课程完全一致
-    if (typeof CourseContent !== 'undefined' && CourseContent.data) {
+    // ①BIPA课程优先：确保课程数据已加载（courseMenuData 单例缓存）
+    const courseData = await loadCourseMenuData();
+    if (courseData) {
+        buildCourseUidMap(courseData);
+        window._courseMenuData = courseData;
         const loc = findCourseWordLoc(word);
         if (loc) {
             const level = (CourseContent.data.levels || []).find(l => String(l.id) === String(loc.levelId));
