@@ -1140,7 +1140,7 @@ async function buildMenu() {
                 (_canUnmark ? '<button onclick="removeMasteredFromNav(\'' + ew + '\',event)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:6px;"><i class="fas fa-times"></i></button>' : '') + '</div>';
         }
         if (_canUnmark) {
-            masteredHTML += '<div style="padding:6px 10px;margin-top:6px;"><button onclick="clearAllMastered()" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-trash-alt"></i> 一键清空</button></div>';
+            masteredHTML += '<div style="padding:6px 10px;margin-top:6px;"><button onclick="clearAllMastered(this)" style="background:rgba(248,113,113,0.1);color:#f87171;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;"><i class="fas fa-trash-alt"></i> 一键清空</button></div>';
         }
     }
 
@@ -4396,6 +4396,9 @@ function clearAllMastered(triggerBtn) {
             const dialog = document.getElementById('mastered-list-dialog');
             if (dialog) dialog.remove();
             updatePracticeWordCount();
+            // 立即刷新侧边栏并同步云端（带确认标记，云端词库一并清空，防止刷新后被云恢复"复活"）
+            if (typeof buildMenu === 'function') buildMenu();
+            if (typeof syncStudyToCloud === 'function') syncStudyToCloud();
         });
     } else if (confirm('确定要清空所有已掌握词汇吗？')) {
         localStorage.setItem('fmi_clear_words_ack', '1');
@@ -4404,6 +4407,8 @@ function clearAllMastered(triggerBtn) {
         const dialog = document.getElementById('mastered-list-dialog');
         if (dialog) dialog.remove();
         updatePracticeWordCount();
+        if (typeof buildMenu === 'function') buildMenu();
+        if (typeof syncStudyToCloud === 'function') syncStudyToCloud();
     }
 }
 
