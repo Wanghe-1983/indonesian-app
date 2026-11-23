@@ -1031,22 +1031,13 @@ async function loadDB() {
             if (!restored && mastered.length > 0 && typeof CourseContent !== 'undefined') {
                 const renderCourseWord = function() {
                     try {
-                        const data = CourseContent.data;
-                        if (!data || !data.levels) return;
-                        for (let m = mastered.length - 1; m >= 0; m--) {
-                            const target = mastered[m];
-                            for (const lv of data.levels) {
-                                for (const u of (lv.units || [])) {
-                                    const hit = (u.words || []).find(w => (w.indonesian || w.en || w.word) === target)
-                                        || (u.sentences || []).find(w => (w.indonesian || w.en || w.word) === target)
-                                        || (u.dialogues || []).find(w => (w.indonesian || w.en || w.word) === target);
-                                    if (hit) {
-                                        document.getElementById('disp-indo').textContent = target;
-                                        document.getElementById('disp-zh').textContent = hit.chinese || hit.zh || '';
-                                        document.getElementById('word-idx').textContent = '--';
-                                        restored = true;
-                                        return;
-                                    }
+                        if (CourseContent._loaded && CourseContent.data) {
+                            for (let m = mastered.length - 1; m >= 0; m--) {
+                                const loc = findCourseWordLoc(mastered[m]);
+                                if (loc) {
+                                    loadCourseWord(loc.levelId, loc.unitId, loc.type, loc.index);
+                                    restored = true;
+                                    return;
                                 }
                             }
                         }
@@ -4198,6 +4189,21 @@ function getMasteredWords() {
     return JSON.parse(localStorage.getItem('fmi_all_words') || '[]');
 }
 
+// 在BIPA课程内容中定位某词的 (等级, 单元, 类型, 序号)——打通"已掌握"与课程的映射
+function findCourseWordLoc(word) {
+    if (typeof CourseContent === 'undefined' || !CourseContent.data) return null;
+    for (const lv of (CourseContent.data.levels || [])) {
+        for (const u of (lv.units || [])) {
+            for (const type of ['words', 'sentences', 'dialogues']) {
+                const list = u[type] || [];
+                const i = list.findIndex(w => (w.indonesian || w.en || w.word) === word);
+                if (i >= 0) return { levelId: lv.id, unitId: u.id, type, index: i };
+            }
+        }
+    }
+    return null;
+}
+
 // ===== 生词释义映射表（fmi_word_meanings: {单词: 中文}） =====
 function getWordMeanings() {
     try { return JSON.parse(localStorage.getItem('fmi_word_meanings') || '{}'); } catch(e) { return {}; }
@@ -4268,23 +4274,13 @@ function navigateToMasteredWord(word) {
         }
         if (found) break;
     }
-    if (!found && typeof CourseContent !== 'undefined' && CourseContent.data) {
-        outer:
-        for (const lv of (CourseContent.data.levels || [])) {
-            for (const unit of (lv.units || [])) {
-                for (const key of ['words', 'sentences', 'dialogues']) {
-                    for (const w of (unit[key] || [])) {
-                        const indo = w.indonesian || w.en || w.word;
-                        const zh = w.chinese || w.zh || '';
-                        if (indo === word) {
-                            document.getElementById('disp-indo').innerText = indo;
-                            document.getElementById('disp-zh').innerText = zh || '(释义缺失)';
-                            document.getElementById('word-idx').innerText = '--';
-                            found = true; break outer;
-                        }
-                    }
-                }
-            }
+    // BIPA课程词 → 通过课程映射加载（序号显示课程内真实位置，翻页在课程生词表内循环）
+    if (!found) {
+        const loc = (typeof findCourseWordLoc === 'function') ? findCourseWordLoc(word) : null;
+        if (loc) {
+            courseBrowseItems = []; // 重置上下文再加载
+            loadCourseWord(loc.levelId, loc.unitId, loc.type, loc.index);
+            found = true;
         }
     }
     if (!found) {
