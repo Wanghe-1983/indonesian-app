@@ -131,6 +131,9 @@ function checkLoginStatus() {
                             <div onclick="if(typeof ChallengeModule!=='undefined'&&ChallengeModule.openGenderPicker){ChallengeModule.openGenderPicker();}toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.background='transparent'">
                                 <i class="fas fa-shield-halved" style="color:#60a5fa;width:16px;text-align:center;"></i> 切换角色形象
                             </div>
+                            <div onclick="showLoginHistory();toggleUserMenu();" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.background='transparent'">
+                                <i class="fas fa-clock-rotate-left" style="color:#34d399;width:16px;text-align:center;"></i> 登录历史
+                            </div>
                             <div style="height:1px;background:rgba(255,255,255,0.05);margin:4px 8px;"></div>
                             <div onclick="logout()" style="padding:10px 14px;border-radius:8px;cursor:pointer;color:#e2e8f0;font-size:0.85rem;display:flex;align-items:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(248,113,113,0.1)'" onmouseout="this.style.background='transparent'">
                                 <i class="fas fa-sign-out-alt" style="color:#f87171;width:16px;text-align:center;"></i> 退出登录
@@ -1767,6 +1770,48 @@ function onCopyrightTap(e) {
         hint.textContent = '🎯 再点 ' + (target - _adminClickCount) + ' 次进入管理入口';
         if (arrow) hint.appendChild(arrow);
         hint.style.opacity = '1';
+    }
+}
+
+// 登录历史弹窗：时间 / IP / 地点
+async function showLoginHistory() {
+    const old = document.getElementById('login-history-dialog');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'login-history-dialog';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10002;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+    overlay.innerHTML = '<div style="background:var(--glass,rgba(30,41,59,0.97));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:22px 24px;max-width:440px;width:92%;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+        + '<h3 style="color:var(--text-main,#e2e8f0);font-size:1.05rem;margin:0;"><i class="fas fa-clock-rotate-left" style="color:#34d399;margin-right:8px;"></i>登录历史（最近 10 次）</h3>'
+        + '<button onclick="document.getElementById(\'login-history-dialog\').remove()" style="background:rgba(148,163,184,0.1);border:none;color:#94a3b8;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:0.85rem;"><i class="fas fa-times"></i></button></div>'
+        + '<div id="lh-list" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;"><div style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:20px 0;"><i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>加载中…</div></div>'
+        + '</div>';
+    document.body.appendChild(overlay);
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    const listEl = document.getElementById('lh-list');
+    try {
+        const res = await API.getLoginHistory();
+        const rows = (res && res.history) || [];
+        if (!rows.length) {
+            listEl.innerHTML = '<div style="color:#64748b;font-size:0.85rem;text-align:center;padding:20px 0;">暂无登录记录<br><span style="font-size:0.75rem;">（登录历史从本次更新后开始记录）</span></div>';
+            return;
+        }
+        const icons = ['fa-circle-check', 'fa-circle-check', 'fa-circle-check', 'fa-circle-check', 'fa-circle-check'];
+        listEl.innerHTML = rows.map((r, i) => {
+            const d = r.logged_at ? new Date(r.logged_at) : null;
+            const timeStr = d ? d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+                + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : '未知时间';
+            const label = i === 0 ? '<span style="color:#34d399;font-size:0.68rem;border:1px solid rgba(52,211,153,0.4);border-radius:4px;padding:1px 5px;margin-left:6px;">最近登录</span>'
+                : (i === rows.length - 1 ? '<span style="color:#64748b;font-size:0.68rem;border:1px solid rgba(100,116,139,0.4);border-radius:4px;padding:1px 5px;margin-left:6px;">最早</span>' : '');
+            return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:12px;">'
+                + '<i class="fas ' + icons[Math.min(i, 4)] + '" style="color:#34d399;font-size:1.05rem;"></i>'
+                + '<div style="flex:1;min-width:0;">'
+                + '<div style="color:#e2e8f0;font-size:0.84rem;font-weight:600;">' + timeStr + label + '</div>'
+                + '<div style="color:#94a3b8;font-size:0.74rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><i class="fas fa-location-dot" style="margin-right:4px;color:#64748b;"></i>' + (r.location || '未知') + ' <span style="color:#475569;">|</span> IP: ' + (r.ip || '未知') + '</div>'
+                + '</div></div>';
+        }).join('');
+    } catch(e) {
+        listEl.innerHTML = '<div style="color:#f87171;font-size:0.85rem;text-align:center;padding:20px 0;">加载失败，请稍后重试</div>';
     }
 }
 

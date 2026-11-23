@@ -16,6 +16,7 @@ export async function onRequest(context) {
         // ========== 系统 ==========
         'system/info':                  { get: handleSystemInfo },
         'auth/login':                   { post: handleLogin },
+        'auth/login-history':           { get: handleLoginHistory },
         'auth/register':                { post: handleRegister },
         'visitor/login':                { post: handleVisitorLogin },
 
@@ -411,11 +412,42 @@ async function handleLogin(context) {
     // 更新心跳时间
     await dbRun(env, 'UPDATE users SET last_heartbeat = ? WHERE username = ?', [new Date().toISOString(), username]);
 
+    // 记录登录历史（IP / 时间 / 地点，来自 Cloudflare 边缘节点信息）
+    try {
+        await env.INDO_LEARN_DB.prepare(`CREATE TABLE IF NOT EXISTS login_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            ip TEXT,
+            location TEXT,
+            logged_at TEXT
+        )`).run();
+        const cf = request.cf || {};
+        const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '未知';
+        const locParts = [cf.city, cf.region, cf.country].filter(Boolean);
+        await env.INDO_LEARN_DB.prepare('INSERT INTO login_history (username, ip, location, logged_at) VALUES (?, ?, ?, ?)')
+            .bind(username, ip, locParts.join(' · ') || '未知', new Date().toISOString()).run();
+        // 每用户只保留最近 20 条
+        await env.INDO_LEARN_DB.prepare('DELETE FROM login_history WHERE username = ? AND id NOT IN (SELECT id FROM login_history WHERE username = ? ORDER BY id DESC LIMIT 20)')
+            .bind(username, username).run();
+    } catch(e) {}
+
     return json({
         success: true,
         token,
         user: { username: user.username, name: user.name, role: user.role, userType: user.user_type },
     });
+}
+
+// 查询当前用户最近 10 次登录历史
+async function handleLoginHistory(context) {
+    const { env } = await requireAuth(context);
+    try {
+        const rows = await env.INDO_LEARN_DB.prepare('SELECT ip, location, logged_at FROM login_history WHERE username = ? ORDER BY id DESC LIMIT 10')
+            .bind(context.username).all();
+        return json({ history: rows.results || [] });
+    } catch(e) {
+        return json({ history: [] });
+    }
 }
 
 // ========== 注册 ==========

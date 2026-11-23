@@ -140,6 +140,9 @@ const API = {
         });
     },
 
+    async getLoginHistory() {
+        return this.request('auth/login-history');
+    },
     async getStats() {
         return await this.request('study/stats');
     },
